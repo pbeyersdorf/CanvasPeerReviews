@@ -573,33 +573,51 @@ def postFromCSV(fileName=None, thisAssignment=None):
 	elif thisAssignment.lower()=='last':
 		thisAssignment=graded_assignments['last']
 	#getStudentWork(thisAssignment)
-	print("accessing"+thisAssignment.name+"...")
+	print("accessing "+thisAssignment.name+"...")
 	submissions=thisAssignment.get_submissions()
 	
 	#get student names, scores and comments from CSV file
 	csvData=readCSV(fileName)
+	nameCol, gradeCol, commentCol= None ,None ,None 
 	for (i,col) in	enumerate(csvData[0]):
-		print(i+1,col)
-	nameCol=int(input("Which coulumn number contains the student names? ")	)-1
-	gradeCol=int(input("Which coulumn number contains the student grades (0 for none)? "))-1
-	commentCol=int(input("Which coulumn number contains the comments (0 for none)? "))-1
-
+		if col.strip().lower() == "name":
+			nameCol=i
+			print(i+1,col,"<- Name")
+		elif col.strip().lower() == "grade" or col.strip().lower() == "total":
+			gradeCol = i
+			print(i+1,col,"<- Grade")
+		elif col.strip().lower() == "comment":
+			commentCol = i
+			print(i+1,col,"<- Comment")
+		else:
+			print(i+1,col)
+	temp=input("Which coulumn number contains the student names? ["+str(nameCol+1)+"] ")	
+	if temp!="":
+		nameCol=int(temp)-1
+	temp=input("Which coulumn number contains the student grades (0 for none)? [" +str(gradeCol+1)+"] ")
+	if temp!="":	
+		gradeCol=int(temp)-1
+	temp=input("Which coulumn number contains the comments (0 for none)? [" +str(commentCol+1)+"] ")
+	if temp!="":	
+		commentCol=int(temp)-1
 	for submission in submissions:
-		student=studentsById[submission.user_id]
-		for (j, row) in enumerate(csvData):
-			try:
-				if (student.name ==	 row[nameCol] and submission.assignment_id == thisAssignment.id):
-					msg="posting "+ student.name + ":\n"
-					if gradeCol!=-1:
-						submission.edit(submission={'posted_grade':row[gradeCol]})
-						msg+="\tscore: " + row[gradeCol] +"\n"
-					if commentCol!=-1:
-						submission.edit(comment={'text_comment':row[commentCol]})
-						msg+="\tcomment: '" + row[commentCol] +"'\n"
-					print(msg, end="")
+		if submission.user_id in studentsById:
+			student=studentsById[submission.user_id]
+			for (j, row) in enumerate(csvData):
+				try:
+					if ((student.name == row[nameCol] or student.sortable_name == row[nameCol])
+					 and submission.assignment_id == thisAssignment.id):
+						msg="posting "+ student.name + ":\n"
+						if gradeCol!=-1:
+							submission.edit(submission={'posted_grade':row[gradeCol]})
+							msg+="\tscore: " + row[gradeCol] +"\n"
+						if commentCol!=-1:
+							submission.edit(comment={'text_comment':row[commentCol]})
+							msg+="\tcomment: '" + row[commentCol] +"'\n"
+						print(msg, end="")
 
-			except:
-				status['err']="unable to process test student"
+				except:
+					status['err']="unable to process test student"
 	status["posted"]=True
 
 ######################################
@@ -653,7 +671,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	if fileName==None and assignment!= None:
 		fileName="scores for " + assignment.name + ".csv"
 	fileName=status['dataDir'] + fileName
-	header="Name" + delimiter + "ID" + delimiter
+	header="Name" + delimiter +"Sortable Name" + delimiter + "ID" + delimiter
 	if assignment!=None:
 		for LOid in assignment.learning_outcome_ids():
 			header+="LO " + str(LOid) + delimiter
@@ -669,6 +687,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 
 	for (i,student) in enumerate(students):
 		line=(student.name + delimiter + 
+			student.sortable_name + delimiter + 
 			str(student.sis_user_id) + delimiter)
 		if assignment!=None:
 			grades=student.grades[assignment.id]			
