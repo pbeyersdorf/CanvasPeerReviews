@@ -56,7 +56,7 @@ def loadCache():
 			students=pickle.load(handle)
 		status['message']="Loaded student data"
 	except:
-		status['message']="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations.	If you have done previous calibrations,\nyou should launch python from the directory contaiing the file"
+		status['message']="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory contaiing the file"
 	try:
 		with open(status['dataDir'] +status['prefix']+'parameters.pkl', 'rb') as handle:
 			params = pickle.load(handle)
@@ -89,18 +89,22 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./"):
 	global course, canvas, students, graded_assignments, status
 	status['dataDir']=dataDirectory
 	if not os.path.exists(dataDirectory):
-   	 os.makedirs(dataDirectory)
+		os.makedirs(dataDirectory)
+	printCommand=False
 	if (CANVAS_URL==None or COURSE_ID==None):
 		response=input("Enter the full URL for the homepage of your course: ")
 		parts=response.split('/courses/')
 		CANVAS_URL=parts[0]
 		COURSE_ID=int(parts[1].split('/')[0])
+		printCommand=True
 	if (TOKEN==None):
 		print("Go to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
 		TOKEN=input("Enter the token here: ")
+		printCommand=True
 	canvas = Canvas(CANVAS_URL, TOKEN)
 	course = canvas.get_course(COURSE_ID)
-	print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
+	if printCommand:
+		print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
 	loadCache()
 	print(status['message'])
 	getStudents(course)
@@ -248,7 +252,7 @@ def getStudents(course):
 		alreadyAdded=False
 		try:
 			for student in students:
-				if  student.id==user.id:
+				if	student.id==user.id:
 					alreadyAdded=True
 					studentsById[user.id]=student
 		except:
@@ -557,12 +561,12 @@ def postGrades(assignment, postGrades=True, postComments=True):
 ######################################
 # Read a CSV file with student names, grades, and comments and upload that data for the
 # assignment from which the creations were taken
-def postFromCSV(filename=None, thisAssignment=None):
+def postFromCSV(fileName=None, thisAssignment=None):
 	global course, creations
 	print("getting list of assignments...")
 	if thisAssignment==None:
 		assignments = course.get_assignments()
-		for (i,assignment) in 	enumerate(assignments):
+		for (i,assignment) in	enumerate(assignments):
 			print(str(i+1)+")",assignment.name)
 		val=int(input("Choose the assignment index: "))-1
 		thisAssignment=assignments[val]
@@ -573,8 +577,8 @@ def postFromCSV(filename=None, thisAssignment=None):
 	submissions=thisAssignment.get_submissions()
 	
 	#get student names, scores and comments from CSV file
-	csvData=readCSV(filename)
-	for (i,col) in 	enumerate(csvData[0]):
+	csvData=readCSV(fileName)
+	for (i,col) in	enumerate(csvData[0]):
 		print(i+1,col)
 	nameCol=int(input("Which coulumn number contains the student names? ")	)-1
 	gradeCol=int(input("Which coulumn number contains the student grades (0 for none)? "))-1
@@ -584,7 +588,7 @@ def postFromCSV(filename=None, thisAssignment=None):
 		student=studentsById[submission.user_id]
 		for (j, row) in enumerate(csvData):
 			try:
-				if (student.name ==  row[nameCol] and submission.assignment_id == thisAssignment.id):
+				if (student.name ==	 row[nameCol] and submission.assignment_id == thisAssignment.id):
 					msg="posting "+ student.name + ":\n"
 					if gradeCol!=-1:
 						submission.edit(submission={'posted_grade':row[gradeCol]})
@@ -644,14 +648,18 @@ def getParameters(ignoreFile=False):
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
-def exportGrades(assignment, fileName=None, delimiter=",", display=False, saveToFile=True):
-	if fileName==None:
+def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, saveToFile=True):
+	fileName = "gradesheet.csv"
+	if fileName==None and assignment!= None:
 		fileName="scores for " + assignment.name + ".csv"
 	fileName=status['dataDir'] + fileName
 	header="Name" + delimiter + "ID" + delimiter
-	for LOid in assignment.learning_outcome_ids():
-		header+="LO " + str(LOid) + delimiter
-	header+="Creation" + delimiter + "Review" + delimiter + "Total" + delimiter + "Comment" + "\n"
+	if assignment!=None:
+		for LOid in assignment.learning_outcome_ids():
+			header+="LO " + str(LOid) + delimiter
+		header+="Creation" + delimiter + "Review" + delimiter + "Total" + delimiter + "Comment\n" 
+	else:
+		header+="Grade, Comment\n"
 	if saveToFile:
 		f = open(fileName, "w")
 		f.write(header) 
@@ -660,24 +668,28 @@ def exportGrades(assignment, fileName=None, delimiter=",", display=False, saveTo
 		print(header)
 
 	for (i,student) in enumerate(students):
-		grades=student.grades[assignment.id]
 		line=(student.name + delimiter + 
 			str(student.sis_user_id) + delimiter)
-		for LOid in assignment.learning_outcome_ids():
-			if LOid in student.gradesByLO:
-				line+=str(student.gradesByLO[LOid]) + delimiter
-			else:
-				line+="" + delimiter
-		line+=(str(grades['creation']) + delimiter + 
-			str(grades['review']) + delimiter + 
-			str(grades['total']) + delimiter + '"' +
-			student.comments[assignment.id] + '"\n')
+		if assignment!=None:
+			grades=student.grades[assignment.id]			
+			for LOid in assignment.learning_outcome_ids():
+				if LOid in student.gradesByLO:
+					line+=str(student.gradesByLO[LOid]) + delimiter
+				else:
+					line+="" + delimiter
+			line+=(str(grades['creation']) + delimiter + 
+				str(grades['review']) + delimiter + 
+				str(grades['total']) + delimiter + '"' +
+				student.comments[assignment.id] ) + '"\n'
+		else:
+			line+= ',\n'
 		if saveToFile:
 			f.write(line)
 		if display:
 			print(line, end ="")
 	if saveToFile:
 		f.close()
+		
 
 ######################################
 # Get the grading power ranking
@@ -750,7 +762,7 @@ def confirm(msg, requireResponse=False):
 	if not requireResponse:
 		print(msg)
 		confirmationResponse=input("'ok' to accept: " )
-		return  (confirmationResponse == 'ok')
+		return	(confirmationResponse == 'ok')
 	while confirmationResponse!='ok':
 		response=input(msg)
 		confirmationResponse=input("You entered '" + str(response) +"'\n'ok' to accept: " )
