@@ -578,7 +578,7 @@ def postFromCSV(fileName=None, thisAssignment=None):
 	
 	#get student names, scores and comments from CSV file
 	csvData=readCSV(fileName)
-	nameCol, gradeCol, commentCol= None ,None ,None 
+	nameCol, gradeCol, commentCol= -1 ,-1 ,-1 
 	for (i,col) in	enumerate(csvData[0]):
 		if col.strip().lower() == "name":
 			nameCol=i
@@ -687,7 +687,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 
 	for (i,student) in enumerate(students):
 		line=(student.name + delimiter + 
-			student.sortable_name + delimiter + 
+			'"' + student.sortable_name + '"' + delimiter + 
 			str(student.sis_user_id) + delimiter)
 		if assignment!=None:
 			grades=student.grades[assignment.id]			
