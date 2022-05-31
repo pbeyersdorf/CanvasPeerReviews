@@ -151,7 +151,10 @@ def getGradedAssignments(course):
 		if (assignment.peer_reviews and assignment.has_submitted_submissions):
 			assignment.courseid=course.id
 			graded_assignments[assignment.id]=GradedAssignment(assignment)
-			assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[assignment.id].name))))]=graded_assignments[assignment.id]
+			try:
+				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[assignment.id].name))))]=graded_assignments[assignment.id]
+			except:
+				pass
 	status["gotGradedAssignments"]=True
 
 
@@ -632,11 +635,12 @@ def getParameters(ignoreFile=False):
 		params=Parameters()
 		params.loadedFromFile=False
 	for key, assignment in graded_assignments.items():
-		for outcome in assignment.rubric:
-			LODescription[outcome['outcome_id']]=outcome['description']
-			if not outcome['outcome_id'] in params.multiplier:
-				val=float(input("\nHow many relative points should\n\t" +outcome['description'] + "\nbe worth? "))
-				params.multiplier[outcome['outcome_id']]=val	
+		if assignment != []:
+			for outcome in assignment.rubric:
+				LODescription[outcome['id']]=outcome['id']
+				if not outcome['id'] in params.multiplier:
+					val=float(input("\nHow many relative points should\n\t" +outcome['description'] + "\nbe worth? "))
+					params.multiplier[outcome['id']]=val	
 	if not params.loadedFromFile or ignoreFile:
 		val=float(input("\nWhat should be the relative weight of the creation towards the total grade? "))
 		weightingOfCreation=val
@@ -674,7 +678,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	header="Name" + delimiter +"Sortable Name" + delimiter + "ID" + delimiter
 	if assignment!=None:
 		for LOid in assignment.learning_outcome_ids():
-			header+="LO " + str(LOid) + delimiter
+			header+="LO" + str(LOid) + delimiter
 		header+="Creation" + delimiter + "Review" + delimiter + "Total" + delimiter + "Comment\n" 
 	else:
 		header+="Grade, Comment\n"

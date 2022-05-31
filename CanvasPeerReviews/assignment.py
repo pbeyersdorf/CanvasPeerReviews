@@ -2,8 +2,8 @@ class GradedAssignment:
 	def __init__(self, assignment):	
 		if hasattr(assignment, 'rubric'):
 			for outcome in assignment.rubric:
-				if not 'outcome_id' in outcome:
-					outcome['outcome_id']=None
+				if not 'id' in outcome:
+					outcome['id']=None
 		self.__dict__ = assignment.__dict__.copy() 
 		self.graded = False 
 		self.peer_reviews_assigned = False
@@ -34,8 +34,8 @@ class GradedAssignment:
 		
 	def learning_outcome_points(self, LOid):
 		for outcome in self.rubric:
-			if "outcome_id" in outcome:
-				if outcome['outcome_id'] == LOid:
+			if "id" in outcome:
+				if outcome['id'] == LOid:
 					return outcome['points']
 			else:
 				if LOid == None:
@@ -46,7 +46,7 @@ class GradedAssignment:
 		LOids=[]
 		for outcome in self.rubric:
 			try:
-				LOids.append(outcome['outcome_id'])
+				LOids.append(outcome['id'])
 			except:
 				LOids.append(None)
 		return LOids

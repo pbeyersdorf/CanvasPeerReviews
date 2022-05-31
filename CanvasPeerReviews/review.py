@@ -10,7 +10,7 @@ class Review:
 		self.scores=dict()
 		for s in self.data:
 			try:
-				self.scores[s['learning_outcome_id']]=s['points']
+				self.scores[s['criterion_id']]=s['points']
 			except:
 				err="Unscored LO"
 				
@@ -19,8 +19,8 @@ class Review:
 		msg += "["
 		for s in self.data:
 			try:
-				msg+="LO_" +str(s['learning_outcome_id']) + " " + str(s['points'])+", "
+				msg+="LO_" +str(s['criterion_id']) + " " + str(s['points'])+", "
 			except:
-				msg+="LO_" +str(s['learning_outcome_id']) + " " + "---, "
+				msg+="LO_" +str(s['criterion_id']) + " " + "---, "
 		msg=msg[0:-2]+ "]"			
 		return msg
