@@ -28,7 +28,7 @@ lastAssignment=[]
 assignmentByNumber=dict()
 professorsReviews=dict()
 course=None
-LODescription=dict()
+criteriaDescription=dict()
 params=Parameters()
 status={'message': '',
 	'err': '', 
@@ -368,38 +368,38 @@ def calibrate(studentsToCalibrate="all"):
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'calibrate'")
 		return
-	LOids=dict()
+	cids=dict()
 	for student in studentsToCalibrate:
 		uncalibratedReviews=False
 		for key,thisGivenReview in student.reviewsGiven.items():
 			uncalibratedReviews=uncalibratedReviews or (not thisGivenReview.submission_id in student.submissionsCalibratedAgainst)
 		if uncalibratedReviews:
 			# reduce the weight of previous calibrations
-			for LOid in student.delta2:
-				student.delta2[LOid]*=params.weeklyDegradationFactor()
-				student.delta[LOid]*=params.weeklyDegradationFactor()
-				student.numberOfComparisons[LOid]*=params.weeklyDegradationFactor()
+			for cid in student.delta2:
+				student.delta2[cid]*=params.weeklyDegradationFactor()
+				student.delta[cid]*=params.weeklyDegradationFactor()
+				student.numberOfComparisons[cid]*=params.weeklyDegradationFactor()
 		for key,thisGivenReview in student.reviewsGiven.items():
 			#student.assignmentsCalibrated[thisGivenReview.assignment_id]=datetime.now()
 			if not thisGivenReview.submission_id in student.submissionsCalibratedAgainst: #don't bother if we've already calibrated against this review
 				student.submissionsCalibratedAgainst[thisGivenReview.submission_id]=True
 				for otherReview in reviewsById[thisGivenReview.submission_id]:
 					if (otherReview.reviewer_id != student.id): #don't compare this review to itself
-						for LOid in thisGivenReview.scores:
-							LOids[LOid]=True
-							student.LODescription[LOid]=LODescription[LOid]
-							if not LOid in student.delta2:
-								student.delta2[LOid]=0
-								student.delta[LOid]=0
-								student.numberOfComparisons[LOid]=0 
+						for cid in thisGivenReview.scores:
+							cids[cid]=True
+							student.criteriaDescription[cid]=criteriaDescription[cid]
+							if not cid in student.delta2:
+								student.delta2[cid]=0
+								student.delta[cid]=0
+								student.numberOfComparisons[cid]=0 
 							if otherReview.review_type == "peer_review" and otherReview.reviewer_id in studentsById:
-								weight=studentsById[otherReview.reviewer_id].getGradingPower(LOid); 
+								weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
 							elif otherReview.review_type == "grading":
 								weight=params.gradingPowerForGraders
-							if (LOid in student.delta2) and (LOid in thisGivenReview.scores) and (LOid in otherReview.scores):
-								student.delta2[LOid]+=weight*(thisGivenReview.scores[LOid] - otherReview.scores[LOid] )**2 
-								student.delta[LOid]+=weight*(thisGivenReview.scores[LOid] - otherReview.scores[LOid] ) 
-								student.numberOfComparisons[LOid]+=weight		
+							if (cid in student.delta2) and (cid in thisGivenReview.scores) and (cid in otherReview.scores):
+								student.delta2[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )**2 
+								student.delta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] ) 
+								student.numberOfComparisons[cid]+=weight		
 	#		Use the previously calculated rms-like deviation from other reviewers to calculate a grading power
 	#		for this student
 	for student in students:
@@ -407,19 +407,19 @@ def calibrate(studentsToCalibrate="all"):
 
 	#		Now that all of the students grading powers have been updated, normalize everything so that the average
 	#		grading power for all of the students is 1
-	for LOid in LOids:
+	for cid in cids:
 		total, numberCounted = 0 , 0
 		for student in students:
-			if LOid in student.rms_deviation_by_category: 
-				total+=student.getGradingPower(LOid)
+			if cid in student.rms_deviation_by_category: 
+				total+=student.getGradingPower(cid)
 				numberCounted+=1
 		else:
-			student.gradingPower[LOid]=1
+			student.gradingPower[cid]=1
 		for student in students:
-			if LOid in student.rms_deviation_by_category:
-				student.gradingPowerNormalizatoinFactor[LOid]*=total/numberCounted
+			if cid in student.rms_deviation_by_category:
+				student.gradingPowerNormalizatoinFactor[cid]*=total/numberCounted
 			else:
-				student.gradingPowerNormalizatoinFactor[LOid]=1
+				student.gradingPowerNormalizatoinFactor[cid]=1
 
 	######### Save student data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
@@ -455,40 +455,40 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
 def gradeStudent(assignment, student, reviewGradeFunc=None):
-	# get a list of the Learning Outcome ids assessed on this assignment
+	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
 	for review in student.reviewsReceived:
 		if review.review_type == "grading" and review.assignment_id == assignment.id:
 			student.assignmentsGradedByInstructor[assignment.id]=True
 	creationGrade=0
 	creationWasReviewed=False
-	for LOid in assignment.learning_outcome_ids():
+	for cid in assignment.criteria_ids():
 		total, numberCount, weightCount = 0, 0, 0
 		for review in student.reviewsReceived:
 			if review.assignment_id == assignment.id:
 				weight=0
 				creationWasReviewed=True
 				if review.review_type == "peer_review" and (review.reviewer_id in studentsById) and not (assignment.id in student.assignmentsGradedByInstructor):
-					weight=studentsById[review.reviewer_id].getGradingPower(LOid); 
+					weight=studentsById[review.reviewer_id].getGradingPower(cid); 
 				elif review.review_type == "grading":
 					weight=params.gradingPowerForGraders
-				if LOid in review.scores:
+				if cid in review.scores:
 					try:
 					#if review.reviewer_id in studentsById:
 						reviewer=studentsById[review.reviewer_id]
-						compensation=reviewer.deviation_by_category[LOid]*params.compensationFactor
+						compensation=reviewer.deviation_by_category[cid]*params.compensationFactor
 					except:
 					#else:
 						compensation=0			
 						#print("unable to compensate for reviewer.id=",review.reviewer_id)
-					total+=max(0,min((review.scores[LOid] - compensation)*weight, assignment.learning_outcome_points(LOid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
+					total+=max(0,min((review.scores[cid] - compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
 					weightCount+=weight
 					numberCount+=1
 		if (weightCount>0):
-			creationGrade+=params.multiplier[LOid]*total/(weightCount*assignment.learning_outcome_points(LOid))
-			student.gradesByLO[LOid]=params.multiplier[LOid]*total/(weightCount*assignment.learning_outcome_points(LOid))
+			creationGrade+=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
+			student.gradesByCriteria[cid]=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
 		else:
-			student.gradesByLO[LOid]=""
+			student.gradesByCriteria[cid]=""
 	if not creationWasReviewed or weight==0:
 		#If student submitted something but had no reviews
 		if student.creations[assignment.id].submitted_at != None:
@@ -502,17 +502,17 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 		if thisGivenReview.assignment_id == assignment.id:
 			for otherReview in reviewsById[thisGivenReview.submission_id]:
 				if (otherReview.reviewer_id != student.id): #don't compare this review to itself
-					for LOid in thisGivenReview.scores:
+					for cid in thisGivenReview.scores:
 						if otherReview.review_type == "peer_review":
 							try:
-								weight=studentsById[otherReview.reviewer_id].getGradingPower(LOid); 
+								weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
 							except:
 								weight=1
 						elif otherReview.review_type == "grading":
 							weight=params.gradingPowerForGraders
 
 						try:
-							delta2+=weight*((thisGivenReview.scores[LOid] - otherReview.scores[LOid] )/ assignment.learning_outcome_points(LOid))**2
+							delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
 							numberOfComparisons+=weight 
 						except:
 							status['err']="Key error" 
@@ -630,17 +630,17 @@ def postFromCSV(fileName=None, thisAssignment=None):
 # review score.	 The results get saved to a file so they don't need to be 
 # reentered everytime the script is run
 def getParameters(ignoreFile=False):
-	global status, LODescription, params
+	global status, criteriaDescription, params
 	if ignoreFile:
 		params=Parameters()
 		params.loadedFromFile=False
 	for key, assignment in graded_assignments.items():
 		if assignment != []:
-			for outcome in assignment.rubric:
-				LODescription[outcome['id']]=outcome['id']
-				if not outcome['id'] in params.multiplier:
-					val=float(input("\nHow many relative points should\n\t" +outcome['description'] + "\nbe worth? "))
-					params.multiplier[outcome['id']]=val	
+			for criteria in assignment.rubric:
+				criteriaDescription[criteria['id']]=criteria['description']
+				if not criteria['id'] in params.multiplier:
+					val=float(input("\nHow many relative points should\n\t" +criteria['description'] + "\nbe worth? "))
+					params.multiplier[criteria['id']]=val	
 	if not params.loadedFromFile or ignoreFile:
 		val=float(input("\nWhat should be the relative weight of the creation towards the total grade? "))
 		weightingOfCreation=val
@@ -677,8 +677,8 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	fileName=status['dataDir'] + fileName
 	header="Name" + delimiter +"Sortable Name" + delimiter + "ID" + delimiter
 	if assignment!=None:
-		for LOid in assignment.learning_outcome_ids():
-			header+="LO" + str(LOid) + delimiter
+		for cid in assignment.criteria_ids():
+			header+='"' + criteriaDescription[cid] + '"' + delimiter #"LO" + str(cid) + delimiter
 		header+="Creation" + delimiter + "Review" + delimiter + "Total" + delimiter + "Comment\n" 
 	else:
 		header+="Grade, Comment\n"
@@ -695,9 +695,9 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 			str(student.sis_user_id) + delimiter)
 		if assignment!=None:
 			grades=student.grades[assignment.id]			
-			for LOid in assignment.learning_outcome_ids():
-				if LOid in student.gradesByLO:
-					line+=str(student.gradesByLO[LOid]) + delimiter
+			for cid in assignment.criteria_ids():
+				if cid in student.gradesByCriteria:
+					line+=str(student.gradesByCriteria[cid]) + delimiter
 				else:
 					line+="" + delimiter
 			line+=(str(grades['creation']) + delimiter + 
@@ -716,12 +716,12 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 
 ######################################
 # Get the grading power ranking
-def gradingPowerRanking(theStudent="all",LOid=0, percentile=False):
-	sortedStudents=sorted(students, key = lambda x : x.getGradingPower(LOid), reverse=True) 
+def gradingPowerRanking(theStudent="all",cid=0, percentile=False):
+	sortedStudents=sorted(students, key = lambda x : x.getGradingPower(cid), reverse=True) 
 	if theStudent=="all":
 		print("--Best graders--")
 		for (i,student) in enumerate(sortedStudents):
-			print(str(i+1)+")\t" + student.name + " %.2f" % student.getGradingPower(LOid))
+			print(str(i+1)+")\t" + student.name + " %.2f" % student.getGradingPower(cid))
 		print("--Worst graders--")
 		return
 	rank=0
@@ -735,12 +735,12 @@ def gradingPowerRanking(theStudent="all",LOid=0, percentile=False):
 
 ######################################
 # Get the grading deviation ranking
-def gradingDeviationRanking(theStudent="all", LOid=0, percentile=False):
-	sortedStudents=sorted(students, key = lambda x : x.getDeviation(LOid), reverse=True) 
+def gradingDeviationRanking(theStudent="all", cid=0, percentile=False):
+	sortedStudents=sorted(students, key = lambda x : x.getDeviation(cid), reverse=True) 
 	if theStudent=="all":
 		print("--Easiest graders--")
 		for (i,student) in enumerate(sortedStudents):
-			print(str(i+1)+")\t" + student.name + " %.2f" % student.getDeviation(LOid))
+			print(str(i+1)+")\t" + student.name + " %.2f" % student.getDeviation(cid))
 		print("--Hardest graders--")
 		return
 	rank=0

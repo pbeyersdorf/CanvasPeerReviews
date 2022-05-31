@@ -14,7 +14,7 @@ class Student:
 		self.gradingPower = dict()
 		self.delta2=dict()
 		self.delta=dict()
-		self.LODescription=dict()
+		self.criteriaDescription=dict()
 		self.numberOfComparisons=dict()
 		self.submissionsCalibratedAgainst=dict()
 		self.gradingPowerNormalizatoinFactor=dict()
@@ -22,31 +22,31 @@ class Student:
 		self.comments=dict()
 		self.reviewCount=dict()
 		self.assignmentsGradedByInstructor=dict()
-		self.gradesByLO=dict()
+		self.gradesByCriteria=dict()
 		self.assignmentsCalibrated=dict()
 		self.role="student"
 		
 
-	def getGradingPower(self,LOid):
-		if not LOid in self.gradingPowerNormalizatoinFactor:
-			self.gradingPowerNormalizatoinFactor[LOid] = 1
-		if not LOid in self.gradingPower:
-			self.gradingPower[LOid] = 1
+	def getGradingPower(self,cid):
+		if not cid in self.gradingPowerNormalizatoinFactor:
+			self.gradingPowerNormalizatoinFactor[cid] = 1
+		if not cid in self.gradingPower:
+			self.gradingPower[cid] = 1
 			return 1
-		if (self.gradingPower[LOid]==1):
+		if (self.gradingPower[cid]==1):
 			return 1
-		return min(10,self.gradingPower[LOid]/self.gradingPowerNormalizatoinFactor[LOid])
+		return min(10,self.gradingPower[cid]/self.gradingPowerNormalizatoinFactor[cid])
 
-	def getDeviation(self,LOid):
-		if not LOid in self.deviation_by_category:
+	def getDeviation(self,cid):
+		if not cid in self.deviation_by_category:
 			return 0
-		return self.deviation_by_category[LOid]
+		return self.deviation_by_category[cid]
 
 
 
-	def getGradingPowerNormalizatoinFactor(self, LOid):
+	def getGradingPowerNormalizatoinFactor(self, cid):
 		try:
-			return self.gradingPowerNormalizatoinFactor[LOid]
+			return self.gradingPowerNormalizatoinFactor[cid]
 		except:
 			return 1
 
@@ -54,29 +54,29 @@ class Student:
 		total=0
 		totalDeviation=0
 		cnt=0
-		for LOid in self.delta2:
-			if not LOid in self.deviation_by_category:
-				self.deviation_by_category[LOid]=0
+		for cid in self.delta2:
+			if not cid in self.deviation_by_category:
+				self.deviation_by_category[cid]=0
 			try:
-				if (self.numberOfComparisons[LOid]>2):
-					self.rms_deviation_by_category[LOid] = (self.delta2[LOid] / max(0.1,self.numberOfComparisons[LOid]-1))**0.5
-					if self.numberOfComparisons[LOid]==0:
-						self.deviation_by_category[LOid] =0
+				if (self.numberOfComparisons[cid]>2):
+					self.rms_deviation_by_category[cid] = (self.delta2[cid] / max(0.1,self.numberOfComparisons[cid]-1))**0.5
+					if self.numberOfComparisons[cid]==0:
+						self.deviation_by_category[cid] =0
 					else:	
-						self.deviation_by_category[LOid] = (self.delta[LOid] / self.numberOfComparisons[LOid])
-					self.gradingPower[LOid]=(1.0/self.rms_deviation_by_category[LOid]**2)/self.getGradingPowerNormalizatoinFactor(LOid)
-					total+=self.gradingPower[LOid]
-					totalDeviation+=self.deviation_by_category[LOid]
+						self.deviation_by_category[cid] = (self.delta[cid] / self.numberOfComparisons[cid])
+					self.gradingPower[cid]=(1.0/self.rms_deviation_by_category[cid]**2)/self.getGradingPowerNormalizatoinFactor(cid)
+					total+=self.gradingPower[cid]
+					totalDeviation+=self.deviation_by_category[cid]
 					cnt+=1
 				else:
-					self.gradingPower[LOid]=1
-					total+=self.gradingPower[LOid]
-					totalDeviation+=self.deviation_by_category[LOid]
+					self.gradingPower[cid]=1
+					total+=self.gradingPower[cid]
+					totalDeviation+=self.deviation_by_category[cid]
 					cnt+=1
 			except:
-				self.gradingPower[LOid]=1
-				total+=self.gradingPower[LOid]
-				totalDeviation+=self.deviation_by_category[LOid]
+				self.gradingPower[cid]=1
+				total+=self.gradingPower[cid]
+				totalDeviation+=self.deviation_by_category[cid]
 				cnt+=1
 		if cnt!=0:
 			self.gradingPower[0]=total/cnt	
@@ -88,13 +88,13 @@ class Student:
 	def gradingReport(self, returnInsteadOfPrint=False):
 		self.updateGradingPower()
 		msg="Grading report for " + self.name +"\n"
-		for LOid in self.delta2:
-			msg+="\t " + self.LODescription[LOid] +"\n"
-#			msg+="\t '" + str(LOid) +"'\n"
-			if LOid in self.rms_deviation_by_category and LOid in self.deviation_by_category:
-				msg+="\t\tRMS deviation of %.2f" % self.rms_deviation_by_category[LOid] +"\n"
-				msg+="\t\tAverage deviation of %+.2f" % self.deviation_by_category[LOid] +"\n"
-			msg+="\t\tGrading power for this category is %.2f" % self.gradingPower[LOid] +"\n"
+		for cid in self.delta2:
+			msg+="\t " + self.criteriaDescription[cid] +"\n"
+#			msg+="\t '" + str(cid) +"'\n"
+			if cid in self.rms_deviation_by_category and cid in self.deviation_by_category:
+				msg+="\t\tRMS deviation of %.2f" % self.rms_deviation_by_category[cid] +"\n"
+				msg+="\t\tAverage deviation of %+.2f" % self.deviation_by_category[cid] +"\n"
+			msg+="\t\tGrading power for this category is %.2f" % self.gradingPower[cid] +"\n"
 			msg+=""
 		if returnInsteadOfPrint:
 			return(msg)

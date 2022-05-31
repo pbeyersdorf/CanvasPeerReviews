@@ -12,15 +12,15 @@ class Review:
 			try:
 				self.scores[s['criterion_id']]=s['points']
 			except:
-				err="Unscored LO"
+				err="Unscored criteria"
 				
 	def disp(self):
 		msg = "(" + str(self.reviewer_id) + ") review of submission by (" + str(self.author_id) + "): "
 		msg += "["
 		for s in self.data:
 			try:
-				msg+="LO_" +str(s['criterion_id']) + " " + str(s['points'])+", "
+				msg+="Criteria" +str(s['criterion_id']) + " " + str(s['points'])+", "
 			except:
-				msg+="LO_" +str(s['criterion_id']) + " " + "---, "
+				msg+="Criteria" +str(s['criterion_id']) + " " + "---, "
 		msg=msg[0:-2]+ "]"			
 		return msg

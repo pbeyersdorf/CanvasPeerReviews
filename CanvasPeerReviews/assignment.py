@@ -32,21 +32,21 @@ class GradedAssignment:
 			cnt+=1
 		return cnt
 		
-	def learning_outcome_points(self, LOid):
-		for outcome in self.rubric:
-			if "id" in outcome:
-				if outcome['id'] == LOid:
-					return outcome['points']
+	def criteria_points(self, cid):
+		for criteria in self.rubric:
+			if "id" in criteria:
+				if criteria['id'] == cid:
+					return criteria['points']
 			else:
-				if LOid == None:
-					return outcome['points']
+				if cid == None:
+					return criteria['points']
 		return 0
 			
-	def learning_outcome_ids(self):
-		LOids=[]
-		for outcome in self.rubric:
+	def criteria_ids(self):
+		cids=[]
+		for criteria in self.rubric:
 			try:
-				LOids.append(outcome['id'])
+				cids.append(criteria['id'])
 			except:
-				LOids.append(None)
-		return LOids
+				cids.append(None)
+		return cids
