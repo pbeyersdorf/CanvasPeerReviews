@@ -13,6 +13,7 @@ import random
 import os
 import subprocess
 import csv
+import math
 
 ######################################
 # Define some global variables to be used in this module
@@ -486,9 +487,9 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 					numberCount+=1
 		if (weightCount>0):
 			creationGrade+=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
-			student.gradesByCriteria[cid]=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
+			student.pointsByCriteria[cid]=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
 		else:
-			student.gradesByCriteria[cid]=""
+			student.pointsByCriteria[cid]=""
 	if not creationWasReviewed or weight==0:
 		#If student submitted something but had no reviews
 		if student.creations[assignment.id].submitted_at != None:
@@ -530,13 +531,23 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 		reviewGrade=reviewGradeFunc(rms)
 	totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
 	
-	student.grades[assignment.id]={'creation': round(creationGrade,0), 'review':  round(reviewGrade,0), 'total' : round(totalGrade,0)}
+	#adjust the points from a scale of 100 down to the number of points for the assingmnet
+	digits=int(2-math.log10(assignment.points_possible))
+	creationPoints=round(creationGrade*assignment.points_possible/100.0*  params.weightingOfCreation ,digits)
+	reviewPoints=round(reviewGrade*assignment.points_possible/100.0 * params.weightingOfReviews ,digits)
+	if (digits ==0):
+		creationPoints=int(creationPoints)
+		reviewPoints=int(reviewPoints)
+	totalPoints=creationPoints + reviewPoints
+	
+	student.grades[assignment.id]={'creation': creationGrade, 'review':  creationGrade, 'total' :totalGrade}
+	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints}
 	#student.comments[assignment.id]=("Your received " + str(round(creationGrade * params.weightingOfCreation))+ 
 	#" points for your creation and " + str(round(totalGrade,0) - round(creationGrade * params.weightingOfCreation)) +
 	#" points for your reviews")
 	percentileRanking=gradingPowerRanking(student, percentile=True)
-	student.comments[assignment.id]=("Your received %d points for your creation and %d points for your reviews.<p>Based on comparisons of your reviews to those of other students and the instructor, you reviewing quality is in the %dth percetile." % 
-	(round(creationGrade * params.weightingOfCreation,0),round(totalGrade,0) - round(creationGrade * params.weightingOfCreation,0), percentileRanking ) )
+	student.comments[assignment.id]=(("Your received %." + str(digits) +"f points for your creation and %." + str(digits) +"f points for your reviews.<p>Based on comparisons of your reviews to those of other students and the instructor, you reviewing quality is in the %dth percetile.") % 
+	(creationPoints,reviewPoints, percentileRanking ) )
 	
 
 ######################################
@@ -557,7 +568,7 @@ def postGrades(assignment, postGrades=True, postComments=True):
 		creation=student.creations[assignment.id]
 		print("posting for",student.name )
 		if postGrades:
-			creation.edit(submission={'posted_grade':student.grades[assignment.id]['total']})
+			creation.edit(submission={'posted_grade':student.points[assignment.id]['total']})
 		if postComments:
 			creation.edit(comment={'text_comment':student.comments[assignment.id]})
 	status["posted"]=True
@@ -694,15 +705,15 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 			'"' + student.sortable_name + '"' + delimiter + 
 			str(student.sis_user_id) + delimiter)
 		if assignment!=None:
-			grades=student.grades[assignment.id]			
+			points=student.points[assignment.id]			
 			for cid in assignment.criteria_ids():
-				if cid in student.gradesByCriteria:
-					line+=str(student.gradesByCriteria[cid]) + delimiter
+				if cid in student.pointsByCriteria:
+					line+=str(student.pointsByCriteria[cid]) + delimiter
 				else:
 					line+="" + delimiter
-			line+=(str(grades['creation']) + delimiter + 
-				str(grades['review']) + delimiter + 
-				str(grades['total']) + delimiter + '"' +
+			line+=(str(points['creation']) + delimiter + 
+				str(points['review']) + delimiter + 
+				str(points['total']) + delimiter + '"' +
 				student.comments[assignment.id] ) + '"\n'
 		else:
 			line+= ',\n'

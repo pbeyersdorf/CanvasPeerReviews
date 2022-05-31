@@ -18,11 +18,12 @@ class Student:
 		self.numberOfComparisons=dict()
 		self.submissionsCalibratedAgainst=dict()
 		self.gradingPowerNormalizatoinFactor=dict()
+		self.points=dict()
 		self.grades=dict()
 		self.comments=dict()
 		self.reviewCount=dict()
 		self.assignmentsGradedByInstructor=dict()
-		self.gradesByCriteria=dict()
+		self.pointsByCriteria=dict()
 		self.assignmentsCalibrated=dict()
 		self.role="student"
 		
