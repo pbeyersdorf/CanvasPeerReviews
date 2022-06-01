@@ -647,11 +647,24 @@ def getParameters(ignoreFile=False):
 		params.loadedFromFile=False
 	for key, assignment in graded_assignments.items():
 		if assignment != []:
+			needInput=False
 			for criteria in assignment.rubric:
 				criteriaDescription[criteria['id']]=criteria['description']
 				if not criteria['id'] in params.multiplier:
-					val=float(input("\nHow many relative points should\n\t" +criteria['description'] + "\nbe worth? "))
-					params.multiplier[criteria['id']]=val	
+					needInput=True
+			if needInput:
+				print("Need to assign criteria weightings for the rubric assigned to " + assignment.name + ": ")
+				for criteria in assignment.rubric:
+					if not criteria['id'] in params.multiplier: 
+						print("\t" + criteria['description'])
+					else:
+						print("\t" + criteria['description'] + " (" + str(params.multiplier[criteria['id']]) +")")
+					
+				for criteria in assignment.rubric:
+					criteriaDescription[criteria['id']]=criteria['description']
+					if not criteria['id'] in params.multiplier:
+						val=float(input("\nHow many relative points should\n\t" +criteria['description'] + "\nbe worth? "))
+						params.multiplier[criteria['id']]=val	
 	if not params.loadedFromFile or ignoreFile:
 		val=float(input("\nWhat should be the relative weight of the creation towards the total grade? "))
 		weightingOfCreation=val
