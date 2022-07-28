@@ -394,9 +394,12 @@ def calibrate(studentsToCalibrate="all"):
 								student.delta[cid]=0
 								student.numberOfComparisons[cid]=0 
 							if otherReview.review_type == "peer_review" and otherReview.reviewer_id in studentsById:
-								weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
+								if (studentsById[otherReview.reviewer_id]).role == 'grader':
+									weight=params.gradingPowerForGraders
+								else:
+									weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
 							elif otherReview.review_type == "grading":
-								weight=params.gradingPowerForGraders
+								weight=params.gradingPowerForInstructors
 							if (cid in student.delta2) and (cid in thisGivenReview.scores) and (cid in otherReview.scores):
 								student.delta2[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )**2 
 								student.delta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] ) 
@@ -470,9 +473,12 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 				weight=0
 				creationWasReviewed=True
 				if review.review_type == "peer_review" and (review.reviewer_id in studentsById) and not (assignment.id in student.assignmentsGradedByInstructor):
-					weight=studentsById[review.reviewer_id].getGradingPower(cid); 
+					if (studentsById[review.reviewer_id]).role == 'grader':
+						weight=params.gradingPowerForGraders
+					else:
+						weight=studentsById[review.reviewer_id].getGradingPower(cid); 
 				elif review.review_type == "grading":
-					weight=params.gradingPowerForGraders
+					weight=params.gradingPowerForInstructors
 				if cid in review.scores:
 					try:
 					#if review.reviewer_id in studentsById:
@@ -509,8 +515,10 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 								weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
 							except:
 								weight=1
+							if (studentsById[otherReview.reviewer_id]).role == 'grader':
+								weight=params.gradingPowerForGraders
 						elif otherReview.review_type == "grading":
-							weight=params.gradingPowerForGraders
+							weight=params.gradingPowerForInstructors
 
 						try:
 							delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
@@ -678,6 +686,8 @@ def getParameters(ignoreFile=False):
 		val=float(input("\nHow many days should the students have to complete their peer reviews? "))
 		params.peerReviewDurationInDays=val
 		val=int(input("\nHow many times greater than a student should an instructors grading be weighted? "))
+		params.gradingPowerForInstructors=val
+		val=int(input("\nHow many times greater than a student should  student graders grading be weighted? "))
 		params.gradingPowerForGraders=val
 		val=float(input("\nHow many assignments is the half life for grading power calculations? "))
 		params.halfLife=val
@@ -737,6 +747,21 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	if saveToFile:
 		f.close()
 		
+######################################
+# Select students to be assigned as graders
+def assignGraders():
+	keepGoing=True
+	while keepGoing:
+		for (i,student) in enumerate(students):
+			print(str(i+1)+")\t" + student.name)
+		i=int(input("Choose a student to be a grader (enter the number): "))-1
+		if confirm("Assign " + students[i].name + " as a grader?"):
+			students[i].role='grader'
+		keepGoing=confirm("Assign another student to be a grader?")
+	######### Save student data for future sessions #########	
+	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	return	
 
 ######################################
 # Get the grading power ranking
@@ -745,7 +770,10 @@ def gradingPowerRanking(theStudent="all",cid=0, percentile=False):
 	if theStudent=="all":
 		print("--Best graders--")
 		for (i,student) in enumerate(sortedStudents):
-			print(str(i+1)+")\t" + student.name + " %.2f" % student.getGradingPower(cid))
+			if student.role=='grader':
+				print(str(i+1)+")\t" + student.name + " (grader) %.2f -> %.2f" % (student.getGradingPower(cid),params.gradingPowerForGraders))
+			else:
+				print(str(i+1)+")\t" + student.name + " %.2f" % student.getGradingPower(cid))
 		print("--Worst graders--")
 		return
 	rank=0
@@ -803,7 +831,7 @@ def readCSV(fileName=None):
 	return data
 
 ######################################
-# Prompt the user for a responce and confirm their response before returning it.
+# Prompt the user for a response and confirm their response before returning it.
 def confirm(msg, requireResponse=False):
 	confirmationResponse=""
 	if not requireResponse:
