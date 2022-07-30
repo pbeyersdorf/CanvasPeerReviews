@@ -24,3 +24,6 @@ class Review:
 				msg+="Criteria" +str(s['criterion_id']) + " " + "---, "
 		msg=msg[0:-2]+ "]"			
 		return msg
+		
+	def fingerprint(self):
+		return "assignment_id=" + str(self.assignment_id) + "&author_id=" + str(self.author_id) + "&reviewer_id="+str(self.reviewer_id)

@@ -8,6 +8,7 @@ from CanvasPeerReviews.assignment import GradedAssignment
 from CanvasPeerReviews.parameters import Parameters
 from CanvasPeerReviews.review import Review
 import pickle
+import webbrowser
 import copy
 import random
 import os
@@ -57,7 +58,7 @@ def loadCache():
 			students=pickle.load(handle)
 		status['message']="Loaded student data"
 	except:
-		status['message']="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory contaiing the file"
+		status['message']="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file"
 	try:
 		with open(status['dataDir'] +status['prefix']+'parameters.pkl', 'rb') as handle:
 			params = pickle.load(handle)
@@ -339,7 +340,14 @@ def getReviews(creations):
 						reviewer_id = assessment['assessor_id']
 						review_type = assessment['assessment_type']
 						review=Review(review_type, reviewer_id, creation.user_id, creation.assignment_id, creation.id, data)
-						studentsById[creation.user_id].reviewsReceived.append(review)
+						alreadyProcessed = any(thisReview.fingerprint() == review.fingerprint() for thisReview in studentsById[creation.user_id].reviewsReceived)
+						if not alreadyProcessed:
+							studentsById[creation.user_id].reviewsReceived.append(review)
+						if creation.assignment_id in studentsById[creation.user_id].regrade: # replace entry
+							for i,thisReview in enumerate(studentsById[creation.user_id].reviewsReceived):
+								if thisReview.fingerprint() == review.fingerprint() and assessment['assessment_type']=="grading":
+									studentsById[creation.user_id].reviewsReceived[i]=review
+								
 						if creation.id in reviewsById:
 							reviewsById[creation.id].append(review)
 						else:
@@ -388,7 +396,8 @@ def calibrate(studentsToCalibrate="all"):
 					if (otherReview.reviewer_id != student.id): #don't compare this review to itself
 						for cid in thisGivenReview.scores:
 							cids[cid]=True
-							student.criteriaDescription[cid]=criteriaDescription[cid]
+							temp=criteriaDescription[cid]
+							student.criteriaDescription[cid]=temp
 							if not cid in student.delta2:
 								student.delta2[cid]=0
 								student.delta[cid]=0
@@ -440,7 +449,7 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return
-	if studentsToGrade.lower()=="all":
+	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		for student in makeList(students):
 			gradeStudent(assignment, student, reviewGradeFunc)
 	else:
@@ -461,13 +470,17 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 def gradeStudent(assignment, student, reviewGradeFunc=None):
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
+	student.gradingExplanation="Creation grade information for " +str(assignment.name) +"\n\n"
 	for review in student.reviewsReceived:
 		if review.review_type == "grading" and review.assignment_id == assignment.id:
 			student.assignmentsGradedByInstructor[assignment.id]=True
+			student.gradingExplanation+="This submission was graded by the instructor.\n"
 	creationGrade=0
 	creationWasReviewed=False
 	for cid in assignment.criteria_ids():
 		total, numberCount, weightCount = 0, 0, 0
+		student.gradingExplanation+=str(criteriaDescription[cid]) + ":\n"
+		gradingExplanationLine=""
 		for review in student.reviewsReceived:
 			if review.assignment_id == assignment.id:
 				weight=0
@@ -475,19 +488,24 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 				if review.review_type == "peer_review" and (review.reviewer_id in studentsById) and not (assignment.id in student.assignmentsGradedByInstructor):
 					if (studentsById[review.reviewer_id]).role == 'grader':
 						weight=params.gradingPowerForGraders
+						gradingExplanationLine="Grader review ["+ str(review.reviewer_id) +"_" + str(cid) +"] "
 					else:
 						weight=studentsById[review.reviewer_id].getGradingPower(cid); 
+						gradingExplanationLine="Peer review ["+ str(review.reviewer_id)+"_" + str(cid) +"] "
 				elif review.review_type == "grading":
 					weight=params.gradingPowerForInstructors
 				if cid in review.scores:
 					try:
-					#if review.reviewer_id in studentsById:
 						reviewer=studentsById[review.reviewer_id]
 						compensation=reviewer.deviation_by_category[cid]*params.compensationFactor
 					except:
-					#else:
 						compensation=0			
-						#print("unable to compensate for reviewer.id=",review.reviewer_id)
+					try:
+						gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
+					except:
+						print("error converting:",review.scores[cid], compensation, weight)
+					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
+						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
 					total+=max(0,min((review.scores[cid] - compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
 					weightCount+=weight
 					numberCount+=1
@@ -496,15 +514,20 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 			student.pointsByCriteria[cid]=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
 		else:
 			student.pointsByCriteria[cid]=""
-	if not creationWasReviewed or weight==0:
+
+	if (not creationWasReviewed) or weightCount==0:
 		#If student submitted something but had no reviews
 		if student.creations[assignment.id].submitted_at != None:
 			creationGrade=100 # Change this
+			student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 			print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)
 
 	#calculate review grades
 	delta2=0
+	tempDelta=dict()
+	tempTotalWeight=dict()
 	numberOfComparisons=0
+	student.reviewGradeExplanation=""
 	for key, thisGivenReview in student.reviewsGiven.items():
 		if thisGivenReview.assignment_id == assignment.id:
 			for otherReview in reviewsById[thisGivenReview.submission_id]:
@@ -513,19 +536,36 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 						if otherReview.review_type == "peer_review":
 							try:
 								weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
+								if (studentsById[otherReview.reviewer_id]).role == 'grader':
+									weight=params.gradingPowerForGraders
 							except:
 								weight=1
-							if (studentsById[otherReview.reviewer_id]).role == 'grader':
-								weight=params.gradingPowerForGraders
+							
 						elif otherReview.review_type == "grading":
 							weight=params.gradingPowerForInstructors
 
 						try:
+							if cid in tempDelta:
+								tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
+								tempTotalWeight[cid]+=weight
+							else:
+								tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
+								tempTotalWeight[cid]=weight						
 							delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
 							numberOfComparisons+=weight 
 						except:
 							status['err']="Key error" 
+	for cid in tempDelta:
+		student.reviewGradeExplanation+="For '" + str(criteriaDescription[cid]) + "' you graded on average " 
+		if (tempDelta[cid]>0.05):
+			student.reviewGradeExplanation+=str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders\n"
+		elif (tempDelta[cid]<-0.05):
+			student.reviewGradeExplanation+=str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders\n"
+		else:
+			student.reviewGradeExplanation+=" about the same as other graders\n"
+	student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders\n\n"
 	rms=2
+	
 	if numberOfComparisons!=0:
 		rms=(delta2/numberOfComparisons)**0.5
 	try:
@@ -550,18 +590,79 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 	
 	student.grades[assignment.id]={'creation': creationGrade, 'review':  creationGrade, 'total' :totalGrade}
 	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints}
-	#student.comments[assignment.id]=("Your received " + str(round(creationGrade * params.weightingOfCreation))+ 
-	#" points for your creation and " + str(round(totalGrade,0) - round(creationGrade * params.weightingOfCreation)) +
-	#" points for your reviews")
 	percentileRanking=gradingPowerRanking(student, percentile=True)
-	student.comments[assignment.id]=(("Your received %." + str(digits) +"f points for your creation and %." + str(digits) +"f points for your reviews.<p>Based on comparisons of your reviews to those of other students and the instructor, you reviewing quality is in the %dth percetile.") % 
-	(creationPoints,reviewPoints, percentileRanking ) )
+	student.comments[assignment.id]=(("If you believe the peer reviews of your work have a significant error, explain in a comment and include the word 'regrade' in your comment within one week and I will review it.\n\n  You earned %." + str(digits) +"f points (%.f%% of your submission score) for your submission and %." + str(digits) +"f points (%.f%% of your review score) for your peer reviews for a total score of %." + str(digits) +"f.\n\n") % 
+	(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints ) )
+	student.regradeComments[assignment.id]=(("Use the 'view rubric' button to see how your submission was regraded.  After regrading your submission it contributes %." + str(digits) +"f points and your reviews contributed  %." + str(digits) +"f points to your final score.\n\n") % 
+	(creationPoints,reviewPoints ) )
+	student.comments[assignment.id]+=student.reviewGradeExplanation
+	student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students and the instructor, you reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
 	
+######################################
+# find submissions that need to be regraded as based on the word regrade in the comments
+
+def regrade(assignment="last", studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
+	global status
+	if assignment=='last':
+		assignment=graded_assignments['last']
+	if not status['initialized']:
+		print("Error: You must first run 'initialize()' before calling 'grade'")
+		return
+	regradedStudents=dict()
+	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
+	#make list of students needing a regrade
+	if studentsToGrade.lower()=="all":
+		for student in makeList(students):
+			for key in student.creations:
+				c = student.creations[key]
+				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
+					if not (assignment.id in student.regrade):
+						regradedStudents[c.edit().id]=student
+	else:
+		for student in makeList(studentsToGrade):
+			for key in student.creations:
+				c = student.creations[key]
+				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
+					if not (assignment.id in student.regrade):
+						regradedStudents[c.edit().id]=student
+	#process list of students needing a regrade
+	for student_key in regradedStudents:
+		student=regradedStudents[student_key]
+		student.regrade[assignment.id]="Started"
+		for key in student.creations:
+			c = student.creations[key]
+			if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>0:
+				comments=[com['comment'] for com in c.edit().submission_comments if keyword in com['comment'].lower()]
+				print("regrade requested by " + student.name + "for assignment at: ")
+				previewUrl=c.edit().preview_url.replace("preview=1&","")
+				webbrowser.open(previewUrl)
+				print(previewUrl)
+				print("With comments: " + "/".join(comments) + "\n")
+				input("Enter any regrade info and comments into the web browser then press enter to continue ")
+	print("done regrading.  updating data...")
+	status["regraded"]=True
+	getStudentWork(assignment)
+	if (recalibrate):
+		calibrate()
+	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc)
+	for student_key in regradedStudents:
+		student=regradedStudents[student_key]
+		student.comments[lastAssignment.id]=student.regradeComments[assignment.id]
+		postGrades(assignment, listOfStudents=[student])
+		student.regrade[assignment.id]="Done"
+	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
+	######### Save student data for future sessions #########	
+	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+
+
 
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated
 # comments.	 The optional arguments allow you to suppress posting comments or the grades
-def postGrades(assignment, postGrades=True, postComments=True):
+def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='all'):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'postGrades'")
@@ -572,7 +673,9 @@ def postGrades(assignment, postGrades=True, postComments=True):
 	if not status['graded']:
 		if not confirm("You haven't yet called grade() but you are calling postGrades()\nyou will be posting previously saved grades, and may get an error", False):
 			return
-	for student in students:
+	if (listOfStudents=='all'):
+		listOfStudents=students
+	for student in listOfStudents:
 		creation=student.creations[assignment.id]
 		print("posting for",student.name )
 		if postGrades:
