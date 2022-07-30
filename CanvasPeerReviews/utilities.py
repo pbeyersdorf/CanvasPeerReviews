@@ -485,25 +485,29 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 			if review.assignment_id == assignment.id:
 				weight=0
 				creationWasReviewed=True
-				if review.review_type == "peer_review" and (review.reviewer_id in studentsById) and not (assignment.id in student.assignmentsGradedByInstructor):
-					if (studentsById[review.reviewer_id]).role == 'grader':
+				role=""
+				gradingExplanationLine=""
+				if (review.reviewer_id in studentsById):
+					role=studentsById[review.reviewer_id].role
+				if review.review_type == "peer_review" and not (assignment.id in student.assignmentsGradedByInstructor):
+					if role == 'grader':
 						weight=params.gradingPowerForGraders
-						gradingExplanationLine="Grader review ["+ str(review.reviewer_id) +"_" + str(cid) +"] "
-					else:
+						gradingExplanationLine="Review [G"+ str(review.reviewer_id) +"_" + str(cid) +"] "
+					elif role== 'student':
 						weight=studentsById[review.reviewer_id].getGradingPower(cid); 
-						gradingExplanationLine="Peer review ["+ str(review.reviewer_id)+"_" + str(cid) +"] "
+						gradingExplanationLine="Review [P"+ str(review.reviewer_id)+"_" + str(cid) +"] "
 				elif review.review_type == "grading":
+					gradingExplanationLine="Review [I"+ str(review.reviewer_id)+"_" + str(cid) +"] "
 					weight=params.gradingPowerForInstructors
 				if cid in review.scores:
 					try:
 						reviewer=studentsById[review.reviewer_id]
 						compensation=reviewer.deviation_by_category[cid]*params.compensationFactor
+						compensation=min(compensation, params.maxCompensationFraction* params.multiplier[cid])
+						compensation=max(compensation, -params.maxCompensationFraction* params.multiplier[cid])
 					except:
 						compensation=0			
-					try:
-						gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
-					except:
-						print("error converting:",review.scores[cid], compensation, weight)
+					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
 					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
 						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
 					total+=max(0,min((review.scores[cid] - compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
@@ -601,13 +605,22 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
 
-def regrade(assignment="last", studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
+def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
 	global status
-	if assignment=='last':
-		assignment=graded_assignments['last']
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return
+	if assignment==None:
+		val=-1
+		while not val in assignmentByNumber:
+			for i,a in assignmentByNumber.items():
+				if a.id==lastAssignment.id:
+					print(str(i)+")",a.name,"<-most recent")
+				else:
+					print(str(i)+")",a.name)	
+			val=getNum()
+		assignment=assignmentByNumber[val]
+	print("Regrading " + assignment.name)
 	regradedStudents=dict()
 	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
 	#make list of students needing a regrade
@@ -654,9 +667,6 @@ def regrade(assignment="last", studentsToGrade="All", reviewGradeFunc=None, reca
 	######### Save student data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-
 
 
 ######################################
@@ -777,28 +787,21 @@ def getParameters(ignoreFile=False):
 						val=float(input("\nHow many relative points should\n\t" +criteria['description'] + "\nbe worth? "))
 						params.multiplier[criteria['id']]=val	
 	if not params.loadedFromFile or ignoreFile:
-		val=float(input("\nWhat should be the relative weight of the creation towards the total grade? "))
-		weightingOfCreation=val
-		val=float(input("\nWhat should be the relative weight of the review towards the total grade? "))
-		weightingOfReviews=val
+		weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7)
+		weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3)
 		total=weightingOfCreation+weightingOfReviews
 		params.weightingOfCreation=weightingOfCreation/total
 		params.weightingOfReviews=weightingOfReviews/total
-		val=int(input("\nHow many reviews should be assigned to each student? "))
-		params.numberOfReviews=val	
-		val=float(input("\nHow many days should the students have to complete their peer reviews? "))
-		params.peerReviewDurationInDays=val
-		val=int(input("\nHow many times greater than a student should an instructors grading be weighted? "))
-		params.gradingPowerForInstructors=val
-		val=int(input("\nHow many times greater than a student should  student graders grading be weighted? "))
-		params.gradingPowerForGraders=val
-		val=float(input("\nHow many assignments is the half life for grading power calculations? "))
-		params.halfLife=val
-		val=-1
-		while val<0 or val >1:
-			val=float(input("\nWhat compensation factor for grader deviations (0-1)? "))
-		params.compensationFactor=val
-		
+		params.numberOfReviews=getNum("How many reviews should be assigned to each student?",3)	
+		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews?",3)
+		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10)
+		params.gradingPowerForGraders=getNum("How many times greater than a student should  student graders grading be weighted?",5)
+		params.halfLife=getNum("How many assignments is the half life for grading power calculations?",4)
+		params.compensationFactor=getNum("What compensation factor for grader deviations (0-1)?",1,[0,1])
+		if (params.compensationFactor>0):
+			params.maxCompensationFraction=getNum("What is the max fractional amount of a score that can be compensated (0-1)?",defaultVal=0.2,limits=[0,1])
+		else:
+			params.maxCompensationFraction=0;
 	with open(status['dataDir'] +status['prefix'] + 'parameters.pkl', 'wb') as handle:
 		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	status["gotParameters"]=True
@@ -816,7 +819,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	if assignment!=None:
 		for cid in assignment.criteria_ids():
 			header+='"' + criteriaDescription[cid] + '"' + delimiter #"LO" + str(cid) + delimiter
-		header+="Creation" + delimiter + "Review" + delimiter + "Total" + delimiter + "Comment\n" 
+		header+="Creation" + delimiter + "Review" + delimiter + "Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 	else:
 		header+="Grade, Comment\n"
 	if saveToFile:
@@ -839,8 +842,11 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 					line+="" + delimiter
 			line+=(str(points['creation']) + delimiter + 
 				str(points['review']) + delimiter + 
-				str(points['total']) + delimiter + '"' +
-				student.comments[assignment.id] ) + '"\n'
+				str(points['total']) + delimiter + 
+				'"' + student.comments[assignment.id] + '"' + delimiter +
+				'"' + student.gradingExplanation + '"' + delimiter +
+				'"' + student.reviewGradeExplanation + '"'
+				) + '\n'
 		else:
 			line+= ',\n'
 		if saveToFile:
@@ -946,6 +952,25 @@ def confirm(msg, requireResponse=False):
 		confirmationResponse=input("You entered '" + str(response) +"'\n'ok' to accept: " )
 	return response
 
+
+######################################
+# Prompt for a number with a default value
+def getNum(msg="choose a number", defaultVal=None, limits=None):
+	dafaultString=""
+	if defaultVal!=None:
+		dafaultString=" [" + str(defaultVal) + "]"
+	while True:
+		response=input(msg + dafaultString +": ")
+		if response=="":
+			response=defaultVal
+		try:
+			val=float(response)
+			if limits == None or (val>= limits[0] and val <= limits[1]):
+				return val
+			else:
+				print("Your response must be between " + str(limits[0]) + " and " + str(limits[1]))
+		except:
+			print("Your response must be numeric")			
 
 ######################################
 # List all objects in an array and prompt the user to select one.  

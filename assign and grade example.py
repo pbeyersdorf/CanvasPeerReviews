@@ -11,6 +11,7 @@ students, graded_assignments, lastAssignment = initialize()
 
 #################  Get relevant parameters assignment  #################
 params=getParameters()
+assignGraders()
 
 # Get creations and reviews
 getStudentWork()
@@ -35,6 +36,8 @@ if (lastAssignment.countPeerReviews()==0):
 		announce(subject, body)
 	
 elif peerReviewingOver(lastAssignment):
+	print("Lets look for any regrades from the previous week")
+	regrade()
 	print("Peer reviews period is over ... let's assign grades") 
 	calibrate()
 	grade(lastAssignment)				
