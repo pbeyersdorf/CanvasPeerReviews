@@ -7,5 +7,6 @@ class Creation:
 		self.edit = submission.edit
 		self.reviews = []
 		self.excused = False
-
-
+		self.reviewCount=0
+		self.graderReviewCount=0
+		

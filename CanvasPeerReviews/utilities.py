@@ -15,6 +15,7 @@ import os
 import subprocess
 import csv
 import math
+import time
 
 ######################################
 # Define some global variables to be used in this module
@@ -213,20 +214,23 @@ def assignCalibrationReviews(creations="auto"):
 # review the submission.  It will select reviewers from the beginning of the list of
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
-def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999):
+def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999, append=True):
+	startTime=time.time()
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'assignPeerReviews'")
 		return
 	elif not status['gotStudentsWork']:
 		getStudentWork()
-
-	countAssignedReviews(creations)
+	countAssignedReviews(creations, append=append)
 	creationList=makeList(creation)
-	countAssignedReviews(creationList)
+	#countAssignedReviews(creationList) #is this necessary?
+	peers=[x for x in students if x.role=='student']
+	graders=[x for x in students if x.role=='grader']
+	graders=randmoize(graders)
 	if reviewers=="randomize":
-		reviewers=randmoize(students) 
-	reviewers=makeList(reviewers)
+		peers=randmoize(peers) 
+	reviewers=makeList(peers)
 	#assign params.numberOfReviews reviews per creation
 	for creation in creationList:
 		for reviewer in reviewers:
@@ -245,6 +249,27 @@ def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999)
 			reviewer.reviewCount[creation.assignment_id]+=1
 			creation.reviewCount+=1
 			print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+	if len(graders)==0:
+		return
+	# finally assign to graders
+	reviewsPerGrader=int(len(creationList)/len(graders))
+	graders=makeList(graders)
+	#lol(list,sublistSize) takes a list and returns a list-of-lists with each sublist of size sublistSize
+	lol = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)] # see https://stackoverflow.com/questions/4119070/how-to-divide-a-list-into-n-equal-parts-python
+	creationsListofList=lol(creationList,reviewsPerGrader)
+	# if dividing up the list left a few extras, add them to the last element
+	if (len(creationsListofList) > len(graders)):
+		creationsListofList[-2] += creationsListofList[-1]
+	for i,reviewer in enumerate(graders):
+		for creation in creationsListofList[i]:
+			if not creation.assignment_id in reviewer.reviewCount:
+				reviewer.reviewCount[creation.assignment_id]=0
+			if (reviewer.id != creation.user_id ):
+				creation.create_submission_peer_review(reviewer.id)
+				reviewer.reviewCount[creation.assignment_id]+=1
+				creation.graderReviewCount+=1
+				print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+	
 			
 ######################################
 # Get a list of all students enrolled in the course.  Return an array of Student objects
@@ -311,17 +336,23 @@ def getSolutionURLs(fileName="solution urls.csv"):
 
 # ######################################
 # Count how many reviews have been assigned to each student using data from Canvas
-def countAssignedReviews(creations):
+def countAssignedReviews(creations, append=True):
+	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
 	global students
 	for student in students:
 		clearList(student.reviewCount)
 	for creation in creations:
-		for thesePeerReviews in creation.get_submission_peer_reviews():
-			if thesePeerReviews.assessor_id in studentsById:
-				reviewer=studentsById[thesePeerReviews.assessor_id]
-				if not creation.assignment_id in reviewer.reviewCount:
-					reviewer.reviewCount[creation.assignment_id]=0				
-				reviewer.reviewCount[creation.assignment_id]+=1		
+		if append:
+			for thesePeerReviews in creation.get_submission_peer_reviews():
+				if thesePeerReviews.assessor_id in studentsById:
+					reviewer=studentsById[thesePeerReviews.assessor_id]
+					if not creation.assignment_id in reviewer.reviewCount:
+						reviewer.reviewCount[creation.assignment_id]=0				
+					reviewer.reviewCount[creation.assignment_id]+=1	
+		else:
+			for student in students:
+				student.reviewCount[creations[0].assignment_id]=0
+	
 				
 
 ######################################

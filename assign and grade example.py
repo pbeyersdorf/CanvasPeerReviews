@@ -21,7 +21,7 @@ if (lastAssignment.countPeerReviews()==0):
 	assignCalibrationReviews()		
 		
 	# Assign remaining reviews  
-	assignPeerReviews(creations, numberOfReviewers=params.numberOfReviews)	
+	assignPeerReviews(creations, numberOfReviewers=params.numberOfReviews)	 
 	input("Open the assignment at " + lastAssignment.html_url + "/peer_reviews to verify the peer reivews have been assigned properly.  Hit <enter> to continue")
 
 	if not getSolutionURLs():
