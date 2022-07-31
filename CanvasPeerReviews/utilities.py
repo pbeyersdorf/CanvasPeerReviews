@@ -341,17 +341,18 @@ def countAssignedReviews(creations, append=True):
 	global students
 	for student in students:
 		clearList(student.reviewCount)
-	for creation in creations:
-		if append:
+	if append:
+		print("Checking how many peer reviews each students has already been assigned...")
+		for creation in creations:
 			for thesePeerReviews in creation.get_submission_peer_reviews():
 				if thesePeerReviews.assessor_id in studentsById:
 					reviewer=studentsById[thesePeerReviews.assessor_id]
 					if not creation.assignment_id in reviewer.reviewCount:
 						reviewer.reviewCount[creation.assignment_id]=0				
 					reviewer.reviewCount[creation.assignment_id]+=1	
-		else:
-			for student in students:
-				student.reviewCount[creations[0].assignment_id]=0
+	else:
+		for student in students:
+			student.reviewCount[creations[0].assignment_id]=0
 	
 				
 
@@ -626,12 +627,17 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 	student.grades[assignment.id]={'creation': creationGrade, 'review':  creationGrade, 'total' :totalGrade}
 	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints}
 	percentileRanking=gradingPowerRanking(student, percentile=True)
-	student.comments[assignment.id]=(("If you believe the peer reviews of your work have a significant error, explain in a comment and include the word 'regrade' in your comment within one week and I will review it.\n\n  You earned %." + str(digits) +"f points (%.f%% of your submission score) for your submission and %." + str(digits) +"f points (%.f%% of your review score) for your peer reviews for a total score of %." + str(digits) +"f.\n\n") % 
+	student.regradeComments[assignment.id]=(("View the rubric table above to see details of your regrade.  The regraded submissions earned %." + str(digits) +"f points.\n\n") % 
+	(creationPoints) )
+	student.comments[assignment.id]=student.reviewGradeExplanation
+	if (percentileRanking >66):
+		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students the graders and the instructor, you reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
+	elif (percentileRanking <33):
+		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students the graders and the instructor, you reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully following the grading rubric.") % (percentileRanking ) )	
+	else:
+		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students the graders and the instructor, you reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
+	student.comments[assignment.id]+=(("If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a score of %." + str(digits) +"f points.\n\n") % 
 	(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints ) )
-	student.regradeComments[assignment.id]=(("Use the 'view rubric' button to see how your submission was regraded.  After regrading your submission it contributes %." + str(digits) +"f points and your reviews contributed  %." + str(digits) +"f points to your final score.\n\n") % 
-	(creationPoints,reviewPoints ) )
-	student.comments[assignment.id]+=student.reviewGradeExplanation
-	student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students and the instructor, you reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
 	
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
@@ -651,7 +657,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 					print(str(i)+")",a.name)	
 			val=getNum()
 		assignment=assignmentByNumber[val]
-	print("Regrading " + assignment.name)
+	print("Regrading " + assignment.name + "...")
 	regradedStudents=dict()
 	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
 	#make list of students needing a regrade
@@ -681,7 +687,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 				previewUrl=c.edit().preview_url.replace("preview=1&","")
 				webbrowser.open(previewUrl)
 				print(previewUrl)
-				print("With comments: " + "/".join(comments) + "\n")
+				print("With comments: " + "\n\n".join(comments[1:]) + "\n")
 				input("Enter any regrade info and comments into the web browser then press enter to continue ")
 	print("done regrading.  updating data...")
 	status["regraded"]=True
