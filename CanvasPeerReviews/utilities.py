@@ -487,6 +487,7 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 	else:
 		for student in makeList(studentsToGrade):
 			gradeStudent(assignment, student, reviewGradeFunc)
+	assignment.graded=True
 	status["graded"]=True
 
 ######################################
@@ -649,14 +650,19 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 		return
 	if assignment==None:
 		val=-1
-		while not val in assignmentByNumber:
-			for i,a in assignmentByNumber.items():
-				if a.id==lastAssignment.id:
-					print(str(i)+")",a.name,"<-most recent")
-				else:
-					print(str(i)+")",a.name)	
-			val=getNum()
-		assignment=assignmentByNumber[val]
+		assignmentList=[x for x in assignmentByNumber.values() if (x.graded and not x.regraded)]
+		if len(assignmentList) ==1:
+			assignment=assignmentList[0]
+		else:
+			while not val in assignmentByNumber:
+				for i,a in assignmentByNumber.items():
+					if (a.graded and not a.regraded) or len(assignmentList) ==0:
+						if a.id==lastAssignment.id:
+							print(str(i)+")",a.name,"<-most recent")
+						else:
+							print(str(i)+")",a.name)	
+				val=getNum()
+			assignment=assignmentByNumber[val]
 	print("Regrading " + assignment.name + "...")
 	regradedStudents=dict()
 	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
@@ -691,6 +697,8 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 				input("Enter any regrade info and comments into the web browser then press enter to continue ")
 	print("done regrading.  updating data...")
 	status["regraded"]=True
+	assignment.regraded=True
+
 	getStudentWork(assignment)
 	if (recalibrate):
 		calibrate()
@@ -704,6 +712,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	######### Save student data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	
 
 
 ######################################
