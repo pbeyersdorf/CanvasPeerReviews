@@ -28,8 +28,10 @@ class Student:
 		self.pointsByCriteria=dict()
 		self.assignmentsCalibrated=dict()
 		self.role="student"
-		
+		self.section=0
+		self.sectionName="unknown"
 
+					
 	def getGradingPower(self,cid):
 		if not cid in self.gradingPowerNormalizatoinFactor:
 			self.gradingPowerNormalizatoinFactor[cid] = 1
@@ -45,6 +47,8 @@ class Student:
 			return 0
 		return self.deviation_by_category[cid]
 
+
+		
 
 
 	def getGradingPowerNormalizatoinFactor(self, cid):

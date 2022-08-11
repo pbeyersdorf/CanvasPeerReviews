@@ -2,9 +2,10 @@ from CanvasPeerReviews import *
 import os
 
 #################  course info  #################
-COURSE_ID = 1234567 
+COURSE_ID = 1490126 #Phys 51 sec 3 and 5 Fall 2022
 CANVAS_URL = "https://sjsu.test.instructure.com"
 TOKEN = "PUT_YOUR_TOKEN_HERE"
+TOKEN = "12~81aMfKnknlt6LUZLBbdFI60l85D2DslWoLBONS11jgIAXE8AWAhBUFG2gPDK4LN8"
 DATADIRECTORY=os.path.dirname(os.path.realpath(__file__)) + "/Data/"
 #students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COURSE_ID, DATADIRECTORY)
 students, graded_assignments, lastAssignment = initialize()
@@ -40,6 +41,7 @@ elif peerReviewingOver(lastAssignment):
 	regrade()
 	print("Peer reviews period is over ... let's assign grades") 
 	calibrate()
+	#overrideDefaultPoints(lastAssignment)
 	grade(lastAssignment)				
 	print("\nGrades save to file 'scores for " + lastAssignment.name + "'")
 	exportGrades(lastAssignment, display=True)

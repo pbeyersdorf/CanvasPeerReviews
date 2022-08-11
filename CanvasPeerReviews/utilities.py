@@ -118,6 +118,17 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./"):
 	return students, graded_assignments, lastAssignment
 
 ######################################
+# Record what section a student is in
+# 
+def assignSections(students):
+	for section in course.get_sections():
+		for user in section.get_enrollments():
+			for student in students:
+				if user.user_id == student.id:
+					student.section=section.id
+					student.sectionName=section.name
+
+######################################
 # Given an assignment object this will return all of the student submissions
 # to that assignment as an array of objects
 def getStudentWork(thisAssignment='last'):
@@ -192,18 +203,22 @@ def assignCalibrationReviews(creations="auto"):
 		return
 	elif not status['gotStudentsWork']:
 		getStudentWork()
-
 	if creations=="auto":
 		creations=professorsReviews[graded_assignments['last'].id]
 		print(creations)
-		return
+		#return
 	reviewers=randmoize(students) 
 	creations=makeList(creations)
 	i=0
 	for reviewer in reviewers:
-		if (reviewer.id == creations[i%len(creations)].user_id):
+		tic=time.time()
+		while (	time.time()-tic < 1 and ((reviewer.id == creations[i%len(creations)].author_id) or  (studentsById[reviewer.id].section != studentsById[creations[i%len(creations)].author_id].section ))):
 			i+=1
-		creation =	creations[i%len(creations)]
+		if not time.time()-tic  <1:
+			#raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
+			return
+		creation = creations[i%len(creations)]
+		print(i,"assigning", str(studentsById[creations[i%len(creations)].author_id].name) +"'s work (", studentsById[creations[i%len(creations)].author_id].sectionName ,") to be reviewed by ", studentsById[reviewer.id].name, "(" ,studentsById[reviewer.id].sectionName , ")" )
 		i+=1
 		assignPeerReviews(creation, [reviewer]) 
 
@@ -214,6 +229,7 @@ def assignCalibrationReviews(creations="auto"):
 # review the submission.  It will select reviewers from the beginning of the list of
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
+#xxx need to ensure reviews are assigned to students in the same section
 def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999, append=True):
 	startTime=time.time()
 	global status
@@ -236,19 +252,21 @@ def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999,
 		for reviewer in reviewers:
 			if not creation.assignment_id in reviewer.reviewCount:
 				reviewer.reviewCount[creation.assignment_id]=0
-			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id ):
+			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+					creation.create_submission_peer_review(reviewer.id)
+					reviewer.reviewCount[creation.assignment_id]+=1
+					creation.reviewCount+=1
+					print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
+	for reviewer in reviewers:
+		tic=time.time()
+		while (reviewer.reviewCount[creationList[0].assignment_id] < params.numberOfReviews and time.time()-tic < 1):
+			creation=random.choice(creationList)
+			if (reviewer.section == studentsById[creation.user_id].section):
 				creation.create_submission_peer_review(reviewer.id)
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
-	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
-	for reviewer in reviewers:
-		while reviewer.reviewCount[creationList[0].assignment_id] < params.numberOfReviews:
-			creation=random.choice(creationList)
-			creation.create_submission_peer_review(reviewer.id)
-			reviewer.reviewCount[creation.assignment_id]+=1
-			creation.reviewCount+=1
-			print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	if len(graders)==0:
 		return
 	# finally assign to graders
@@ -293,6 +311,7 @@ def getStudents(course):
 
 	#studentsById[4445567]="Test Student"	
 	status["gotStudents"]=True
+	assignSections(students)
 	return students
 	
 	
@@ -390,7 +409,7 @@ def getReviews(creations):
 							else:
 								professorsReviews[creation.assignment_id]=[review]
 						elif reviewer_id in studentsById:
-							# if not already assigned xxx
+							# if not already assigned assignment.multiplier[cid]
 							studentsById[reviewer_id].reviewsGiven[review.submission_id]=review
 	status["gotReviews"]=True
 
@@ -471,16 +490,24 @@ def calibrate(studentsToCalibrate="all"):
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	status["calibrated"]=True
 
+######################################
+# adjust point distribution for a specific assignment
+def overrideDefaultPoints(assignment):
+	for cid in assignment.criteria_ids():
+		val=getNum("How many points (out of 100) should be awarded for '" + criteriaDescription[cid]+ "'?", params.pointsForCid(cid, assignment.id))
+		params.pointsForCid(cid,assignment.id ,val)
+	#save the parameters
+	with open(status['dataDir'] +status['prefix'] + 'parameters.pkl', 'wb') as handle:
+		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)	
 
 ######################################
 # Process a list of students (or all of the students, calling the
 # gradeStudent function for each
-
 def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
-		return
+		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		for student in makeList(students):
 			gradeStudent(assignment, student, reviewGradeFunc)
@@ -489,6 +516,10 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 			gradeStudent(assignment, student, reviewGradeFunc)
 	assignment.graded=True
 	status["graded"]=True
+	msg=assignment.name +  " graded with the following point values:\n"
+	for cid in assignment.criteria_ids():
+		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
+	log(msg)
 
 ######################################
 # Go through all submissions for an assignment. If the assignment was created by
@@ -514,6 +545,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 		total, numberCount, weightCount = 0, 0, 0
 		student.gradingExplanation+=str(criteriaDescription[cid]) + ":\n"
 		gradingExplanationLine=""
+		multiplier=params.pointsForCid(cid, assignment.id)
 		for review in student.reviewsReceived:
 			if review.assignment_id == assignment.id:
 				weight=0
@@ -536,8 +568,8 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 					try:
 						reviewer=studentsById[review.reviewer_id]
 						compensation=reviewer.deviation_by_category[cid]*params.compensationFactor
-						compensation=min(compensation, params.maxCompensationFraction* params.multiplier[cid])
-						compensation=max(compensation, -params.maxCompensationFraction* params.multiplier[cid])
+						compensation=min(compensation, params.maxCompensationFraction* multiplier)
+						compensation=max(compensation, -params.maxCompensationFraction* multiplier)
 					except:
 						compensation=0			
 					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
@@ -547,8 +579,8 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 					weightCount+=weight
 					numberCount+=1
 		if (weightCount>0):
-			creationGrade+=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
-			student.pointsByCriteria[cid]=params.multiplier[cid]*total/(weightCount*assignment.criteria_points(cid))
+			creationGrade+=multiplier*total/(weightCount*assignment.criteria_points(cid))
+			student.pointsByCriteria[cid]=multiplier*total/(weightCount*assignment.criteria_points(cid))
 		else:
 			student.pointsByCriteria[cid]=""
 
@@ -698,6 +730,10 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	print("done regrading.  updating data...")
 	status["regraded"]=True
 	assignment.regraded=True
+	msg=assignment.name +  " regraded with the following point values:\n"
+	for cid in assignment.criteria_ids():
+		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
+	log(msg)
 
 	getStudentWork(assignment)
 	if (recalibrate):
@@ -830,7 +866,7 @@ def getParameters(ignoreFile=False):
 				for criteria in assignment.rubric:
 					criteriaDescription[criteria['id']]=criteria['description']
 					if not criteria['id'] in params.multiplier:
-						val=float(input("\nHow many relative points should\n\t" +criteria['description'] + "\nbe worth? "))
+						val=float(input("\nHow many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? "))
 						params.multiplier[criteria['id']]=val	
 	if not params.loadedFromFile or ignoreFile:
 		weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7)
@@ -854,10 +890,23 @@ def getParameters(ignoreFile=False):
 	return params
 
 ######################################
+# save data to a log file
+def log(msg, display=True):
+	fileName=status['dataDir'] + "log.txt"
+	if display:
+		print(msg, end ="")
+	f = open(fileName, "a")
+	f.write("----" + str(datetime.now()) + "----\n")
+	f.write(msg) 
+	f.write("\n\n") 
+	f.close()
+
+
+######################################
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
 def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, saveToFile=True):
-	fileName = "gradesheet.csv"
+	#fileName = "gradesheet.csv"
 	if fileName==None and assignment!= None:
 		fileName="scores for " + assignment.name + ".csv"
 	fileName=status['dataDir'] + fileName

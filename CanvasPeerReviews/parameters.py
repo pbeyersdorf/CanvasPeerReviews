@@ -9,5 +9,14 @@ class Parameters:
 		return self.peerReviewDurationInDays*24*60*60
 	
 	def weeklyDegradationFactor(self):
-		return 0.5**(1.0/self.halfLife)
-			
+		return 0.5**(1.0/self.halfLife)	
+		
+	def pointsForCid(self, cid, assignmentid, val=None):
+		key="assignment=" + str(assignmentid) + "&criteria=" + str(cid)
+		if val!=None:
+			self.multiplier[key]=val
+			return
+		if key in self.multiplier:
+			return self.multiplier[key]
+		else:
+			return self.multiplier[cid]

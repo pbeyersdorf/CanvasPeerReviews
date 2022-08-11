@@ -10,6 +10,7 @@ class GradedAssignment:
 		self.peer_reviews_assigned = False
 		self.get_peer_reviews=assignment.get_peer_reviews
 		self.get_submissions=assignment.get_submissions
+		self.multiplier=dict()
 
 	def calibrate():
 		return
