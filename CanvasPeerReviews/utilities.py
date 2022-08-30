@@ -966,7 +966,10 @@ def assignGraders():
 	while keepGoing:
 		for (i,student) in enumerate(students):
 			print(str(i+1)+")\t" + student.name)
-		i=int(input("Choose a student to be a grader (enter the number): "))-1
+		i=int(input("Choose a student to be a grader (enter the number) or '0' to skip: "))-1
+		if (i<1): 
+			print("OK,  not assigning any graders")
+			return
 		if confirm("Assign " + students[i].name + " as a grader?"):
 			students[i].role='grader'
 		keepGoing=confirm("Assign another student to be a grader?")
