@@ -230,7 +230,7 @@ def assignCalibrationReviews(creations="auto"):
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
 #xxx need to ensure reviews are assigned to students in the same section
-def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999, append=True):
+def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999, append=True):
 	startTime=time.time()
 	global status
 	if not status['initialized']:
@@ -238,8 +238,9 @@ def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999,
 		return
 	elif not status['gotStudentsWork']:
 		getStudentWork()
+		
 	countAssignedReviews(creations, append=append)
-	creationList=makeList(creation)
+	creationList=makeList(creationsToConsider)
 	#countAssignedReviews(creationList) #is this necessary?
 	peers=[x for x in students if x.role=='student']
 	graders=[x for x in students if x.role=='grader']
@@ -270,23 +271,30 @@ def assignPeerReviews(creation, reviewers="randomize", numberOfReviewers=999999,
 	if len(graders)==0:
 		return
 	# finally assign to graders
-	reviewsPerGrader=int(len(creationList)/len(graders))
-	graders=makeList(graders)
-	#lol(list,sublistSize) takes a list and returns a list-of-lists with each sublist of size sublistSize
-	lol = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)] # see https://stackoverflow.com/questions/4119070/how-to-divide-a-list-into-n-equal-parts-python
-	creationsListofList=lol(creationList,reviewsPerGrader)
-	# if dividing up the list left a few extras, add them to the last element
-	if (len(creationsListofList) > len(graders)):
-		creationsListofList[-2] += creationsListofList[-1]
-	for i,reviewer in enumerate(graders):
-		for creation in creationsListofList[i]:
-			if not creation.assignment_id in reviewer.reviewCount:
-				reviewer.reviewCount[creation.assignment_id]=0
-			if (reviewer.id != creation.user_id ):
-				creation.create_submission_peer_review(reviewer.id)
-				reviewer.reviewCount[creation.assignment_id]+=1
-				creation.graderReviewCount+=1
-				print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+	sections=dict()
+	for grader in graders:
+		sections[grader.section] = grader.sectionName
+	for key in sections:
+		thisSectionsGraders=[x for x in students if (x.role=='grader' and x.section == key)]
+		thisSectionsCreations=[x for x in creationList if (x.author.section == key)]
+		reviewsPerGrader=int(len(thisSectionsCreations)/len(thisSectionsGraders))
+		thisSectionsGraders=makeList(thisSectionsGraders)
+		#lol(list,sublistSize) takes a list and returns a list-of-lists with each sublist of size sublistSize
+		lol = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)] # see https://stackoverflow.com/questions/4119070/how-to-divide-a-list-into-n-equal-parts-python
+		creationsListofList=lol(thisSectionsCreations,reviewsPerGrader)
+		# if dividing up the list left a few extras, add them to the last element
+		if (len(creationsListofList) > len(thisSectionsGraders)):
+			creationsListofList[-2] += creationsListofList[-1]
+		print("Assigning reviews to graders of ", sections[key])
+		for i,reviewer in enumerate(thisSectionsGraders):
+			for creation in creationsListofList[i]:
+				if not creation.assignment_id in reviewer.reviewCount:
+					reviewer.reviewCount[creation.assignment_id]=0
+				if (reviewer.id != creation.user_id ):
+					creation.create_submission_peer_review(reviewer.id)
+					reviewer.reviewCount[creation.assignment_id]+=1
+					creation.graderReviewCount+=1
+					print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	
 			
 ######################################
