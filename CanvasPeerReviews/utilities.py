@@ -166,7 +166,8 @@ def getGradedAssignments(course):
 	assignments = course.get_assignments()
 	global graded_assignments
 	for i,assignment in enumerate(assignments):
-		if (assignment.peer_reviews and assignment.has_submitted_submissions):
+		#if (assignment.peer_reviews and assignment.has_submitted_submissions): #xxx is it ok to remove the requirement that there are submissions already?
+		if (assignment.peer_reviews):
 			assignment.courseid=course.id
 			graded_assignments[assignment.id]=GradedAssignment(assignment)
 			try:
@@ -338,8 +339,9 @@ def peerReviewingOver(assignment):
 # Look for the URL for the assignment solutions in a csv file.	If the file
 # isn't found it will generate a template
 def getSolutionURLs(fileName="solution urls.csv"):
-	global status
-	fileName=status['dataDir'] + fileName
+	global status, solutionURLs
+	solutionURLs={}
+	fileName=status['dataDir'] + fileName.replace("/","").replace(":","")
 	placeholder="solution URLs go here"
 	status["gotSolutionURLs"]=True
 	print("looking for solution urls in", fileName)
