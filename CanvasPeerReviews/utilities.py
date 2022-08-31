@@ -32,6 +32,7 @@ assignmentByNumber=dict()
 professorsReviews=dict()
 course=None
 criteriaDescription=dict()
+sections=dict()
 params=Parameters()
 status={'message': '',
 	'err': '', 
@@ -113,6 +114,9 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./"):
 	getStudents(course)
 	getGradedAssignments(course)
 	getMostRecentAssignment()
+	for student in students:
+		sections[student.section]=student.sectionName
+
 	status["initialized"]=True
 	#lastAssignment = getMostRecentAssignment()
 	return students, graded_assignments, lastAssignment
@@ -856,6 +860,9 @@ def getParameters(ignoreFile=False):
 	if ignoreFile:
 		params=Parameters()
 		params.loadedFromFile=False
+	logFile = open(status['dataDir'] +status['prefix'] + 'parameters.log', "a") 	
+	logFile.write("----" + str(datetime.now()) + "----\n")
+
 	for key, assignment in graded_assignments.items():
 		if assignment != []:
 			needInput=False
@@ -874,24 +881,27 @@ def getParameters(ignoreFile=False):
 				for criteria in assignment.rubric:
 					criteriaDescription[criteria['id']]=criteria['description']
 					if not criteria['id'] in params.multiplier:
-						val=float(input("\nHow many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? "))
-						params.multiplier[criteria['id']]=val	
+						params.multiplier[criteria['id']]=getNum("How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? ",limits=[0,100], fileDescriptor=logFile)
+						#val=float(input("\nHow many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? "))
+						#params.multiplier[criteria['id']]=val
+						#logFile.write(How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth?: " + str(val))
 	if not params.loadedFromFile or ignoreFile:
-		weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7)
-		weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3)
+		weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)
+		weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3, fileDescriptor=logFile)
 		total=weightingOfCreation+weightingOfReviews
 		params.weightingOfCreation=weightingOfCreation/total
 		params.weightingOfReviews=weightingOfReviews/total
-		params.numberOfReviews=getNum("How many reviews should be assigned to each student?",3)	
-		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews?",3)
-		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10)
-		params.gradingPowerForGraders=getNum("How many times greater than a student should  student graders grading be weighted?",5)
-		params.halfLife=getNum("How many assignments is the half life for grading power calculations?",4)
-		params.compensationFactor=getNum("What compensation factor for grader deviations (0-1)?",1,[0,1])
+		params.numberOfReviews=getNum("How many reviews should be assigned to each student?",3, fileDescriptor=logFile)	
+		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews?",3, fileDescriptor=logFile)
+		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10, fileDescriptor=logFile)
+		params.gradingPowerForGraders=getNum("How many times greater than a student should  student graders grading be weighted?",5, fileDescriptor=logFile)
+		params.halfLife=getNum("How many assignments is the half life for grading power calculations?",4, fileDescriptor=logFile)
+		params.compensationFactor=getNum("What compensation factor for grader deviations (0-1)?",1,[0,1], fileDescriptor=logFile)
 		if (params.compensationFactor>0):
-			params.maxCompensationFraction=getNum("What is the max fractional amount of a score that can be compensated (0-1)?",defaultVal=0.2,limits=[0,1])
+			params.maxCompensationFraction=getNum("What is the max fractional amount of a score that can be compensated (0-1)?",defaultVal=0.2,limits=[0,1], fileDescriptor=logFile)
 		else:
 			params.maxCompensationFraction=0;
+	logFile.close()
 	with open(status['dataDir'] +status['prefix'] + 'parameters.pkl', 'wb') as handle:
 		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	status["gotParameters"]=True
@@ -1023,8 +1033,11 @@ def gradingDeviationRanking(theStudent="all", cid=0, percentile=False):
 
 ######################################
 # Send an announcement to the canvas course			
-def announce(subject, body):
-	announcement=course.create_discussion_topic(message=body, title=subject, is_announcement=True)
+def announce(subject, body, section="all"):
+	if section == "all":
+		announcement=course.create_discussion_topic(message=body, title=subject, is_announcement=True)
+	else:
+		announcement=course.create_discussion_topic(message=body, title=subject, is_announcement=True, specific_sections=section)
 
 ######################################
 # Send a canvas message to a student or list of students.		
@@ -1061,7 +1074,7 @@ def confirm(msg, requireResponse=False):
 
 ######################################
 # Prompt for a number with a default value
-def getNum(msg="choose a number", defaultVal=None, limits=None):
+def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=None):
 	dafaultString=""
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
@@ -1072,6 +1085,8 @@ def getNum(msg="choose a number", defaultVal=None, limits=None):
 		try:
 			val=float(response)
 			if limits == None or (val>= limits[0] and val <= limits[1]):
+				if fileDescriptor!=None:
+					fileDescriptor.write(msg +": " + str(val) + "\n")
 				return val
 			else:
 				print("Your response must be between " + str(limits[0]) + " and " + str(limits[1]))
