@@ -1,12 +1,9 @@
+import sys, os
+sys.path.insert(0, "/Volumes/T7/peteman/Documents/GitHub/CanvasPeerReviews")
+sys.path.insert(0, "/Users/peteman/Documents/GitHub/CanvasPeerReviews")
 from CanvasPeerReviews import *
-import os
 
 #################  course info  #################
-COURSE_ID = 1234567 
-CANVAS_URL = "https://sjsu.test.instructure.com"
-TOKEN = "PUT_YOUR_TOKEN_HERE"
-DATADIRECTORY=os.path.dirname(os.path.realpath(__file__)) + "/Data/"
-#students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COURSE_ID, DATADIRECTORY)
 students, graded_assignments, lastAssignment = initialize()
 
 #################  Get relevant parameters assignment  #################
