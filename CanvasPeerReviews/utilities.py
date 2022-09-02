@@ -132,6 +132,8 @@ def assignSections(students):
 					student.section=section.id
 					student.sectionName=section.name
 
+
+
 ######################################
 # Given an assignment object this will return all of the student submissions
 # to that assignment as an array of objects
@@ -204,6 +206,30 @@ def getMostRecentAssignment():
 			print("Trouble getting date of",graded_assignment,", likely it was an unscedhueld assignment")
 	graded_assignments['last']=lastAssignment
 	status["gotMostRecentAssignment"]=True
+
+######################################
+# Choose an assignment to work on
+def chooseAssignment():
+	global graded_assignments, lastAssignment
+	confirmed=False
+	defaultChoice=0
+	while not confirmed:
+		i=1
+		assignmentKeyByNumber=dict()
+		print("\nAssignments with peer reviews enabled: ")
+		for key in graded_assignments:
+			if (key != 'last'):
+				if graded_assignments[key] == graded_assignments['last']:
+					print("\t" + str(i) +") " + graded_assignments[key].name + "  <---- last assignment")
+					defaultChoice=i
+				else:
+					print("\t" + str(i) +") " + graded_assignments[key].name)
+				assignmentKeyByNumber[i]=key
+				i+=1
+		val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[1,i])
+		confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+	graded_assignments['last']=graded_assignments[assignmentKeyByNumber[val]]
+	lastAssignment=graded_assignments['last']
 
 
 ######################################
@@ -997,21 +1023,34 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 ######################################
 # Select students to be assigned as graders
 def assignGraders():
-	keepGoing=True
-	while keepGoing:
-		for (i,student) in enumerate(students):
-			print(str(i+1)+")\t" + student.name)
-		i=int(input("Choose a student to be a grader (enter the number) or '0' to skip: "))-1
-		if (i<1): 
-			print("OK,  not assigning any more graders")
-			return
-		if confirm("Assign " + students[i].name + " as a grader?"):
+	listOfGraders=[s for s in students if s.role=='grader']
+	if len(listOfGraders) > 0:
+		print("\nCurrent graders are ")
+		for g in listOfGraders:
+			print("\t"+g.name)
+		print("is this ok? ")
+	else:
+		print("The class has no graders, is this ok? ")
+	if confirm():
+		######### Save student data for future sessions #########	
+		with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+			pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		return
+	for (i,student) in enumerate(students):
+		print(str(i+1)+")\t" + student.name)
+	val=input("enter numbers of all students you want to be graders separated by commas: ")
+	indicesPlusOneOfGraders=val.replace(" ","").split(",")
+	for s in students:
+		if s.role=='grader':
+			s.role='student'
+	try:
+		for ip in indicesPlusOneOfGraders:
+			i=int(ip)-1 # convert from 1-based numbering scheme to zero based scheme
 			students[i].role='grader'
-		keepGoing=confirm("Assign another student to be a grader?")
-	######### Save student data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
-		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
-	return	
+	except:
+		print("Error with your input.  Try again.")
+	assignGraders()
+
 
 ######################################
 # Get the grading power ranking
@@ -1085,7 +1124,7 @@ def readCSV(fileName=None):
 
 ######################################
 # Prompt the user for a response and confirm their response before returning it.
-def confirm(msg, requireResponse=False):
+def confirm(msg="", requireResponse=False):
 	confirmationResponse=""
 	if not requireResponse:
 		print(msg)
