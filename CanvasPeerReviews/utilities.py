@@ -27,7 +27,7 @@ students=[]
 creations=[]
 solutionURLs=dict()
 graded_assignments=dict()
-lastAssignment=[]
+lastAssignment=None
 assignmentByNumber=dict()
 professorsReviews=dict()
 course=None
@@ -141,6 +141,14 @@ def getStudentWork(thisAssignment='last'):
 		print("Error: You must first run 'initialize()' before calling 'getStudentWork'")
 		return
 	if thisAssignment=='last':
+		if graded_assignments['last'] ==[]:
+			for key in 	graded_assignments:
+				try:
+					print(key, graded_assignments[key].name)
+				except:
+					pass
+			val=int(input("Choose the assignment id to grade: "))
+			graded_assignments['last']=graded_assignments[val]
 		thisAssignment=graded_assignments['last']
 	submissions=thisAssignment.get_submissions()
 	clearList(creations)
@@ -149,6 +157,7 @@ def getStudentWork(thisAssignment='last'):
 			submission.courseid=thisAssignment.courseid
 			submission.reviewCount=0
 			submission.author=studentsById[submission.user_id]
+			submission.author_id=submission.user_id
 			creations.append(Creation(submission))
 			studentsById[submission.user_id].creations[thisAssignment.id]=creations[-1]
 			creationsByAuthorId[submission.user_id]=creations[-1]			
@@ -200,19 +209,25 @@ def getMostRecentAssignment():
 #This takes a list of submissions which are to be used as calibration reviews
 # and assigns one to each student in the class, making sure to avoid assigning
 # a calibration to its own author if possible
-def assignCalibrationReviews(creations="auto"):
-	global status
+def assignCalibrationReviews(calibrations="auto"):
+	global status, creations
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'assignCalibrationReviews'")
 		return
 	elif not status['gotStudentsWork']:
 		getStudentWork()
-	if creations=="auto":
-		creations=professorsReviews[graded_assignments['last'].id]
-		print(creations)
+	if calibrations=="auto":
+		professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[graded_assignments['last'].id]]
+		creations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
 		#return
+	else:
+		creations=calibrations
 	reviewers=randmoize(students) 
 	creations=makeList(creations)
+	print("Professor has already graded submissions by")
+	for c in creations:
+		print(c.author.name)
+	
 	i=0
 	for reviewer in reviewers:
 		tic=time.time()
@@ -224,7 +239,11 @@ def assignCalibrationReviews(creations="auto"):
 		creation = creations[i%len(creations)]
 		print(i,"assigning", str(studentsById[creations[i%len(creations)].author_id].name) +"'s work (", studentsById[creations[i%len(creations)].author_id].sectionName ,") to be reviewed by ", studentsById[reviewer.id].name, "(" ,studentsById[reviewer.id].sectionName , ")" )
 		i+=1
-		assignPeerReviews(creation, [reviewer]) 
+		creation.create_submission_peer_review(reviewer.id)
+		if not creation.assignment_id in reviewer.reviewCount:
+			reviewer.reviewCount[creation.assignment_id]=0
+		reviewer.reviewCount[creation.assignment_id]+=1
+		creation.reviewCount+=1
 
 	
 ######################################
@@ -236,6 +255,7 @@ def assignCalibrationReviews(creations="auto"):
 #xxx need to ensure reviews are assigned to students in the same section
 def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999, append=True):
 	startTime=time.time()
+
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'assignPeerReviews'")
@@ -243,7 +263,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	elif not status['gotStudentsWork']:
 		getStudentWork()
 		
-	countAssignedReviews(creations, append=append)
+	countAssignedReviews(creationsToConsider, append=append)
 	creationList=makeList(creationsToConsider)
 	#countAssignedReviews(creationList) #is this necessary?
 	peers=[x for x in students if x.role=='student']
@@ -251,7 +271,9 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	graders=randmoize(graders)
 	if reviewers=="randomize":
 		peers=randmoize(peers) 
-	reviewers=makeList(peers)
+		reviewers=makeList(peers)
+	else:
+		reviewers=makeList(reviewers)
 	#assign params.numberOfReviews reviews per creation
 	for creation in creationList:
 		for reviewer in reviewers:
@@ -370,6 +392,7 @@ def getSolutionURLs(fileName="solution urls.csv"):
 def countAssignedReviews(creations, append=True):
 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
 	global students
+	creations=makeList(creations)
 	for student in students:
 		clearList(student.reviewCount)
 	if append:
@@ -978,7 +1001,7 @@ def assignGraders():
 			print(str(i+1)+")\t" + student.name)
 		i=int(input("Choose a student to be a grader (enter the number) or '0' to skip: "))-1
 		if (i<1): 
-			print("OK,  not assigning any graders")
+			print("OK,  not assigning any more graders")
 			return
 		if confirm("Assign " + students[i].name + " as a grader?"):
 			students[i].role='grader'
