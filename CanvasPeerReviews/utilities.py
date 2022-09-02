@@ -730,11 +730,11 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 	(creationPoints) )
 	student.comments[assignment.id]=student.reviewGradeExplanation
 	if (percentileRanking >66):
-		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students the graders and the instructor, you reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
+		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
 	elif (percentileRanking <33):
-		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students the graders and the instructor, you reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully following the grading rubric.") % (percentileRanking ) )	
+		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully following the grading rubric.") % (percentileRanking ) )	
 	else:
-		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students the graders and the instructor, you reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
+		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
 	student.comments[assignment.id]+=(("If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a score of %." + str(digits) +"f points.\n\n") % 
 	(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints ) )
 	
