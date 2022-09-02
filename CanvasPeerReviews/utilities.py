@@ -28,6 +28,7 @@ creations=[]
 solutionURLs=dict()
 graded_assignments=dict()
 lastAssignment=None
+activeAssignment=None
 assignmentByNumber=dict()
 professorsReviews=dict()
 course=None
@@ -118,7 +119,7 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./"):
 		sections[student.section]=student.sectionName
 
 	status["initialized"]=True
-	#lastAssignment = getMostRecentAssignment()
+	lastAssignment = getMostRecentAssignment()
 	return students, graded_assignments, lastAssignment
 
 ######################################
@@ -192,7 +193,7 @@ def getGradedAssignments(course):
 # Return the most recently due assignment of all the assignments that have peer reviews
 def getMostRecentAssignment():
 	global lastAssignment
-	lastAssignmentID=None
+	lastAssignment=None
 	if len(graded_assignments)==0:
 		getGradedAssignments(course)
 	minTimeDelta=timedelta(days=3650)
@@ -205,12 +206,15 @@ def getMostRecentAssignment():
 		except:
 			print("Trouble getting date of",graded_assignment,", likely it was an unscedhueld assignment")
 	graded_assignments['last']=lastAssignment
+	if lastAssignment==None:
+		print("Couldn't find an assignment with peer reviews that is past due.")
 	status["gotMostRecentAssignment"]=True
+	return lastAssignment
 
 ######################################
 # Choose an assignment to work on
 def chooseAssignment():
-	global graded_assignments, lastAssignment
+	global graded_assignments, lastAssignment, activeAssignment
 	confirmed=False
 	defaultChoice=0
 	while not confirmed:
@@ -228,8 +232,7 @@ def chooseAssignment():
 				i+=1
 		val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[1,i])
 		confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
-	graded_assignments['last']=graded_assignments[assignmentKeyByNumber[val]]
-	lastAssignment=graded_assignments['last']
+	activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 
 
 ######################################
@@ -739,9 +742,9 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 # find submissions that need to be regraded as based on the word regrade in the comments
 
 def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
-	global status
+	global status, activeAssignment
 	if not status['initialized']:
-		print("Error: You must first run 'initialize()' before calling 'grade'")
+		print("Error: You must first run 'initialize()' before calling 'regrade'")
 		return
 	if assignment==None:
 		val=-1
@@ -752,7 +755,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 			while not val in assignmentByNumber:
 				for i,a in assignmentByNumber.items():
 					if (a.graded and not a.regraded) or len(assignmentList) ==0:
-						if a.id==lastAssignment.id:
+						if a.id==activeAssignment.id:
 							print(str(i)+")",a.name,"<-most recent")
 						else:
 							print(str(i)+")",a.name)	
@@ -804,7 +807,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc)
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
-		student.comments[lastAssignment.id]=student.regradeComments[assignment.id]
+		student.comments[activeAssignment.id]=student.regradeComments[assignment.id]
 		postGrades(assignment, listOfStudents=[student])
 		student.regrade[assignment.id]="Done"
 	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
