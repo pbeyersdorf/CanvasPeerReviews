@@ -161,9 +161,10 @@ def getStudentWork(thisAssignment='last'):
 			submission.reviewCount=0
 			submission.author=studentsById[submission.user_id]
 			submission.author_id=submission.user_id
-			creations.append(Creation(submission))
-			studentsById[submission.user_id].creations[thisAssignment.id]=creations[-1]
-			creationsByAuthorId[submission.user_id]=creations[-1]			
+			if not submission.missing:
+				creations.append(Creation(submission))
+				studentsById[submission.user_id].creations[thisAssignment.id]=creations[-1]
+				creationsByAuthorId[submission.user_id]=creations[-1]			
 		except:
 			status['err']="key error"
 	getReviews(creations)
