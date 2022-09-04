@@ -104,6 +104,8 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./"):
 		printCommand=True
 	if (TOKEN==None):
 		print("Go to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
+		print("More info at https://community.canvaslms.com/t5/Admin-Guide/How-do-I-manage-API-access-tokens-as-an-admin/ta-p/89")
+		print("")
 		TOKEN=input("Enter the token here: ")
 		printCommand=True
 	canvas = Canvas(CANVAS_URL, TOKEN)
@@ -233,6 +235,7 @@ def chooseAssignment():
 				i+=1
 		val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[1,i])
 		confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+	#print("using key " + str(assignmentKeyByNumber[val]))
 	activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 
 
