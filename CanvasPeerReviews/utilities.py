@@ -28,7 +28,6 @@ creations=[]
 solutionURLs=dict()
 graded_assignments=dict()
 lastAssignment=None
-activeAssignment=None
 assignmentByNumber=dict()
 professorsReviews=dict()
 course=None
@@ -221,22 +220,41 @@ def chooseAssignment():
 	confirmed=False
 	defaultChoice=0
 	while not confirmed:
-		i=1
-		assignmentKeyByNumber=dict()
-		print("\nAssignments with peer reviews enabled: ")
-		for key in graded_assignments:
-			if (key != 'last'):
-				if graded_assignments[key] == graded_assignments['last']:
-					print("\t" + str(i) +") " + graded_assignments[key].name + "  <---- last assignment")
-					defaultChoice=i
+		if len(graded_assignments)-1 == len(assignmentByNumber):
+			print("\nAssignments with peer reviews enabled: ")
+			for key in assignmentByNumber:
+				if assignmentByNumber[key] == graded_assignments['last']:
+					print("\t" + str(key) +") " + assignmentByNumber[key].name + "  <---- last assignment")
+					defaultChoice=key
 				else:
-					print("\t" + str(i) +") " + graded_assignments[key].name)
-				assignmentKeyByNumber[i]=key
-				i+=1
-		val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[1,i])
-		confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+					print("\t" + str(key) +") " + assignmentByNumber[key].name )
+			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice)
+			if val in assignmentByNumber:
+				confirmed=confirm("You have chosen " + assignmentByNumber[val].name)
+			else:
+				confirmed=False
+				print("Invalid choice")
+			if confirmed:
+				activeAssignment=assignmentByNumber[val]
+		else:
+			i=1
+			assignmentKeyByNumber=dict()
+			print("\nAssignments with peer reviews enabled: ")
+			for key in graded_assignments:
+				if (key != 'last'):
+					if graded_assignments[key] == graded_assignments['last']:
+						print("\t" + str(i) +") " + graded_assignments[key].name + "  <---- last assignment")
+						defaultChoice=i
+					else:
+						print("\t" + str(i) +") " + graded_assignments[key].name)
+					assignmentKeyByNumber[i]=key
+					i+=1
+			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[1,i])
+			confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+			if confirmed:
+				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 	#print("using key " + str(assignmentKeyByNumber[val]))
-	activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
+	return activeAssignment
 
 
 ######################################
