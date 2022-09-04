@@ -508,7 +508,9 @@ def calibrate(studentsToCalibrate="all"):
 				student.numberOfComparisons[cid]*=params.weeklyDegradationFactor()
 		for key,thisGivenReview in student.reviewsGiven.items():
 			#student.assignmentsCalibrated[thisGivenReview.assignment_id]=datetime.now()
-			if not thisGivenReview.submission_id in student.submissionsCalibratedAgainst: #don't bother if we've already calibrated against this review
+			blankCreation=len([c for c in creations if c.id == key and c.missing])>0
+			alreadyCalibratedAgainst=thisGivenReview.submission_id in student.submissionsCalibratedAgainst
+			if not blankCreation and not alreadyCalibratedAgainst: #don't bother if creation is blank or we've already calibrated against this review 
 				student.submissionsCalibratedAgainst[thisGivenReview.submission_id]=True
 				for otherReview in reviewsById[thisGivenReview.submission_id]:
 					if (otherReview.reviewer_id != student.id): #don't compare this review to itself
@@ -665,7 +667,8 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 	numberOfComparisons=0
 	student.reviewGradeExplanation=""
 	for key, thisGivenReview in student.reviewsGiven.items():
-		if thisGivenReview.assignment_id == assignment.id:
+		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
+		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
 			for otherReview in reviewsById[thisGivenReview.submission_id]:
 				if (otherReview.reviewer_id != student.id): #don't compare this review to itself
 					for cid in thisGivenReview.scores:
