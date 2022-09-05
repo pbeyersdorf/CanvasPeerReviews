@@ -593,23 +593,45 @@ def overrideDefaultPoints(assignment):
 ######################################
 # Process a list of students (or all of the students, calling the
 # gradeStudent function for each
-def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
+def grade(assignment, studentsToGrade="All", reviewGradeFunc=None, curveFunc=None):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		for student in makeList(students):
-			gradeStudent(assignment, student, reviewGradeFunc)
+			gradeStudent(assignment, student, reviewGradeFunc, curveFunc)
 	else:
 		for student in makeList(studentsToGrade):
-			gradeStudent(assignment, student, reviewGradeFunc)
+			gradeStudent(assignment, student, reviewGradeFunc, curveFunc)
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
 	for cid in assignment.criteria_ids():
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
 	log(msg)
+
+
+######################################
+# Check for any work that is unreviewed.
+def checkForUnreviewed(assignment):
+	unreviewedCreations=[]
+	for creation in creations:
+		student=creation.author
+		creationWasReviewed=False
+		for review in student.reviewsReceived:
+			if review.assignment_id == assignment.id:
+				creationWasReviewed=True
+		if (not creationWasReviewed):
+			unreviewedCreations.append(creation)
+	if len(unreviewedCreations)==0:
+		print("All creations have been reviewed")
+	else:
+		for creation in unreviewedCreations:
+			url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
+			print(creation.author.name + "'s creation was not reviewed (see " + url+ ")")
+	return unreviewedCreations
+
 
 ######################################
 # Go through all submissions for an assignment. If the assignment was created by
@@ -621,7 +643,7 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student, reviewGradeFunc=None):
+def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
 	student.gradingExplanation="Creation grade information for " +str(assignment.name) +"\n\n"
@@ -676,10 +698,15 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 
 	if (not creationWasReviewed) or weightCount==0:
 		#If student submitted something but had no reviews
-		if student.creations[assignment.id].submitted_at != None:
-			creationGrade=100 # Change this
-			student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
-			print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)
+		if not assignment.id in student.creations:
+			creationGrade=0
+			student.gradingExplanation+="No submission received"
+			print("No submission for",student.name,"on assignment",assignment.name, "assigning grade of", creationGrade)
+		else:
+			if student.creations[assignment.id].submitted_at != None:
+				creationGrade=100 # Change this
+				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
+				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)
 
 	#calculate review grades
 	delta2=0
@@ -723,7 +750,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 			student.reviewGradeExplanation+=str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders\n"
 		else:
 			student.reviewGradeExplanation+=" about the same as other graders\n"
-	student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders\n\n"
+	student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
 	rms=2
 	
 	if numberOfComparisons!=0:
@@ -734,7 +761,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 		reviewCount=params.numberOfReviews
 
 	if reviewGradeFunc == None:
-		reviewGrade=(student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-rms)))
+		reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-rms)))
 	else:
 		reviewGrade=reviewGradeFunc(rms)
 	totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
@@ -747,9 +774,14 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
 	totalPoints=creationPoints + reviewPoints
-	
-	student.grades[assignment.id]={'creation': creationGrade, 'review':  creationGrade, 'total' :totalGrade}
-	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints}
+	# Need to change this
+	if curveFunc == None:
+		curvedTotalPoints=totalPoints
+	else:
+		curvedTotalPoints=curveFunc(totalPoints)
+			
+	student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
 	percentileRanking=gradingPowerRanking(student, percentile=True)
 	student.regradeComments[assignment.id]=(("View the rubric table above to see details of your regrade.  The regraded submissions earned %." + str(digits) +"f points.\n\n") % 
 	(creationPoints) )
@@ -760,8 +792,13 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully following the grading rubric.") % (percentileRanking ) )	
 	else:
 		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
-	student.comments[assignment.id]+=(("If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a score of %." + str(digits) +"f points.\n\n") % 
-	(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints ) )
+	if (curvedTotalPoints==totalPoints):
+		student.comments[assignment.id]+=(("  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a score of %." + str(digits) +"f points.\n\n") % 
+		(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints ) )
+	else:
+		student.comments[assignment.id]+=(("  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a raw score of %." + str(digits) +"f points.  This was curved to give an adjusted score of %." + str(digits) +"f points.\n\n") % 
+		(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints, curvedTotalPoints ) )
+	
 	
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
@@ -862,7 +899,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 		creation=student.creations[assignment.id]
 		print("posting for",student.name )
 		if postGrades:
-			creation.edit(submission={'posted_grade':student.points[assignment.id]['total']})
+			creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
 		if postComments:
 			creation.edit(comment={'text_comment':student.comments[assignment.id]})
 	status["posted"]=True
@@ -891,7 +928,7 @@ def postFromCSV(fileName=None, thisAssignment=None):
 		if col.strip().lower() == "name":
 			nameCol=i
 			print(i+1,col,"<- Name")
-		elif col.strip().lower() == "grade" or col.strip().lower() == "total":
+		elif col.strip().lower() == "grade" or col.strip().lower() == "adjusted total" or col.strip().lower() == "total":
 			gradeCol = i
 			print(i+1,col,"<- Grade")
 		elif col.strip().lower() == "comment":
@@ -1011,7 +1048,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	if assignment!=None:
 		for cid in assignment.criteria_ids():
 			header+='"' + criteriaDescription[cid] + '"' + delimiter #"LO" + str(cid) + delimiter
-		header+="Creation" + delimiter + "Review" + delimiter + "Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
+		header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 	else:
 		header+="Grade, Comment\n"
 	if saveToFile:
@@ -1035,6 +1072,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 			line+=(str(points['creation']) + delimiter + 
 				str(points['review']) + delimiter + 
 				str(points['total']) + delimiter + 
+				str(points['curvedTotal']) + delimiter + 
 				'"' + student.comments[assignment.id] + '"' + delimiter +
 				'"' + student.gradingExplanation + '"' + delimiter +
 				'"' + student.reviewGradeExplanation + '"'
@@ -1094,6 +1132,7 @@ def gradingPowerRanking(theStudent="all",cid=0, percentile=False):
 		print("--Worst graders--")
 		return
 	rank=0
+	
 	for student in sortedStudents:
 		rank+=1
 		if theStudent.id == student.id:
