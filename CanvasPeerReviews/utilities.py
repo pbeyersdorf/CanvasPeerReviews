@@ -758,7 +758,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 			student.reviewGradeExplanation+=str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders\n"
 		else:
 			student.reviewGradeExplanation+=" about the same as other graders\n"
-	student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
+
 	rms=2
 	
 	if numberOfComparisons!=0:
@@ -772,6 +772,12 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 		reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-rms)))
 	else:
 		reviewGrade=reviewGradeFunc(rms)
+	if (reviewGrade<100):
+		student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
+	else:
+		student.reviewGradeExplanation+="Keep up the good work on your reviews"
+		
+
 	totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
 	
 	#adjust the points from a scale of 100 down to the number of points for the assingmnet
@@ -794,6 +800,8 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 	percentileRanking=gradingPowerRanking(student, percentile=True)
 	student.regradeComments[assignment.id]=(("View the rubric table above to see details of your regrade.  The regraded submissions earned %." + str(digits) +"f points.\n\n") % 
 	(creationPoints) )
+	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
+		student.reviewGradeExplanation="You did not completeany of your peer reviews, so your review grade was 0.  "
 
 	student.comments[assignment.id]=student.reviewGradeExplanation
 	if (percentileRanking >66):
@@ -803,16 +811,16 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 	else:
 		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
 	if (curvedTotalPoints==totalPoints):
-		student.comments[assignment.id]+=(("  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a score of %." + str(digits) +"f points.\n\n") % 
+		student.comments[assignment.id]+=(("  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a score of %." + str(digits) +"f points.\n\n If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.") % 
 		(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints ) )
 	else:
-		student.comments[assignment.id]+=(("  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a raw score of %." + str(digits) +"f points.  This was curved to give an adjusted score of %." + str(digits) +"f points.\n\n") % 
+		student.comments[assignment.id]+=(("  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a raw score of %." + str(digits) +"f points.  This was curved to give an adjusted score of %." + str(digits) +"f.\n\n  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.") % 
 		(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints, curvedTotalPoints ) )
 	
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
 		student.comments[assignment.id]="No submission received"
-	
+
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
 
@@ -907,7 +915,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 		if not confirm("You haven't yet called grade() but you are calling postGrades()\nyou will be posting previously saved grades, and may get an error", False):
 			return
 	if (listOfStudents=='all'):
-		listOfStudents=students
+		listOfStudents=[s for s in students if s.role=='student']
 	for student in listOfStudents:
 		creation=student.creations[assignment.id]
 		print("posting for",student.name )
@@ -1058,16 +1066,17 @@ def getStatistics(assignment=lastAssignment):
 	reviewGrade=[]
 	rawTotal=[]
 	curvedTotal=[]
-for (i,student) in enumerate(students):
-	#try:
-		points=student.points[assignment.id]
-		grades=student.grades[assignment.id]
-		creationGrade.append(grades['creation'])
-		reviewGrade.append(grades['review'])
-		rawTotal.append(grades['total'])
-		curvedTotal.append(points['curvedTotal'])
-	#except:
-	#	pass
+	for student in students:
+		if assignment.id in student.creations:
+			try:
+				points=student.points[assignment.id]
+				grades=student.grades[assignment.id]
+				creationGrade.append(grades['creation'])
+				reviewGrade.append(grades['review'])
+				rawTotal.append(grades['total'])
+				curvedTotal.append(points['curvedTotal'])
+			except:
+				pass
 	print("Creation average is %.1f with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
 	print("Review average is %.1f with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
 	print("Raw total average is %.1f with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
@@ -1098,30 +1107,31 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 		print(header)
 
 	for (i,student) in enumerate(students):
-		line=(student.name + delimiter + 
-			'"' + student.sortable_name + '"' + delimiter + 
-			str(student.sis_user_id) + delimiter)
-		if assignment!=None:
-			points=student.points[assignment.id]			
-			for cid in assignment.criteria_ids():
-				if cid in student.pointsByCriteria:
-					line+=str(student.pointsByCriteria[cid]) + delimiter
-				else:
-					line+="" + delimiter
-			line+=(str(points['creation']) + delimiter + 
-				str(points['review']) + delimiter + 
-				str(points['total']) + delimiter + 
-				str(points['curvedTotal']) + delimiter + 
-				'"' + student.comments[assignment.id] + '"' + delimiter +
-				'"' + student.gradingExplanation + '"' + delimiter +
-				'"' + student.reviewGradeExplanation + '"'
-				) + '\n'
-		else:
-			line+= ',\n'
-		if saveToFile:
-			f.write(line)
-		if display:
-			print(line, end ="")
+		if studnet.role=='student':
+			line=(student.name + delimiter + 
+				'"' + student.sortable_name + '"' + delimiter + 
+				str(student.sis_user_id) + delimiter)
+			if assignment!=None:
+				points=student.points[assignment.id]			
+				for cid in assignment.criteria_ids():
+					if cid in student.pointsByCriteria:
+						line+=str(student.pointsByCriteria[cid]) + delimiter
+					else:
+						line+="" + delimiter
+				line+=(str(points['creation']) + delimiter + 
+					str(points['review']) + delimiter + 
+					str(points['total']) + delimiter + 
+					str(points['curvedTotal']) + delimiter + 
+					'"' + student.comments[assignment.id] + '"' + delimiter +
+					'"' + student.gradingExplanation + '"' + delimiter +
+					'"' + student.reviewGradeExplanation + '"'
+					) + '\n'
+			else:
+				line+= ',\n'
+			if saveToFile:
+				f.write(line)
+			if display:
+				print(line, end ="")
 	if saveToFile:
 		f.close()
 		
