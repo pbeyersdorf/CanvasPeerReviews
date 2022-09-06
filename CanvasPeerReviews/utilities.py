@@ -633,7 +633,7 @@ def checkForUnreviewed(assignment):
 		f.write("<h3>Unreviewed Submissions</h3>\n<ul>\n")
 		for creation in unreviewedCreations:
 			url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-			f.write("<li><a href='"+ url +"' targe='_blank'> " + creation.author.name + "'s creation</a>\n")
+			f.write("<li><a href='"+ url +"' target='_blank'> " + creation.author.name + "'s creation</a>\n")
 		f.write("</ul></body></html>\n")
 		f.close()
 		subprocess.call(('open', fileName))
