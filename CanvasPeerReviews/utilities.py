@@ -274,7 +274,9 @@ def assignCalibrationReviews(calibrations="auto"):
 		#return
 	else:
 		creations=calibrations
-	reviewers=randmoize(students) 
+	studentsWithSubmissions=[studentsById[c.author_id] for c in creations]
+	reviewers=randmoize(studentsWithSubmissions) 
+	
 	creations=makeList(creations)
 	print("Professor has already graded submissions by")
 	for c in creations:
@@ -318,14 +320,13 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	countAssignedReviews(creationsToConsider, append=append)
 	creationList=makeList(creationsToConsider)
 	#countAssignedReviews(creationList) #is this necessary?
-	peers=[x for x in students if x.role=='student']
+	studentsWithSubmissions=[studentsById[c.author_id] for c in creations]
+	peersWithSubmissions=[x for x in studentsWithSubmissions if x.role=='student']
 	graders=[x for x in students if x.role=='grader']
 	graders=randmoize(graders)
 	if reviewers=="randomize":
-		peers=randmoize(peers) 
-		reviewers=makeList(peers)
-	else:
-		reviewers=makeList(reviewers)
+		peersWithSubmissions=randmoize(peersWithSubmissions) 
+	reviewers=makeList(peersWithSubmissions)
 	#assign params.numberOfReviews reviews per creation
 	for creation in creationList:
 		for reviewer in reviewers:
