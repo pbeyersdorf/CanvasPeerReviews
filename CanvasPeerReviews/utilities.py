@@ -1064,12 +1064,13 @@ def log(msg, display=True):
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
-def getStatistics(assignment=lastAssignment):
+def getStatistics(assignment=lastAssignment, text=True, hist=False):
 	import numpy as np
 	creationGrade=[]
 	reviewGrade=[]
 	rawTotal=[]
 	curvedTotal=[]
+	zeros=[]
 	for student in students:
 		if assignment.id in student.creations:
 			try:
@@ -1081,10 +1082,26 @@ def getStatistics(assignment=lastAssignment):
 				curvedTotal.append(points['curvedTotal'])
 			except:
 				pass
-	print("Creation average is %.1f with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
-	print("Review average is %.1f with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
-	print("Raw total average is %.1f with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
-	print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
+		else:
+			zeros.append(0)
+
+	if hist:
+		#importing required libraries
+		from matplotlib import pyplot as plt
+		# A dataset of 10 students
+		marks = curvedTotal + zeros
+		fig, axis = plt.subplots(figsize =(10, 5))
+		axis.hist(marks, bins = [0, 10, 20, 30, 40,50, 60, 70, 80, 90, 100])
+		plt.title('Cuirved grades\n\n',
+				  fontweight ="bold")
+		# Displaying the graph
+		plt.show()
+	
+	if text:
+		print("Creation average is %.1f with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
+		print("Review average is %.1f with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
+		print("Raw total average is %.1f with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
+		print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
 
 	
 
