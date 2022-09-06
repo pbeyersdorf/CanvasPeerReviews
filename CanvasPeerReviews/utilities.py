@@ -782,17 +782,19 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
 	totalPoints=creationPoints + reviewPoints
-	# Need to change this
 	if curveFunc == None:
 		curvedTotalPoints=totalPoints
 	else:
 		curvedTotalPoints=curveFunc(totalPoints)
-			
+	if not assignment.id in student.creations:
+		curvedTotalPoints=0 # no submission
+
 	student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
 	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
 	percentileRanking=gradingPowerRanking(student, percentile=True)
 	student.regradeComments[assignment.id]=(("View the rubric table above to see details of your regrade.  The regraded submissions earned %." + str(digits) +"f points.\n\n") % 
 	(creationPoints) )
+
 	student.comments[assignment.id]=student.reviewGradeExplanation
 	if (percentileRanking >66):
 		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
@@ -807,6 +809,9 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 		student.comments[assignment.id]+=(("  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.\n\n  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a raw score of %." + str(digits) +"f points.  This was curved to give an adjusted score of %." + str(digits) +"f points.\n\n") % 
 		(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints, curvedTotalPoints ) )
 	
+	if not assignment.id in student.creations:
+		student.gradingExplanation+="No submission received"
+		student.comments[assignment.id]="No submission received"
 	
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
@@ -1043,6 +1048,32 @@ def log(msg, display=True):
 	f.write("\n\n") 
 	f.close()
 
+
+######################################
+# Export the student grades for the given assignment to a file and optionally print
+# them on the screen too.		
+def getStatistics(assignment=lastAssignment):
+	import numpy as np
+	creationGrade=[]
+	reviewGrade=[]
+	rawTotal=[]
+	curvedTotal=[]
+for (i,student) in enumerate(students):
+	#try:
+		points=student.points[assignment.id]
+		grades=student.grades[assignment.id]
+		creationGrade.append(grades['creation'])
+		reviewGrade.append(grades['review'])
+		rawTotal.append(grades['total'])
+		curvedTotal.append(points['curvedTotal'])
+	#except:
+	#	pass
+	print("Creation average is %.1f with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
+	print("Review average is %.1f with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
+	print("Raw total average is %.1f with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
+	print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
+
+	
 
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
