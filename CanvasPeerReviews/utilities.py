@@ -917,12 +917,16 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	if (listOfStudents=='all'):
 		listOfStudents=[s for s in students if s.role=='student']
 	for student in listOfStudents:
-		creation=student.creations[assignment.id]
-		print("posting for",student.name )
-		if postGrades:
-			creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
-		if postComments:
-			creation.edit(comment={'text_comment':student.comments[assignment.id]})
+		if assignment.id in student.creations:
+			creation=student.creations[assignment.id]
+			print("posting for",student.name )
+			if postGrades:
+				creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
+			if postComments:
+				creation.edit(comment={'text_comment':student.comments[assignment.id]})
+		else:
+			print("No creation to post for",student.name )
+			
 	status["posted"]=True
 ######################################
 # Read a CSV file with student names, grades, and comments and upload that data for the
@@ -1107,7 +1111,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 		print(header)
 
 	for (i,student) in enumerate(students):
-		if studnet.role=='student':
+		if student.role=='student':
 			line=(student.name + delimiter + 
 				'"' + student.sortable_name + '"' + delimiter + 
 				str(student.sis_user_id) + delimiter)
