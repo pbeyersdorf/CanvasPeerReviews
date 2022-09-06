@@ -627,9 +627,16 @@ def checkForUnreviewed(assignment):
 	if len(unreviewedCreations)==0:
 		print("All creations have been reviewed")
 	else:
+		fileName=status['dataDir'] + assignment.name + "_todo.html"
+		f = open(fileName, "w")
+		f.write("<html><head><title>Unreviewed Submissions</title></head><body>\n")
+		f.write("<h3>Unreviewed Submissions</h3>\n<ul>\n")
 		for creation in unreviewedCreations:
 			url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-			print(creation.author.name + "'s creation was not reviewed (see " + url+ ")")
+			f.write("<li><a href='"+ url +"'> " + creation.author.name + "'s creation</a>\n")
+		f.write("</ul></body></html>\n")
+		f.close()
+		subprocess.call(('open', fileName))
 	return unreviewedCreations
 
 
