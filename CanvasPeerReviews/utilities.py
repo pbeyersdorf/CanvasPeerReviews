@@ -496,8 +496,6 @@ def reviewSummary(assessment, display=False):
 	msg=""
 	#get comments on each learning outcome
 	for d in assessment['data']:
-		print("d=",d)
-		print("criteriaDescription",criteriaDescription)
 		msg+="\t" + criteriaDescription[d['criterion_id']] 
 		try:
 			msg+=" [" + str(d['points']) + "]"
