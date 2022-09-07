@@ -609,28 +609,24 @@ def overrideDefaultPoints(assignment):
 ######################################
 # Process a list of students (or all of the students, calling the
 # gradeStudent function for each
-def grade(assignment, studentsToGrade="All", reviewGradeFunc=None, curveFunc=None):
+def grade(assignment, studentsToGrade="All", reviewGradeFunc=None, curve='x'):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		for student in makeList(students):
-			gradeStudent(assignment, student, reviewGradeFunc, curveFunc)
+			gradeStudent(assignment, student, reviewGradeFunc, curve)
 	else:
 		for student in makeList(studentsToGrade):
-			gradeStudent(assignment, student, reviewGradeFunc, curveFunc)
+			gradeStudent(assignment, student, reviewGradeFunc, curve)
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
 	for cid in assignment.criteria_ids():
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
-
-	from dill.source import getsource
-	if (curveFunc!=None):
-		msg+="Using the following curve: " + getsource(curveFunc)
-	else:
-		msg+="With no curve "		
+	msg+="Using the following curve '" + curve + "'\n"
+	log(assignment.name + ", " + curve, display=False, fileName="cureveLog.csv")
 	log(msg)
 
 
@@ -672,9 +668,10 @@ def checkForUnreviewed(assignment):
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
+def gradeStudent(assignment, student, reviewGradeFunc=None, curve='x'):
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
+	curveFunc=eval('lambda x:' + curve)
 	student.gradingExplanation="Creation grade information for " +str(assignment.name) +"\n\n"
 	for review in student.reviewsReceived:
 		if review.review_type == "grading" and review.assignment_id == assignment.id:
@@ -809,10 +806,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
 	totalPoints=creationPoints + reviewPoints
-	if curveFunc == None:
-		curvedTotalPoints=totalPoints
-	else:
-		curvedTotalPoints=curveFunc(totalPoints)
+	curvedTotalPoints=curveFunc(totalPoints)
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
 
@@ -845,7 +839,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
 
-def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True, curveFunc=None):
+def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
 	global status, activeAssignment
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
@@ -866,6 +860,26 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 				val=getNum()
 			assignment=assignmentByNumber[val]
 	print("Regrading " + assignment.name + "...")
+	
+	#get the curve to use for the regrading:
+	curves=dict()
+	try:		
+		curvesData=readCSV(fileName=DATADIRECTORY+"cureveLog.csv")
+		for row in reversed(curvesData):
+			if len(row)>1:
+				curves[row[0]]=row[1].strip()
+	except:
+		pass
+	acceptedCurve=False
+	if assignment.name in curves:
+		curve=curves[assignment.name]
+		acceptedCurve=True
+	while not acceptedCurve:
+		print("You can find the curve function that was originally used in the file Data/log.txt")
+		curve=input('Enter the expression that takes a raw score x (out of 100) and returns a curved score for the regrade, for instance "round(50+x/2)": ')
+	curveFunc=eval('lambda x:' + curve)
+		
+			
 	regradedStudents=dict()
 	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
 	#make list of students needing a regrade
@@ -908,7 +922,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	getStudentWork(assignment)
 	if (recalibrate):
 		calibrate()
-	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc, curveFunc=curveFunc)
+	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc, curve=curve)
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
 		student.comments[activeAssignment.id]=student.regradeComments[assignment.id]
@@ -1071,11 +1085,11 @@ def getParameters(ignoreFile=False):
 
 ######################################
 # save data to a log file
-def log(msg, display=True):
-	fileName=status['dataDir'] + "log.txt"
+def log(msg, display=True, fileName="log.txt"):
+	theFile=status['dataDir'] + fileName
 	if display:
 		print(msg, end ="")
-	f = open(fileName, "a")
+	f = open(theFile, "a")
 	f.write("----" + str(datetime.now()) + "----\n")
 	f.write(msg) 
 	f.write("\n\n") 
@@ -1104,7 +1118,6 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 				pass
 		else:
 			zeros.append(0)
-
 	if hist:
 		#importing required libraries
 		from matplotlib import pyplot as plt
@@ -1112,11 +1125,10 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 		marks = curvedTotal + zeros
 		fig, axis = plt.subplots(figsize =(10, 5))
 		axis.hist(marks, bins = [0, 10, 20, 30, 40,50, 60, 70, 80, 90, 100])
-		plt.title('Cuirved grades\n\n',
+		plt.title('Curved grades\n\n',
 				  fontweight ="bold")
 		# Displaying the graph
-		plt.show()
-	
+		plt.show(block=False)
 	if text:
 		print("Creation average is %.1f with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
 		print("Review average is %.1f with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
