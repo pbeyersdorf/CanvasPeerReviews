@@ -824,7 +824,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None, curveFunc=None):
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
 
-def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
+def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True, curveFunc=None):
 	global status, activeAssignment
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
@@ -887,7 +887,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	getStudentWork(assignment)
 	if (recalibrate):
 		calibrate()
-	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc)
+	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc, curveFunc=curveFunc)
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
 		student.comments[activeAssignment.id]=student.regradeComments[assignment.id]
