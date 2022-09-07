@@ -11,6 +11,8 @@ from CanvasPeerReviews.student import Student
 from CanvasPeerReviews.assignment import GradedAssignment
 from CanvasPeerReviews.parameters import Parameters
 from CanvasPeerReviews.review import Review
+from CanvasPeerReviews.persistentInfo import persistentInfo
+
 import numpy as np
 try:
 	from dill.source import getsource	
@@ -68,14 +70,21 @@ status={'message': '',
 ######################################
 # Try loading any cached data
 def loadCache():
-	global course, status, params, dataDir, students
+	global course, status, params, dataDir, students, graded_assignments
 	status['prefix']="course_" + str(course.id) + "_"
+	status['message']=""
 	try:
 		with open( status['dataDir'] +status['prefix']+'students.pkl', 'rb') as handle:
 			students=pickle.load(handle)
-		status['message']="Loaded student data"
+		status['message']+="Loaded student data\n"
 	except:
-		status['message']="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file"
+		status['message']+="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
+	try:
+		with open( status['dataDir'] +status['prefix']+'assignments.pkl', 'rb') as handle:
+			graded_assignments=pickle.load(handle)
+		status['message']="Loaded assginment data\n"
+	except:
+		status['message']="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
 		with open(status['dataDir'] +status['prefix']+'parameters.pkl', 'rb') as handle:
 			params = pickle.load(handle)
@@ -83,6 +92,7 @@ def loadCache():
 	except:
 		params=Parameters()
 		params.loadedFromFile=False 
+	
 
 ######################################
 # delete the files that cache student data and parameters
@@ -198,7 +208,8 @@ def getGradedAssignments(course):
 		#if (assignment.peer_reviews and assignment.has_submitted_submissions): #xxx is it ok to remove the requirement that there are submissions already?
 		if (assignment.peer_reviews):
 			assignment.courseid=course.id
-			graded_assignments[assignment.id]=GradedAssignment(assignment)
+			if not assignment.id in graded_assignments: # no need to recreate if it was already loaded from the cache
+				graded_assignments[assignment.id]=GradedAssignment(assignment)
 			try:
 				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[assignment.id].name))))]=graded_assignments[assignment.id]
 			except:
@@ -609,25 +620,27 @@ def overrideDefaultPoints(assignment):
 ######################################
 # Process a list of students (or all of the students, calling the
 # gradeStudent function for each
-def grade(assignment, studentsToGrade="All", reviewGradeFunc=None, curve='x'):
+def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		for student in makeList(students):
-			gradeStudent(assignment, student, reviewGradeFunc, curve)
+			gradeStudent(assignment, student, reviewGradeFunc)
 	else:
 		for student in makeList(studentsToGrade):
-			gradeStudent(assignment, student, reviewGradeFunc, curve)
+			gradeStudent(assignment, student, reviewGradeFunc)
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
 	for cid in assignment.criteria_ids():
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
-	msg+="Using the following curve '" + curve + "'\n"
-	log(assignment.name + ", " + curve, display=False, fileName="cureveLog.csv")
+	msg+="Using the following curve '" + assignment.curve + "'\n"
 	log(msg)
+	######### Save assignment data for future sessions #########	
+	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
+		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 ######################################
@@ -668,10 +681,10 @@ def checkForUnreviewed(assignment):
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student, reviewGradeFunc=None, curve='x'):
+def gradeStudent(assignment, student, reviewGradeFunc=None):
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
-	curveFunc=eval('lambda x:' + curve)
+	curveFunc=eval('lambda x:' + assignment.curve)
 	student.gradingExplanation="Creation grade information for " +str(assignment.name) +"\n\n"
 	for review in student.reviewsReceived:
 		if review.review_type == "grading" and review.assignment_id == assignment.id:
@@ -860,26 +873,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 				val=getNum()
 			assignment=assignmentByNumber[val]
 	print("Regrading " + assignment.name + "...")
-	
-	#get the curve to use for the regrading:
-	curves=dict()
-	try:		
-		curvesData=readCSV(fileName=DATADIRECTORY+"cureveLog.csv")
-		for row in reversed(curvesData):
-			if len(row)>1:
-				curves[row[0]]=row[1].strip()
-	except:
-		pass
-	acceptedCurve=False
-	if assignment.name in curves:
-		curve=curves[assignment.name]
-		acceptedCurve=True
-	while not acceptedCurve:
-		print("You can find the curve function that was originally used in the file Data/log.txt")
-		curve=input('Enter the expression that takes a raw score x (out of 100) and returns a curved score for the regrade, for instance "round(50+x/2)": ')
-	curveFunc=eval('lambda x:' + curve)
-		
-			
+					
 	regradedStudents=dict()
 	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
 	#make list of students needing a regrade
@@ -922,7 +916,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	getStudentWork(assignment)
 	if (recalibrate):
 		calibrate()
-	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc, curve=curve)
+	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc)
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
 		student.comments[activeAssignment.id]=student.regradeComments[assignment.id]
@@ -961,8 +955,13 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 				creation.edit(comment={'text_comment':student.comments[assignment.id]})
 		else:
 			print("No creation to post for",student.name )
-			
+	assignment.gradesPosted=True	
+	######### Save assignment data for future sessions #########	
+	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
+		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	log("Grades for " +assignment.name+ " posted")
 	status["posted"]=True
+
 ######################################
 # Read a CSV file with student names, grades, and comments and upload that data for the
 # assignment from which the creations were taken
@@ -1023,6 +1022,11 @@ def postFromCSV(fileName=None, thisAssignment=None):
 
 				except:
 					status['err']="unable to process test student"
+	thisAssignment.gradesPosted=True	
+	######### Save assignment data for future sessions #########	
+	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
+		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	log("Grades for " +thisAssignment.name+ " posted via file'" + fileName + "'")
 	status["posted"]=True
 
 ######################################
@@ -1100,6 +1104,9 @@ def log(msg, display=True, fileName="log.txt"):
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
 def getStatistics(assignment=lastAssignment, text=True, hist=False):
+	if not assignment.graded:
+		print("You must grade the assignment before getting statistics")
+		return
 	creationGrade=[]
 	reviewGrade=[]
 	rawTotal=[]
@@ -1134,7 +1141,14 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 		print("Review average is %.1f with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
 		print("Raw total average is %.1f with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
 		print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
-
+	assignment.creationAverage=np.average(creationGrade)
+	assignment.creationStd=np.std(creationGrade)
+	assignment.reviewAverage=np.average(reviewGrade)
+	assignment.reviewStd=np.std(reviewGrade)
+	assignment.rawAverage=np.average(rawTotal)
+	assignment.rawStd=np.std(rawTotal)	
+	assignment.curvedAverage=np.average(curvedTotal)
+	assignment.curvedStd=np.std(curvedTotal)
 	
 
 ######################################
