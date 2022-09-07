@@ -11,7 +11,6 @@ from CanvasPeerReviews.student import Student
 from CanvasPeerReviews.assignment import GradedAssignment
 from CanvasPeerReviews.parameters import Parameters
 from CanvasPeerReviews.review import Review
-from CanvasPeerReviews.persistentInfo import persistentInfo
 
 import numpy as np
 try:
@@ -114,7 +113,7 @@ def reset():
 ######################################
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
-def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./"):
+def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/"):
 	global course, canvas, students, graded_assignments, status
 	status['dataDir']=dataDirectory
 	if not os.path.exists(dataDirectory):
@@ -488,6 +487,37 @@ def countAssignedReviews(creations, append=True):
 		for student in students:
 			student.reviewCount[creations[0].assignment_id]=0
 	
+######################################
+# create a text summary of a review
+def reviewSummary(assessment, display=False):
+	global criteriaDescription
+	if display:
+		print("Review of " + str(assessment['artifact_id']) + " by " +studentsById[assessment['assessor_id']].name+ "\n")
+	msg=""
+	#get comments on each learning outcome
+	for d in assessment['data']:
+		print("d=",d)
+		print("criteriaDescription",criteriaDescription)
+		msg+="\t" + criteriaDescription[d['criterion_id']] 
+		try:
+			msg+=" [" + str(d['points']) + "]"
+		except:
+			msg+=" [missing]"
+		try:
+			msg+=" "+d['comments']
+		except:
+			pass
+		msg+="\n"
+	#get general comments on the submission
+	
+	c=[c for c in creations if c.id==assessment['artifact_id']][0]
+	ce=c.edit()
+	comments=[comment_item['comment'] for comment_item in ce.submission_comments if comment_item['author_id']==assessment['assessor_id']]
+	for comment in comments:
+		msg+=comment+"\n"
+	if display:
+		print(msg)
+	return msg
 				
 
 ######################################
@@ -638,6 +668,7 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
 	msg+="Using the following curve '" + assignment.curve + "'\n"
 	log(msg)
+	getStatistics(assignment, text=False, hist=False)
 	######### Save assignment data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
 		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -1104,9 +1135,6 @@ def log(msg, display=True, fileName="log.txt"):
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
 def getStatistics(assignment=lastAssignment, text=True, hist=False):
-	if not assignment.graded:
-		print("You must grade the assignment before getting statistics")
-		return
 	creationGrade=[]
 	reviewGrade=[]
 	rawTotal=[]
@@ -1125,6 +1153,9 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 				pass
 		else:
 			zeros.append(0)
+	if len(curvedTotal)==0 or not assignment.graded:
+		print("You must grade the assignment before getting statistics")
+		return
 	if hist:
 		#importing required libraries
 		from matplotlib import pyplot as plt
