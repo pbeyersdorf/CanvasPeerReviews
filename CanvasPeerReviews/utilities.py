@@ -1,13 +1,25 @@
 ######################################
 # Import various class definitions and other modules
+errormsg=""
 from datetime import datetime, timedelta
-from canvasapi import Canvas
+try:
+	from canvasapi import Canvas
+except:
+	errormsg+="Missing canvasapi module.  Run 'pip install canvasapi' to intall\n"
 from CanvasPeerReviews.creation import Creation
 from CanvasPeerReviews.student import Student
 from CanvasPeerReviews.assignment import GradedAssignment
 from CanvasPeerReviews.parameters import Parameters
 from CanvasPeerReviews.review import Review
-import pickle
+import numpy as np
+try:
+	from dill.source import getsource	
+except:
+	errormsg+="Missing dill module.  Run 'pip install dill' to intall\n"
+try:
+	import pickle
+except:
+	errormsg+="Missing pickle module.  Run 'pip install pickle5' to intall\n"
 import webbrowser
 import copy
 import random
@@ -16,6 +28,9 @@ import subprocess
 import csv
 import math
 import time
+if errormsg!="":
+	raise Exception(errormsg)
+	
 
 ######################################
 # Define some global variables to be used in this module
@@ -610,6 +625,12 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None, curveFunc=Non
 	msg=assignment.name +  " graded with the following point values:\n"
 	for cid in assignment.criteria_ids():
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
+
+	from dill.source import getsource
+	if (curveFunc!=None):
+		msg+="Using the following curve: " + getsource(curveFunc)
+	else:
+		msg+="With no curve "		
 	log(msg)
 
 
@@ -1065,7 +1086,6 @@ def log(msg, display=True):
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
 def getStatistics(assignment=lastAssignment, text=True, hist=False):
-	import numpy as np
 	creationGrade=[]
 	reviewGrade=[]
 	rawTotal=[]
