@@ -1118,7 +1118,9 @@ def getParameters(ignoreFile=False):
 
 ######################################
 # save data to a log file
-def log(msg, display=True, fileName="log.txt"):
+def log(msg, display=True, fileName=None):
+	if fileName==None:
+		fileName=status['prefix']+"log.txt"
 	theFile=status['dataDir'] + fileName
 	if display:
 		print(msg, end ="")
