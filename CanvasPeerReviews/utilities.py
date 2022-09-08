@@ -1072,7 +1072,7 @@ def getParameters(ignoreFile=False):
 		params=Parameters()
 		params.loadedFromFile=False
 	logFile = open(status['dataDir'] +status['prefix'] + 'parameters.log', "a") 	
-	logFile.write("----" + str(datetime.now()) + "----\n")
+	headerWritten=False
 
 	for key, assignment in graded_assignments.items():
 		if assignment != []:
@@ -1082,6 +1082,9 @@ def getParameters(ignoreFile=False):
 				if not criteria['id'] in params.multiplier:
 					needInput=True
 			if needInput:
+				if not headerWritten:
+					logFile.write("----" + str(datetime.now()) + "----\n")
+					headerWritten=True
 				print("Need to assign criteria weightings for the rubric assigned to " + assignment.name + ": ")
 				for criteria in assignment.rubric:
 					if not criteria['id'] in params.multiplier: 
@@ -1120,7 +1123,9 @@ def getParameters(ignoreFile=False):
 
 ######################################
 # save data to a log file
-def log(msg, display=True, fileName="log.txt"):
+def log(msg, display=True, fileName=None):
+	if fileName==None:
+		fileName=status['prefix']+".log"
 	theFile=status['dataDir'] + fileName
 	if display:
 		print(msg, end ="")
