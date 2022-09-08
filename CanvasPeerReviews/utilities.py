@@ -159,7 +159,6 @@ def assignSections(students):
 					student.sectionName=section.name
 
 
-
 ######################################
 # Given an assignment object this will return all of the student submissions
 # to that assignment as an array of objects
@@ -524,6 +523,7 @@ def reviewSummary(assessment, display=False):
 # submission and the students performing the reviews.  Nothing is returned. 
 def getReviews(creations):
 	rubrics=course.get_rubrics()
+	allReviews=[]
 	for rubric in rubrics:
 		rubric=course.get_rubric(rubric.id,include='assessments', style='full')
 		if hasattr(rubric, 'assessments'):
@@ -554,8 +554,10 @@ def getReviews(creations):
 						elif reviewer_id in studentsById:
 							# if not already assigned assignment.multiplier[cid]
 							studentsById[reviewer_id].reviewsGiven[review.submission_id]=review
+						allReviews.append(review)
 	status["gotReviews"]=True
-
+	return allReviews
+	
 ######################################
 # Compare the peer reviews students gave to the peer reviews of the same submission 
 # given by others.	An average deviation is computed using a weighting factor based on 
@@ -1317,10 +1319,13 @@ def announce(subject, body, section="all"):
 
 ######################################
 # Send a canvas message to a student or list of students.		
-def message(theStudents, body):
+def message(theStudents, theBody, theSubject='', display=False):
 	studentList=makeList(theStudents)
 	for student in studentList:
-		canvas.create_conversation(student.id, body)
+		canvas.create_conversation(student.id, body=theBody, subject=theSubject)
+		if display:
+			print("messaging " +  student.name)
+			
 ######################################
 # Read a CSV file and return the data as an array
 def readCSV(fileName=None):
