@@ -1393,6 +1393,32 @@ def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=N
 			print("Your response must be numeric")			
 
 ######################################
+# Display text and allow the user to accept it or edit it
+def confirmText(msg,prompt="Is the following text ok?"):
+	import subprocess, os
+	print(prompt)
+	print()
+	print(msg)
+	print()
+	val=input("[a] accept or (e) edit?: ")
+	if val=="a" or val=="":
+		return(msg)
+	else:
+		fileName="temp.txt"
+		f = open(fileName, "w")
+		f.write(msg)
+		f.close()
+		subprocess.call(('open', fileName))	
+		input("Edit and save the text file '"+fileName+"' then enter to continue: ")
+		f = open(fileName, "r")
+		lines = f.readlines()
+		f.close()
+		print(lines)
+		os.remove(fileName)
+		msg="".join(lines)
+		confirmText(prompt,msg)
+		
+######################################
 # List all objects in an array and prompt the user to select one.  
 # Once they confirm their choice it will be returned
 
