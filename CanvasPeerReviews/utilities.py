@@ -31,7 +31,7 @@ import math
 import time
 if errormsg!="":
 	raise Exception(errormsg)
-	
+
 
 ######################################
 # Define some global variables to be used in this module
@@ -139,12 +139,11 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	print(status['message'])
 	getStudents(course)
 	getGradedAssignments(course)
-	getMostRecentAssignment()
+	lastAssignment =getMostRecentAssignment()
 	for student in students:
 		sections[student.section]=student.sectionName
 
 	status["initialized"]=True
-	lastAssignment = getMostRecentAssignment()
 	return students, graded_assignments, lastAssignment
 
 ######################################
@@ -180,7 +179,9 @@ def getStudentWork(thisAssignment='last'):
 		thisAssignment=graded_assignments['last']
 	submissions=thisAssignment.get_submissions()
 	clearList(creations)
+	i=0
 	for submission in submissions:
+		i+=1
 		try:
 			submission.courseid=thisAssignment.courseid
 			submission.reviewCount=0
@@ -223,12 +224,16 @@ def getMostRecentAssignment():
 	lastAssignment=None
 	if len(graded_assignments)==0:
 		getGradedAssignments(course)
-	minTimeDelta=timedelta(days=3650)
+	minTimeDelta=3650*24*3600
+	offsetHours=12 # move the due dates earlier by this amount so that an assignment that is almost due will show up as the last assignment.
+	
 	for key, graded_assignment in graded_assignments.items():
 		try:
 			thisDelta=datetime.utcnow()-graded_assignment.due_at_date.replace(tzinfo=None)
-			if (thisDelta.total_seconds() > 0  and thisDelta < minTimeDelta) :
-				minTimeDelta=thisDelta
+			delta=thisDelta.total_seconds()
+			delta+=offsetHours*3600
+			if (delta > 0  and delta < minTimeDelta) :
+				minTimeDelta=delta
 				lastAssignment=graded_assignment
 		except:
 			print("Trouble getting date of",graded_assignment,", likely it was an unscedhueld assignment")
@@ -292,38 +297,44 @@ def assignCalibrationReviews(calibrations="auto"):
 		print("Error: You must first run 'initialize()' before calling 'assignCalibrationReviews'")
 		return
 	elif not status['gotStudentsWork']:
+		print("getting student work")
 		getStudentWork()
 	if calibrations=="auto":
 		professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[graded_assignments['last'].id]]
-		creations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
+		calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
 		#return
 	else:
 		creations=calibrations
-	studentsWithSubmissions=[studentsById[c.author_id] for c in creations]
+
+	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	reviewers=randmoize(studentsWithSubmissions) 
 	
-	creations=makeList(creations)
+	print("studentsWithSubmissions ->" , len(studentsWithSubmissions))
+
+	calibrations=makeList(calibrations)
 	print("Professor has already graded submissions by")
-	for c in creations:
-		print(c.author.name)
+	for c in calibrations:
+		print("\t" + c.author.name)
 	
 	i=0
 	for reviewer in reviewers:
 		tic=time.time()
-		while (	time.time()-tic < 1 and ((reviewer.id == creations[i%len(creations)].author_id) or  (studentsById[reviewer.id].section != studentsById[creations[i%len(creations)].author_id].section ))):
+		while (	time.time()-tic < 1 and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
 			i+=1
 		if not time.time()-tic  <1:
-			#raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
+			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
-		creation = creations[i%len(creations)]
-		print(i,"assigning", str(studentsById[creations[i%len(creations)].author_id].name) +"'s work (", studentsById[creations[i%len(creations)].author_id].sectionName ,") to be reviewed by ", studentsById[reviewer.id].name, "(" ,studentsById[reviewer.id].sectionName , ")" )
+		calibration = calibrations[i%len(calibrations)]
+		print(i,"assigning", str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (", studentsById[calibrations[i%len(calibrations)].author_id].sectionName ,") to be reviewed by ", studentsById[reviewer.id].name, "(" ,studentsById[reviewer.id].sectionName , ")" )
 		i+=1
-		creation.create_submission_peer_review(reviewer.id)
-		if not creation.assignment_id in reviewer.reviewCount:
-			reviewer.reviewCount[creation.assignment_id]=0
-		reviewer.reviewCount[creation.assignment_id]+=1
-		creation.reviewCount+=1
-
+		if (studentsById[calibrations[i%len(calibrations)].author_id].name!=studentsById[reviewer.id].name):
+			calibration.create_submission_peer_review(reviewer.id)
+		else:
+			print("skipping self review")
+		if not calibration.assignment_id in reviewer.reviewCount:
+			reviewer.reviewCount[calibration.assignment_id]=0
+		reviewer.reviewCount[calibration.assignment_id]+=1
+		calibration.reviewCount+=1
 	
 ######################################
 # Takes a student submission and a list of potential reviewers, and the number of reviews 
@@ -345,7 +356,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	countAssignedReviews(creationsToConsider, append=append)
 	creationList=makeList(creationsToConsider)
 	#countAssignedReviews(creationList) #is this necessary?
-	studentsWithSubmissions=[studentsById[c.author_id] for c in creations]
+	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	peersWithSubmissions=[x for x in studentsWithSubmissions if x.role=='student']
 	graders=[x for x in students if x.role=='grader']
 	graders=randmoize(graders)
@@ -437,7 +448,7 @@ def peerReviewingOver(assignment):
 ######################################
 # Look for the URL for the assignment solutions in a csv file.	If the file
 # isn't found it will generate a template
-def getSolutionURLs(fileName="solution urls.csv"):
+def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 	global status, solutionURLs
 	solutionURLs={}
 	fileName=status['dataDir'] + fileName.replace("/","").replace(":","")
@@ -451,11 +462,11 @@ def getSolutionURLs(fileName="solution urls.csv"):
 		f.close()
 		for line in lines:
 			cells=line.split(",")
-			for key, assignment in graded_assignments.items():
-				if assignment.name in cells[0] and not placeholder in cells[1]:
-					solutionURLs[assignment.id]=cells[1].strip()
-					success=True
-		return success
+			if assignment.name in cells[0] and not placeholder in cells[1]:
+				solutionURLs[assignment.id]=cells[1].strip()
+				success=True
+		if success:
+			return solutionURLs[assignment.id]
 	except:
 		f = open(fileName, "w")
 		f.write("Assignment Name, Solution URL\n")
@@ -464,7 +475,7 @@ def getSolutionURLs(fileName="solution urls.csv"):
 		f.close()
 		subprocess.call(('open', fileName))
 		print("Put the solution URLs into the file '" + fileName + "'")
-		return False
+	return ""
 
 # ######################################
 # Count how many reviews have been assigned to each student using data from Canvas
@@ -523,6 +534,7 @@ def reviewSummary(assessment, display=False):
 # those peer reviews get attached to the student objects for both the author of the 
 # submission and the students performing the reviews.  Nothing is returned. 
 def getReviews(creations):
+	global course
 	rubrics=course.get_rubrics()
 	for rubric in rubrics:
 		rubric=course.get_rubric(rubric.id,include='assessments', style='full')
@@ -537,11 +549,12 @@ def getReviews(creations):
 						alreadyProcessed = any(thisReview.fingerprint() == review.fingerprint() for thisReview in studentsById[creation.user_id].reviewsReceived)
 						if not alreadyProcessed:
 							studentsById[creation.user_id].reviewsReceived.append(review)
+						else: 
+							print("alrady processed")
 						if creation.assignment_id in studentsById[creation.user_id].regrade: # replace entry
 							for i,thisReview in enumerate(studentsById[creation.user_id].reviewsReceived):
 								if thisReview.fingerprint() == review.fingerprint() and assessment['assessment_type']=="grading":
-									studentsById[creation.user_id].reviewsReceived[i]=review
-								
+									studentsById[creation.user_id].reviewsReceived[i]=review			
 						if creation.id in reviewsById:
 							reviewsById[creation.id].append(review)
 						else:
