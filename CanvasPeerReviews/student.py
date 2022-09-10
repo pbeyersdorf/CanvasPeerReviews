@@ -8,7 +8,7 @@ class Student:
 		self.creations=dict()
 		self.rms_deviation_by_category=dict()
 		self.deviation_by_category=dict()
-		self.number_of_reviews=0
+		#self.number_of_reviews=0
 		self.reviewsGiven=dict()
 		self.reviewsReceived=[]
 		self.gradingPower = dict()
@@ -26,7 +26,7 @@ class Student:
 		self.reviewCount=dict()
 		self.assignmentsGradedByInstructor=dict()
 		self.pointsByCriteria=dict()
-		self.assignmentsCalibrated=dict()
+		#self.assignmentsCalibrated=dict()
 		self.role="student"
 		self.section=0
 		self.sectionName="unknown"

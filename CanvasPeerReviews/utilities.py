@@ -62,6 +62,7 @@ status={'message': '',
 	'gotReviews': False,
 	'calibrated': False,
 	'graded': False,
+	'regraded': False,
 	'posted': False,
 	'dataDir': './'}
 
@@ -484,8 +485,9 @@ def countAssignedReviews(creations, append=True):
 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
 	global students
 	creations=makeList(creations)
-	for student in students:
-		clearList(student.reviewCount)
+	#for student in students:
+	#	clearList(student.reviewCount)
+	print("commented out lines 487-488 in utilites that clears the student reviewcount")
 	if append:
 		print("Checking how many peer reviews each students has already been assigned...")
 		for creation in creations:
@@ -687,9 +689,11 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 	msg+="Using the following curve '" + assignment.curve + "'\n"
 	log(msg)
 	getStatistics(assignment, text=False, hist=False)
-	######### Save assignment data for future sessions #########	
+	######### Save student and assignment data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
 		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 ######################################
@@ -778,14 +782,17 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 					total+=max(0,min((review.scores[cid] - compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
 					weightCount+=weight
 					numberCount+=1
+		if not assignment.id in student.pointsByCriteria:
+			student.pointsByCriteria[assignment.id]=dict()
+			
 		if (weightCount>0):
 			creationGrade+=multiplier*total/(weightCount*assignment.criteria_points(cid))
-			student.pointsByCriteria[cid]=multiplier*total/(weightCount*assignment.criteria_points(cid))
+			student.pointsByCriteria[assignment.id][cid]=multiplier*total/(weightCount*assignment.criteria_points(cid))
 		else:
-			student.pointsByCriteria[cid]=""
+			student.pointsByCriteria[assignment.id][cid]=""
 
 	if (not creationWasReviewed) or weightCount==0:
-		#If student submitted something but had no reviews
+		#If student had no reviews
 		if not assignment.id in student.creations:
 			creationGrade=0
 			student.gradingExplanation+="No submission received"
@@ -875,8 +882,15 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 	student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
 	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
 	percentileRanking=gradingPowerRanking(student, percentile=True)
-	student.regradeComments[assignment.id]=(("View the rubric table above to see details of your regrade.  The regraded submissions earned %." + str(digits) +"f points.\n\n") % 
-	(creationPoints) )
+	
+	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
+		msg="View the rubric table above to see details of your regrade.\n"
+		msg+="In total you received " + str(student.points[assignment.id]['creation']) + " points for your creation, "
+		msg+=" and " + str(student.points[assignment.id]['review']) + " points for your reviews, "
+		msg+=" giving a total of " + str(student.points[assignment.id]['total']) + " points"
+		if (assignment.curve!='x'):
+			msg+=" that when curved gives a score of " + str(student.points[assignment.id]['curvedTotal'])
+		student.regradeComments[assignment.id]=msg
 	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
 		student.reviewGradeExplanation="You did not completeany of your peer reviews, so your review grade was 0.  "
 
@@ -1258,8 +1272,8 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 			if assignment!=None:
 				points=student.points[assignment.id]			
 				for cid in assignment.criteria_ids():
-					if cid in student.pointsByCriteria:
-						line+=str(student.pointsByCriteria[cid]) + delimiter
+					if assignment.id in student.pointsByCriteria and cid in student.pointsByCriteria[assignment.id]:
+						line+=str(student.pointsByCriteria[assignment.id][cid]) + delimiter
 					else:
 						line+="" + delimiter
 				line+=(str(points['creation']) + delimiter + 
