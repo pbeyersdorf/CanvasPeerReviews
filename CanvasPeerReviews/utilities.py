@@ -1446,7 +1446,7 @@ def confirmText(msg,prompt="Is the following text ok?"):
 	print(msg  +"\n")
 	val=input("[a] accept or (e) edit?: ")
 	if val=="a" or val=="":
-		return(msg)
+		return msg 
 	else:
 		fileName="temp.txt"
 		f = open(fileName, "w")
@@ -1460,7 +1460,7 @@ def confirmText(msg,prompt="Is the following text ok?"):
 		print(lines)
 		os.remove(fileName)
 		msg="".join(lines)
-		confirmText(prompt,msg)
+		return confirmText(msg, prompt)
 		
 ######################################
 # List all objects in an array and prompt the user to select one.  
