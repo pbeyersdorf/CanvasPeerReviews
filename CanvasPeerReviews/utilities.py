@@ -899,82 +899,85 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
 
-def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
+def regrade(assignmentList=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
 	global status, activeAssignment
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
 		return
-	if assignment==None:
-		val=-1
-		assignmentList=[x for x in assignmentByNumber.values() if (x.graded and not x.regraded)]
-		if len(assignmentList) ==1:
-			assignment=assignmentList[0]
-		else:
-			while not val in assignmentByNumber:
-				for i,a in assignmentByNumber.items():
-					if (a.graded and not a.regraded) or len(assignmentList) ==0:
-						if a.id==lastAssignment.id:
-							print("\t"+str(i)+")",a.name,"<-most recent")
-						else:
-							print("\t"+str(i)+")",a.name)	
-				val=getNum()
-			assignment=assignmentByNumber[val]
-	print("\nRegrading " + assignment.name + "...")
+	if assignmentList==None:
+		assignmentList=[g for g in graded_assignments.values() if g.graded]
+# 		val=-1
+# 		assignmentList=[x for x in assignmentByNumber.values() if (x.graded and not x.regraded)]
+# 		if len(assignmentList) ==1:
+# 			assignment=assignmentList[0]
+# 		else:
+# 			while not val in assignmentByNumber:
+# 				for i,a in assignmentByNumber.items():
+# 					if (a.graded and not a.regraded) or len(assignmentList) ==0:
+# 						if a.id==lastAssignment.id:
+# 							print("\t"+str(i)+")",a.name,"<-most recent")
+# 						else:
+# 							print("\t"+str(i)+")",a.name)	
+# 				val=getNum()
+# 			assignment=assignmentByNumber[val]
+	assignmentList=makeList(assignmentList)
+	for assignment in assignmentList:
+		print("\nRegrading " + assignment.name + "...")
 					
-	regradedStudents=dict()
-	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
-	#make list of students needing a regrade
-	if studentsToGrade.lower()=="all":
-		for i,student in enumerate(makeList(students)):
+		regradedStudents=dict()
+		keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
+		#make list of students needing a regrade
+		if studentsToGrade.lower()=="all":
+			for i,student in enumerate(makeList(students)):
+				for key in student.creations:
+					c = student.creations[key]
+					printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
+					if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
+						if not (assignment.id in student.regrade): 
+							regradedStudents[c.edit().id]=student
+							printLine(student.name + " has a regrade request pending")
+			printLine("",newLine=False)
+		else:
+			for student in makeList(studentsToGrade):
+				for key in student.creations:
+					c = student.creations[key]
+					if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
+						if not (assignment.id in student.regrade):
+							regradedStudents[c.edit().id]=student
+		#process list of students needing a regrade
+		for student_key in regradedStudents:
+			student=regradedStudents[student_key]
 			for key in student.creations:
 				c = student.creations[key]
-				printLine("Checking for a regrade request from " + student.name + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
-				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
-					if not (assignment.id in student.regrade): 
-						regradedStudents[c.edit().id]=student
-						printLine(student.name + " has a regrade request pending")
-		printLine("",newLine=False)
-	else:
-		for student in makeList(studentsToGrade):
-			for key in student.creations:
-				c = student.creations[key]
-				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
-					if not (assignment.id in student.regrade):
-						regradedStudents[c.edit().id]=student
-	#process list of students needing a regrade
-	for student_key in regradedStudents:
-		student=regradedStudents[student_key]
-		for key in student.creations:
-			c = student.creations[key]
-			if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>0:
-				comments=[com['comment'] for com in c.edit().submission_comments if keyword in com['comment'].lower()]
-				#print("regrade requested by " + student.name + "for assignment at: ")
-				previewUrl=c.edit().preview_url.replace("preview=1&","")
-				#webbrowser.open(previewUrl)
-				#print(previewUrl)
-				print("\n---------- " + student.name + " says: ---------- \n")
-				print("\n\n".join(comments[1:])+"\n")
-				#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
-				val="unknwon"
-				while not val in ["i","I","v",""]:
-					val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(I) to ignore it forever\n\t<enter> to accept\n")
-					if val=='i' and assignment.id in student.regrade:
-						student.regrade.pop(assignment.id)
-					if val=='I':
-						student.regrade[assignment.id]="ignore"
-					if val=="v":
-						val="unknwon"
-						print("Enter any regrade info and comments into the web browser")
-						webbrowser.open(previewUrl)
-					if val=="":
-						student.regrade[assignment.id]="Started"
-	print("\n")
-	status["regraded"]=True
-	assignment.regraded=True
-	msg=assignment.name +  " regraded with the following point values:\n"
-	for cid in assignment.criteria_ids():
-		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
-	log(msg,False)
+				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>0:
+					comments=[com['comment'] for com in c.edit().submission_comments if keyword in com['comment'].lower()]
+					#print("regrade requested by " + student.name + "for assignment at: ")
+					previewUrl=c.edit().preview_url.replace("preview=1&","")
+					#webbrowser.open(previewUrl)
+					#print(previewUrl)
+					print("\n---------- " + student.name + " says: ---------- \n")
+					print("\n\n".join(comments[1:])+"\n")
+					#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
+					val="unknwon"
+					while not val in ["i","I","v",""]:
+						val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(I) to ignore it forever\n\t<enter> to accept\n")
+						if val=='i' and assignment.id in student.regrade:
+							student.regrade.pop(assignment.id)
+						if val=='I':
+							student.regrade[assignment.id]="ignore"
+						if val=="v":
+							val="unknwon"
+							print("Enter any regrade info and comments into the web browser")
+							webbrowser.open(previewUrl)
+						if val=="":
+							student.regrade[assignment.id]="Started"
+		print("\n")
+		status["regraded"]=True
+		assignment.regraded=True
+		msg=assignment.name +  " regraded with the following point values:\n"
+		for cid in assignment.criteria_ids():
+			msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
+		log(msg,False)
 
 	getStudentWork(assignment)
 	if (recalibrate):
