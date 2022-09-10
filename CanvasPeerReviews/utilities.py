@@ -550,7 +550,7 @@ def getReviews(creations):
 						if not alreadyProcessed:
 							studentsById[creation.user_id].reviewsReceived.append(review)
 						else: 
-							print("alrady processed")
+							pass
 						if creation.assignment_id in studentsById[creation.user_id].regrade: # replace entry
 							for i,thisReview in enumerate(studentsById[creation.user_id].reviewsReceived):
 								if thisReview.fingerprint() == review.fingerprint() and assessment['assessment_type']=="grading":
@@ -677,6 +677,9 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
+	if status["regraded"]:
+		msg=assignment.name +  " regraded with the following point values:\n"
+	
 	for cid in assignment.criteria_ids():
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
 	msg+="Using the following curve '" + assignment.curve + "'\n"
@@ -910,7 +913,7 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 			while not val in assignmentByNumber:
 				for i,a in assignmentByNumber.items():
 					if (a.graded and not a.regraded) or len(assignmentList) ==0:
-						if a.id==activeAssignment.id:
+						if a.id==lastAssignment.id:
 							print(str(i)+")",a.name,"<-most recent")
 						else:
 							print(str(i)+")",a.name)	
@@ -922,12 +925,15 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
 	#make list of students needing a regrade
 	if studentsToGrade.lower()=="all":
-		for student in makeList(students):
+		for i,student in enumerate(makeList(students)):
 			for key in student.creations:
 				c = student.creations[key]
+				print(("\rChecking for a regrade request from {: <{width}}"+str(i+1)+"/"+str(len(makeList(students)))).format(student.name, width=30),end="")
 				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
-					if not (assignment.id in student.regrade):
+					print("\r"+ student.name + " has requested a regrade                                          ")
+					if not (assignment.id in student.regrade): #xxx
 						regradedStudents[c.edit().id]=student
+		print("\r                                                                           ")
 	else:
 		for student in makeList(studentsToGrade):
 			for key in student.creations:
@@ -943,19 +949,31 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 			c = student.creations[key]
 			if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>0:
 				comments=[com['comment'] for com in c.edit().submission_comments if keyword in com['comment'].lower()]
-				print("regrade requested by " + student.name + "for assignment at: ")
+				#print("regrade requested by " + student.name + "for assignment at: ")
 				previewUrl=c.edit().preview_url.replace("preview=1&","")
-				webbrowser.open(previewUrl)
-				print(previewUrl)
-				print("With comments: " + "\n\n".join(comments[1:]) + "\n")
-				input("Enter any regrade info and comments into the web browser then press enter to continue ")
-	print("done regrading.  updating data...")
+				#webbrowser.open(previewUrl)
+				#print(previewUrl)
+				print("\n---------- " + student.name + " says: ---------- \n")
+				print("\n\n".join(comments[1:])+"\n")
+				#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
+				val=""
+				while not val in ["i","I","v"]:
+					val=input("(v) to view student work (i) to ignore this requdest for now or (I) to ignore it forever: ")
+					if val=='i':
+						student.regrade.pop(assignment.id)
+					if val=='I':
+						student.regrade[assignment.id]="ignore"
+					if val=="v":
+						val=""
+						print("Enter any regrade info and comments into the web browser")
+						webbrowser.open(previewUrl)
+	print("\n")
 	status["regraded"]=True
 	assignment.regraded=True
 	msg=assignment.name +  " regraded with the following point values:\n"
 	for cid in assignment.criteria_ids():
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
-	log(msg)
+	log(msg,False)
 
 	getStudentWork(assignment)
 	if (recalibrate):
@@ -963,15 +981,17 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc)
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
-		student.comments[activeAssignment.id]=student.regradeComments[assignment.id]
-		postGrades(assignment, listOfStudents=[student])
-		student.regrade[assignment.id]="Done"
+		if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
+			print("Posting regrade comments for", student.name, end="\r")
+			student.comments[assignment.id]=student.regradeComments[assignment.id]
+			postGrades(assignment, listOfStudents=[student])
+			student.regrade[assignment.id]="Done"
+	print("                                                                ");
 	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
 	######### Save student data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	
-
 
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated
@@ -1395,11 +1415,8 @@ def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=N
 ######################################
 # Display text and allow the user to accept it or edit it
 def confirmText(msg,prompt="Is the following text ok?"):
-	import subprocess, os
-	print(prompt)
-	print()
-	print(msg)
-	print()
+	print(prompt +"\n")
+	print(msg  +"\n")
 	val=input("[a] accept or (e) edit?: ")
 	if val=="a" or val=="":
 		return(msg)
