@@ -928,13 +928,12 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 		for i,student in enumerate(makeList(students)):
 			for key in student.creations:
 				c = student.creations[key]
-				print(("\rChecking for a regrade request from {: <{width}}"+str(i+1)+"/"+str(len(makeList(students)))).format(student.name, width=30),end="")
+				printLine("Checking for a regrade request from " + student.name + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
 				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
 					if not (assignment.id in student.regrade): 
 						regradedStudents[c.edit().id]=student
-						print("\r    "+ student.name + " has a regrade request pending                                          ")
-
-		clearLine(False)
+						printLine(student.name + " has a regrade request pending")
+		printLine("",newLine=False)
 	else:
 		for student in makeList(studentsToGrade):
 			for key in student.creations:
@@ -984,11 +983,11 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
 		if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
-			print("Posting regrade comments for", student.name, end="\r")
+			printLine("Posting regrade comments for", student.name, newLine=False)
 			student.comments[assignment.id]=student.regradeComments[assignment.id]
 			postGrades(assignment, listOfStudents=[student])
 			student.regrade[assignment.id]="Done"
-	clearLine()
+	printLine()
 	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
 	######### Save student data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
@@ -1015,14 +1014,14 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	for student in listOfStudents:
 		if assignment.id in student.creations:
 			creation=student.creations[assignment.id]
-			print("posting for",student.name, end="\r" )
+			printLine("posting for " + student.name, newLine=False)
 			if postGrades:
 				creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
 			if postComments:
 				creation.edit(comment={'text_comment':student.comments[assignment.id]})
 		else:
-			print("No creation to post for",student.name, end="\r" )
-	clearLine()
+			printLine("No creation to post for " + student.name, newLine=False)
+	printLine()
 	assignment.gradesPosted=True	
 	######### Save assignment data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
@@ -1471,14 +1470,14 @@ def makeList(obj):
 		return	[obj]
 	return obj
 
+
 ######################################
-# clear a line by printing white space
-def clearLine(newLine=True):
+# print a line by printing white space
+def printLine(msg="", newLine=True):
 	if newLine:
-		print("                                                                                ")
+		print("\r{: <{width}}".format(msg, width=80))		
 	else:
-		print("\r                                                                                ")
-		
+		print("\r{: <{width}}".format(msg, width=80),end="")	
 
 ######################################
 # clear a list without redefining it.  Allows it to be kept in global scope
