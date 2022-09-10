@@ -136,7 +136,7 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	if printCommand:
 		print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
 	loadCache()
-	print(status['message'])
+	print(status['message'],end="")
 	getStudents(course)
 	getGradedAssignments(course)
 	lastAssignment =getMostRecentAssignment()
@@ -311,10 +311,12 @@ def assignCalibrationReviews(calibrations="auto"):
 	print("studentsWithSubmissions ->" , len(studentsWithSubmissions))
 
 	calibrations=makeList(calibrations)
-	print("Professor has already graded submissions by")
+	print("Professor has already graded submissions by ", end="")
 	for c in calibrations:
-		print("\t" + c.author.name)
-	
+		if c!=calibrations[-1]:
+			print(c.author.name,end=",")
+		else:
+			print(" and " + c.author.name)			
 	i=0
 	for reviewer in reviewers:
 		tic=time.time()
@@ -324,12 +326,12 @@ def assignCalibrationReviews(calibrations="auto"):
 			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
 		calibration = calibrations[i%len(calibrations)]
-		print(i,"assigning", str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (", studentsById[calibrations[i%len(calibrations)].author_id].sectionName ,") to be reviewed by ", studentsById[reviewer.id].name, "(" ,studentsById[reviewer.id].sectionName , ")" )
+		printLine(str(i)+"assigning" +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (" + studentsById[calibrations[i%len(calibrations)].author_id].sectionName +") to be reviewed by "+ studentsById[reviewer.id].name+ "(" ,studentsById[reviewer.id].sectionName + ")", False )
 		i+=1
 		if (studentsById[calibrations[i%len(calibrations)].author_id].name!=studentsById[reviewer.id].name):
 			calibration.create_submission_peer_review(reviewer.id)
 		else:
-			print("skipping self review")
+			printLine("skipping self review", False)
 		if not calibration.assignment_id in reviewer.reviewCount:
 			reviewer.reviewCount[calibration.assignment_id]=0
 		reviewer.reviewCount[calibration.assignment_id]+=1
@@ -959,11 +961,11 @@ def regrade(assignmentList=None, studentsToGrade="All", reviewGradeFunc=None, re
 					print("\n\n".join(comments[1:])+"\n")
 					#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
 					val="unknwon"
-					while not val in ["i","I","v",""]:
-						val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(I) to ignore it forever\n\t<enter> to accept\n")
+					while not val in ["i","f","v",""]:
+						val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t<enter> to accept\n")
 						if val=='i' and assignment.id in student.regrade:
 							student.regrade.pop(assignment.id)
-						if val=='I':
+						if val=='f':
 							student.regrade[assignment.id]="ignore"
 						if val=="v":
 							val="unknwon"
@@ -1277,18 +1279,23 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	if saveToFile:
 		f.close()
 		
+
 ######################################
-# Select students to be assigned as graders
-def assignGraders():
+# view students that are as graders
+def viewGraders():
 	listOfGraders=[s for s in students if s.role=='grader']
 	if len(listOfGraders) > 0:
 		print("\nCurrent graders are ")
 		for g in listOfGraders:
 			print("\t"+g.name)
-		print("is this ok? ")
 	else:
-		print("The class has no graders, is this ok? ")
-	if confirm():
+		print("The class has no graders.")
+######################################
+# Select students to be assigned as graders
+def assignGraders():
+	listOfGraders=[s for s in students if s.role=='grader']
+	viewGraders()
+	if confirm("is this ok? "):
 		######### Save student data for future sessions #########	
 		with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
 			pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
