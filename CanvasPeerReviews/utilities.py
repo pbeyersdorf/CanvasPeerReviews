@@ -914,12 +914,12 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 				for i,a in assignmentByNumber.items():
 					if (a.graded and not a.regraded) or len(assignmentList) ==0:
 						if a.id==lastAssignment.id:
-							print(str(i)+")",a.name,"<-most recent")
+							print("\t"+str(i)+")",a.name,"<-most recent")
 						else:
-							print(str(i)+")",a.name)	
+							print("\t"+str(i)+")",a.name)	
 				val=getNum()
 			assignment=assignmentByNumber[val]
-	print("Regrading " + assignment.name + "...")
+	print("\nRegrading " + assignment.name + "...")
 					
 	regradedStudents=dict()
 	keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
@@ -930,10 +930,11 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 				c = student.creations[key]
 				print(("\rChecking for a regrade request from {: <{width}}"+str(i+1)+"/"+str(len(makeList(students)))).format(student.name, width=30),end="")
 				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
-					print("\r"+ student.name + " has requested a regrade                                          ")
-					if not (assignment.id in student.regrade): #xxx
+					if not (assignment.id in student.regrade): 
 						regradedStudents[c.edit().id]=student
-		print("\r                                                                           ")
+						print("\r    "+ student.name + " has a regrade request pending                                          ")
+
+		clearLine(False)
 	else:
 		for student in makeList(studentsToGrade):
 			for key in student.creations:
@@ -944,7 +945,6 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 	#process list of students needing a regrade
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
-		student.regrade[assignment.id]="Started"
 		for key in student.creations:
 			c = student.creations[key]
 			if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>0:
@@ -956,17 +956,19 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 				print("\n---------- " + student.name + " says: ---------- \n")
 				print("\n\n".join(comments[1:])+"\n")
 				#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
-				val=""
-				while not val in ["i","I","v"]:
-					val=input("(v) to view student work (i) to ignore this requdest for now or (I) to ignore it forever: ")
-					if val=='i':
+				val="unknwon"
+				while not val in ["i","I","v",""]:
+					val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(I) to ignore it forever\n\t<enter> to accept\n")
+					if val=='i' and assignment.id in student.regrade:
 						student.regrade.pop(assignment.id)
 					if val=='I':
 						student.regrade[assignment.id]="ignore"
 					if val=="v":
-						val=""
+						val="unknwon"
 						print("Enter any regrade info and comments into the web browser")
 						webbrowser.open(previewUrl)
+					if val=="":
+						student.regrade[assignment.id]="Started"
 	print("\n")
 	status["regraded"]=True
 	assignment.regraded=True
@@ -986,12 +988,13 @@ def regrade(assignment=None, studentsToGrade="All", reviewGradeFunc=None, recali
 			student.comments[assignment.id]=student.regradeComments[assignment.id]
 			postGrades(assignment, listOfStudents=[student])
 			student.regrade[assignment.id]="Done"
-	print("                                                                ");
+	clearLine()
 	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
 	######### Save student data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	
+
 
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated
@@ -1012,13 +1015,14 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	for student in listOfStudents:
 		if assignment.id in student.creations:
 			creation=student.creations[assignment.id]
-			print("posting for",student.name )
+			print("posting for",student.name, end="\r" )
 			if postGrades:
 				creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
 			if postComments:
 				creation.edit(comment={'text_comment':student.comments[assignment.id]})
 		else:
-			print("No creation to post for",student.name )
+			print("No creation to post for",student.name, end="\r" )
+	clearLine()
 	assignment.gradesPosted=True	
 	######### Save assignment data for future sessions #########	
 	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
@@ -1466,6 +1470,15 @@ def makeList(obj):
 	if not type(obj) == list:
 		return	[obj]
 	return obj
+
+######################################
+# clear a line by printing white space
+def clearLine(newLine=True):
+	if newLine:
+		print("                                                                                ")
+	else:
+		print("\r                                                                                ")
+		
 
 ######################################
 # clear a list without redefining it.  Allows it to be kept in global scope
