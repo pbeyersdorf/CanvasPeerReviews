@@ -1527,7 +1527,10 @@ def inputWithTimeout(prompt, timeout):
 			if not stopFlag:
 				msg1=str(i)+msg[len(str(i)):]
 				print("\r"+msg1, end="")
-				time.sleep(1)
+				for j in range(100):
+					if not stopFlag:
+						time.sleep(0.01)
+			printLine("",False)
 	def alarm_handler(signum, frame):
 		raise TimeoutExpired
 	msg=" "*len(str(timeout)) + " " + prompt + ": "
@@ -1549,10 +1552,12 @@ def inputWithTimeout(prompt, timeout):
 ######################################
 # print a line by printing white space
 def printLine(msg="", newLine=True):
+	size=os.get_terminal_size()
+	cols=size.columns
 	if newLine:
-		print("\r{: <{width}}".format(msg, width=80))		
+		print("\r{: <{width}}".format(msg, width=cols))		
 	else:
-		print("\r{: <{width}}".format(msg, width=80),end="")	
+		print("\r{: <{width}}".format(msg, width=cols),end="")	
 
 ######################################
 # clear a list without redefining it.  Allows it to be kept in global scope
