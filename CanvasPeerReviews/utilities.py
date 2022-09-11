@@ -346,6 +346,10 @@ def assignCalibrationReviews(calibrations="auto"):
 			reviewer.reviewCount[calibration.assignment_id]=0
 		reviewer.reviewCount[calibration.assignment_id]+=1
 		calibration.reviewCount+=1
+	######### Save student data for future sessions #########	
+	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 	
 ######################################
 # Takes a student submission and a list of potential reviewers, and the number of reviews 
@@ -354,7 +358,7 @@ def assignCalibrationReviews(calibrations="auto"):
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
 #xxx need to ensure reviews are assigned to students in the same section
-def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999, append=True):
+def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999):
 	startTime=time.time()
 
 	global status
@@ -364,7 +368,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	elif not status['gotStudentsWork']:
 		getStudentWork()
 		
-	countAssignedReviews(creationsToConsider, append=append)
+	countAssignedReviews(creationsToConsider)
 	creationList=makeList(creationsToConsider)
 	#countAssignedReviews(creationList) #is this necessary?
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
@@ -421,6 +425,9 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 					reviewer.reviewCount[creation.assignment_id]+=1
 					creation.graderReviewCount+=1
 					print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+	######### Save student data for future sessions #########	
+	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	
 			
 ######################################
@@ -496,27 +503,26 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 
 # ######################################
 # Count how many reviews have been assigned to each student using data from Canvas
-def countAssignedReviews(creations, append=True):
+def countAssignedReviews(creations):
 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
 	global students
 	creations=makeList(creations)
 	#for student in students:
 	#	clearList(student.reviewCount)
 	print("commented out lines 487-488 in utilites that clears the student reviewcount")
-	if append:
-		print("Checking how many peer reviews each students has already been assigned...")
-		for i,creation in enumerate(creations):
-			printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + creation.author.name, False)
-			for thesePeerReviews in creation.get_submission_peer_reviews():
-				if thesePeerReviews.assessor_id in studentsById:
-					reviewer=studentsById[thesePeerReviews.assessor_id]
-					if not creation.assignment_id in reviewer.reviewCount:
-						reviewer.reviewCount[creation.assignment_id]=0				
-					reviewer.reviewCount[creation.assignment_id]+=1	
-		printLine("",False)
-	else:
+	if not append: # reset the count
 		for student in students:
-			student.reviewCount[creations[0].assignment_id]=0
+			student.reviewCount[creations[0].assignment_id]=0	
+	print("Checking how many peer reviews each students has already been assigned...")
+	for i,creation in enumerate(creations):
+		printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + creation.author.name, False)
+		for thesePeerReviews in creation.get_submission_peer_reviews():
+			if thesePeerReviews.assessor_id in studentsById:
+				reviewer=studentsById[thesePeerReviews.assessor_id]
+				if not creation.assignment_id in reviewer.reviewCount:
+					reviewer.reviewCount[creation.assignment_id]=0				
+				reviewer.reviewCount[creation.assignment_id]+=1	
+	printLine("",False)
 	
 ######################################
 # create a text summary of a review
@@ -715,7 +721,7 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 
 ######################################
 # Check for any work that is unreviewed.
-def checkForUnreviewed(assignment):
+def checkForUnreviewed(assignment, openPage=False):
 	unreviewedCreations=[]
 	for creation in creations:
 		student=creation.author
@@ -737,7 +743,8 @@ def checkForUnreviewed(assignment):
 			f.write("<li><a href='"+ url +"' target='_blank'> " + creation.author.name + "'s creation</a>\n")
 		f.write("</ul></body></html>\n")
 		f.close()
-		subprocess.call(('open', fileName))
+		if openPage:
+			subprocess.call(('open', fileName))
 	return unreviewedCreations
 
 
