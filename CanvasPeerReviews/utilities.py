@@ -1516,8 +1516,36 @@ def makeList(obj):
 	if not type(obj) == list:
 		return	[obj]
 	return obj
-
-
+######################################
+# Prompt for user input, but give up after a timeout
+def inputWithTimeout(prompt, timeout):
+	import signal, threading
+	stopFlag=False
+	def countdown(n, prompt):
+		msg=" "*len(str(n)) + " " + prompt + ": "
+		for i in range(n,0,-1):
+			if not stopFlag:
+				msg1=str(i)+msg[len(str(i)):]
+				print("\r"+msg1, end="")
+				time.sleep(1)
+	def alarm_handler(signum, frame):
+		raise TimeoutExpired
+	msg=" "*len(str(timeout)) + " " + prompt + ": "
+	new_thread = threading.Thread(target=countdown, args=(timeout,prompt))
+	new_thread.start()	
+	signal.signal(signal.SIGALRM, alarm_handler)
+	signal.alarm(timeout) # produce SIGALRM in `timeout` seconds
+	try:
+		val= input()
+		stopFlag=True
+		return val
+	except:
+		printLine("",False)
+		print("\r", end="")
+	finally:
+		signal.alarm(0) # cancel alarm
+	return None
+	
 ######################################
 # print a line by printing white space
 def printLine(msg="", newLine=True):
