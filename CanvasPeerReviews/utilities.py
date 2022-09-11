@@ -510,9 +510,8 @@ def countAssignedReviews(creations):
 	#for student in students:
 	#	clearList(student.reviewCount)
 	print("commented out lines 487-488 in utilites that clears the student reviewcount")
-	if not append: # reset the count
-		for student in students:
-			student.reviewCount[creations[0].assignment_id]=0	
+	for student in students:
+		student.reviewCount[creations[0].assignment_id]=0	
 	print("Checking how many peer reviews each students has already been assigned...")
 	for i,creation in enumerate(creations):
 		printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + creation.author.name, False)
@@ -1537,3 +1536,10 @@ def clearList(lst):
 		while lst:
 			lst.popitem()
 
+# def detectKeyPress(key=' ',duration=1):
+# 	import keyboard, time
+# 	start=time.time()
+# 	keypress=False
+# 	while time.time()-start < duration:
+# 		keypress = keypress or keyboard.is_pressed(key)
+# 	return keypress
