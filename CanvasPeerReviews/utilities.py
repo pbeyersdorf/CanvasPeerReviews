@@ -76,15 +76,17 @@ def loadCache():
 	try:
 		with open( status['dataDir'] +status['prefix']+'students.pkl', 'rb') as handle:
 			students=pickle.load(handle)
+		status['students']="loaded"
 		status['message']+="Loaded student data\n"
 	except:
+		status['students']="not loaded"
 		status['message']+="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +status['prefix']+'assignments.pkl', 'rb') as handle:
 			graded_assignments=pickle.load(handle)
-		status['message']="Loaded assginment data\n"
+		status['message']+="Loaded assginment data\n"
 	except:
-		status['message']="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
+		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
 		with open(status['dataDir'] +status['prefix']+'parameters.pkl', 'rb') as handle:
 			params = pickle.load(handle)
@@ -137,9 +139,13 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	if printCommand:
 		print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
 	loadCache()
-	print(status['message'],end="")
+	#print(status['message'],end="")
+	printLine(status['message'],False)
+	printLine("Getting students",False)
 	getStudents(course)
+	printLine("Getting assignments",False)
 	getGradedAssignments(course)
+
 	lastAssignment =getMostRecentAssignment()
 	for student in students:
 		sections[student.section]=student.sectionName
@@ -151,8 +157,10 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 # Record what section a student is in
 # 
 def assignSections(students):
-	for section in course.get_sections():
-		for user in section.get_enrollments():
+	sections=course.get_sections()
+	for section in sections:
+		sectionUsers=section.get_enrollments()
+		for user in sectionUsers:
 			for student in students:
 				if user.user_id == student.id:
 					student.section=section.id
@@ -190,7 +198,8 @@ def getStudentWork(thisAssignment='last'):
 			if not submission.missing:
 				creations.append(Creation(submission))
 				studentsById[submission.user_id].creations[thisAssignment.id]=creations[-1]
-				creationsByAuthorId[submission.user_id]=creations[-1]			
+				creationsByAuthorId[submission.user_id]=creations[-1]
+				printLine("Getting submission of " + studentsById[submission.user_id].name ,False)
 		except:
 			status['err']="key error"
 	getReviews(creations)
@@ -436,7 +445,13 @@ def getStudents(course):
 
 	#studentsById[4445567]="Test Student"	
 	status["gotStudents"]=True
-	assignSections(students)
+	needToGetSections=False
+	for student in students:
+		needToGetSections=needToGetSections or student.section==0
+	if 	needToGetSections:	
+		printLine("Looking up which section each student is in", False)
+		assignSections(students)
+
 	return students
 	
 	
@@ -490,13 +505,15 @@ def countAssignedReviews(creations, append=True):
 	print("commented out lines 487-488 in utilites that clears the student reviewcount")
 	if append:
 		print("Checking how many peer reviews each students has already been assigned...")
-		for creation in creations:
+		for i,creation in enumerate(creations):
+			printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + creation.author.name, False)
 			for thesePeerReviews in creation.get_submission_peer_reviews():
 				if thesePeerReviews.assessor_id in studentsById:
 					reviewer=studentsById[thesePeerReviews.assessor_id]
 					if not creation.assignment_id in reviewer.reviewCount:
 						reviewer.reviewCount[creation.assignment_id]=0				
 					reviewer.reviewCount[creation.assignment_id]+=1	
+		printLine("",False)
 	else:
 		for student in students:
 			student.reviewCount[creations[0].assignment_id]=0
