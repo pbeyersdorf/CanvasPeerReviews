@@ -1407,10 +1407,13 @@ def announce(subject, body, section="all"):
 
 ######################################
 # Send a canvas message to a student or list of students.		
-def message(theStudents, theBody, theSubject='', display=False):
+def message(theStudents, body, subject='', display=False):
 	studentList=makeList(theStudents)
 	for student in studentList:
-		canvas.create_conversation(student.id, body=theBody, subject=theSubject)
+		try:
+			canvas.create_conversation(student.id, body=body, subject=subject)
+		except:
+			print("error messaging " ,student.name, ".  Perhaps the student dropped." )
 		if display:
 			print("messaging " +  student.name)
 			
@@ -1531,6 +1534,7 @@ def inputWithTimeout(prompt, timeout):
 					if not stopFlag:
 						time.sleep(0.01)
 			printLine("",False)
+		print("\r",end="")
 	def alarm_handler(signum, frame):
 		raise TimeoutExpired
 	msg=" "*len(str(timeout)) + " " + prompt + ": "
@@ -1541,6 +1545,9 @@ def inputWithTimeout(prompt, timeout):
 	try:
 		val= input()
 		stopFlag=True
+		printLine("",False)
+		print("\r", end="")
+		time.sleep(0.1)
 		return val
 	except:
 		printLine("",False)
