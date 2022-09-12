@@ -8,7 +8,7 @@ class Student:
 		self.creations=dict()
 		self.rms_deviation_by_category=dict()
 		self.deviation_by_category=dict()
-		#self.number_of_reviews=0
+		self.reviewsReceivedBy=dict()
 		self.reviewsGiven=dict()
 		self.reviewsReceived=[]
 		self.gradingPower = dict()
@@ -46,10 +46,6 @@ class Student:
 		if not cid in self.deviation_by_category:
 			return 0
 		return self.deviation_by_category[cid]
-
-
-		
-
 
 	def getGradingPowerNormalizatoinFactor(self, cid):
 		try:
@@ -113,5 +109,12 @@ class Student:
 			if review.assignment_id == assignment_id:
 				relevantReviews[review.submission_id]=True
 		return len(relevantReviews)
+
+	def numberOfReviewsReceivedOnAssignment(self, assignment_id):
+		count=0
+		for review in self.reviewsReceived:
+			if review.assignment_id == assignment_id:
+				count+=1
+		return count
 			
 			

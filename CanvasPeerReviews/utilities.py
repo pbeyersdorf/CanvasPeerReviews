@@ -723,39 +723,39 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 def checkForUnreviewed(assignment, openPage=False):
 	unreviewedCreations=[]
 	singlyReviewedCreations=[]
+	mostNumberOfReviewsReceived=0
 	for creation in creations:
-		student=creation.author
-		#creationWasReviewed=False
-		creationsReviewCount=0
-		for review in student.reviewsReceived:
-			if review.assignment_id == assignment.id:
-				creationsReviewCount+=1
-				#creationWasReviewed=True
-		if creation.author.role == 'student':
-			if (creationsReviewCount==0):
-				unreviewedCreations.append(creation)
-			elif (creationsReviewCount==1):
-				singlyReviewedCreations.append(creation)
+		student=creation.author	
+		mostNumberOfReviewsReceived=max(mostNumberOfReviewsReceived,student.numberOfReviewsReceivedOnAssignment(assignment.id))
+
+	creationsByNumberOfReviews=[0]*(mostNumberOfReviewsReceived+1)
+	for n in range(mostNumberOfReviewsReceived+1):
+		creationsByNumberOfReviews[n]=[c for c in creations if c.author.numberOfReviewsReceivedOnAssignment(assignment.id)==n and c.author.role=='student']
 				
-	if len(unreviewedCreations)==0 and len(singlyReviewedCreations)==0:
+	if len(creationsByNumberOfReviews[0])==0 and len(creationsByNumberOfReviews[1])==0:
 		print("All creations have been reviewed at least twice")
 	else:
-		if len(unreviewedCreations)==0 :
+		if len(creationsByNumberOfReviews[0])==0 :
 			print("All creations have been reviewed at least once")
 		fileName=status['dataDir'] + assignment.name + "_todo.html"
 		f = open(fileName, "w")
 		f.write("<html><head><title>Submissions with few reviews</title></head><body>\n")
 		f.write("<h3>Submissions for "+assignment.name+" with few reviews:</h3>\n<ul>\n")
-		f.write("<table border='1'><tr><th>Unreviewed (" + str(len(unreviewedCreations))+  ")</th><th>Only 1 review (" + str(len(singlyReviewedCreations))+  ")</th></tr>\n")
-		f.write("<tr><td>\n")
-		for creation in unreviewedCreations:
-			url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-			f.write("<li><a href='"+ url +"' target='_blank'> " + creation.author.name + "'s creation</a><br>\n")
-		f.write("</td><td>\n")
-		for creation in singlyReviewedCreations:
-			url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-			f.write("<a href='"+ url +"' target='_blank'> " + creation.author.name + "'s creation</a><br>\n")
-		f.write("</td></tr></table>\n")
+		f.write("<table border='1'><tr>")
+		for n in range(mostNumberOfReviewsReceived+1):
+			if n==1:
+				f.write("<th>" +str(n)+" review (" + str(len(creationsByNumberOfReviews[n]))+  ")</th>")
+			else:
+				f.write("<th>" +str(n)+" reviews (" + str(len(creationsByNumberOfReviews[n]))+  ")</th>")
+		f.write("</tr>\n")
+
+		for n in range(mostNumberOfReviewsReceived+1):
+			f.write("<td style='vertical-align:top; white-space: nowrap;'>")
+			for creation in creationsByNumberOfReviews[n]:
+				url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
+				f.write("<a href='"+ url +"' target='_blank'> " + creation.author.name + "</a><br>\n")
+			f.write("</td>\n")
+		f.write("</tr></table>\n")
 		f.write("</ul></body></html>\n")
 		f.close()
 		if openPage:
