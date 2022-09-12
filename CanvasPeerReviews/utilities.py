@@ -1534,16 +1534,9 @@ def formatWithBoldOptions(prompt):
 	return result	
 	
 ######################################
-# Make any single char between parenthesis reversed (and get rid of paranethesis
-def formatWithReverseOptions(prompt):
-	stringsToReplace=[]
-	for i in range(len(prompt)-2):
-		if prompt[i]=="(" and prompt[i+2]==")":
-			stringsToReplace.append(prompt[i:i+3])
-	result=prompt
-	for searchString in stringsToReplace:
-		result=result.replace(searchString, "\033[7m" + searchString[1] + "\033[0m")
-	return result		
+# format text to print reversed on a terminal
+def reverseText(msg):
+	return  "\033[7m" + msg + "\033[0m"		
 	
 ######################################
 # Prompt for user input, but give up after a timeout
@@ -1555,7 +1548,7 @@ def inputWithTimeout(prompt, timeout):
 		msg=" "*len(str(n)) + " " + prompt + ": "
 		for i in range(n,0,-1):
 			if not stopFlag:
-				msg1=str(i)+msg[len(str(i)):]
+				msg1= reverseText(str(i))  +msg[len(str(i)):]
 				print("\r"+msg1, end="")
 				for j in range(100):
 					if not stopFlag:
