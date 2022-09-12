@@ -1433,6 +1433,7 @@ def readCSV(fileName=None):
 ######################################
 # Prompt the user for a response and confirm their response before returning it.
 def confirm(msg="", requireResponse=False):
+	msg=formatWithBoldOptions(msg)
 	confirmationResponse=""
 	if not requireResponse:
 		print(msg)
@@ -1519,10 +1520,24 @@ def makeList(obj):
 	if not type(obj) == list:
 		return	[obj]
 	return obj
+	
+######################################
+# Make any single char between parenthesis bold
+def formatWithBoldOptions(prompt):
+	stringsToReplace=[]
+	for i in range(len(prompt)-2):
+		if prompt[i]=="(" and prompt[i+2]==")":
+			stringsToReplace.append(prompt[i:i+3])
+	result=prompt
+	for searchString in stringsToReplace:
+		result=result.replace(searchString,"(" + "\033[1m" + searchString[1] + "\033[0m" +")")
+	return result	
+	
 ######################################
 # Prompt for user input, but give up after a timeout
 def inputWithTimeout(prompt, timeout):
 	import signal, threading
+	prompt=formatWithBoldOptions(prompt)
 	stopFlag=False
 	def countdown(n, prompt):
 		msg=" "*len(str(n)) + " " + prompt + ": "
