@@ -722,24 +722,40 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 # Check for any work that is unreviewed.
 def checkForUnreviewed(assignment, openPage=False):
 	unreviewedCreations=[]
+	singlyReviewedCreations=[]
 	for creation in creations:
 		student=creation.author
-		creationWasReviewed=False
+		#creationWasReviewed=False
+		creationsReviewCount=0
 		for review in student.reviewsReceived:
 			if review.assignment_id == assignment.id:
-				creationWasReviewed=True
-		if (not creationWasReviewed) and (creation.author.role == 'student'):
-			unreviewedCreations.append(creation)
-	if len(unreviewedCreations)==0:
-		print("All creations have been reviewed")
+				creationsReviewCount+=1
+				#creationWasReviewed=True
+		if creation.author.role == 'student':
+			if (creationsReviewCount==0):
+				unreviewedCreations.append(creation)
+			elif (creationsReviewCount==1):
+				singlyReviewedCreations.append(creation)
+				
+	if len(unreviewedCreations)==0 and len(singlyReviewedCreations)==0:
+		print("All creations have been reviewed at least twice")
 	else:
+		if len(unreviewedCreations)==0 :
+			print("All creations have been reviewed at least once")
 		fileName=status['dataDir'] + assignment.name + "_todo.html"
 		f = open(fileName, "w")
-		f.write("<html><head><title>Unreviewed Submissions</title></head><body>\n")
-		f.write("<h3>" +str(len(unreviewedCreations))+ " Unreviewed Submissions for "+assignment.name+":</h3>\n<ul>\n")
+		f.write("<html><head><title>Submissions with few reviews</title></head><body>\n")
+		f.write("<h3>Submissions for "+assignment.name+" with few reviews:</h3>\n<ul>\n")
+		f.write("<table border='1'><tr><th>Unreviewed (" + str(len(unreviewedCreations))+  ")</th><th>Only 1 review (" + str(len(singlyReviewedCreations))+  ")</th></tr>\n")
+		f.write("<tr><td>\n")
 		for creation in unreviewedCreations:
 			url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-			f.write("<li><a href='"+ url +"' target='_blank'> " + creation.author.name + "'s creation</a>\n")
+			f.write("<li><a href='"+ url +"' target='_blank'> " + creation.author.name + "'s creation</a><br>\n")
+		f.write("</td><td>\n")
+		for creation in singlyReviewedCreations:
+			url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
+			f.write("<a href='"+ url +"' target='_blank'> " + creation.author.name + "'s creation</a><br>\n")
+		f.write("</td></tr></table>\n")
 		f.write("</ul></body></html>\n")
 		f.close()
 		if openPage:
