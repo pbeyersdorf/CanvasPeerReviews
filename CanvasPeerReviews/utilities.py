@@ -531,7 +531,7 @@ def reviewSummary(assessment, display=False):
 		print("Review of " + str(assessment['artifact_id']) + " by " +studentsById[assessment['assessor_id']].name+ "\n")
 	msg=""
 	#get comments on each learning outcome
-	for d in assessment['data']:
+	for d in assessment.data:
 		msg+="\t" + criteriaDescription[d['criterion_id']] 
 		try:
 			msg+=" [" + str(d['points']) + "]"
@@ -544,9 +544,9 @@ def reviewSummary(assessment, display=False):
 		msg+="\n"
 	#get general comments on the submission
 	
-	c=[c for c in creations if c.id==assessment['artifact_id']][0]
+	c=[c for c in creations if c.id==assessment.submission_id][0]
 	ce=c.edit()
-	comments=[comment_item['comment'] for comment_item in ce.submission_comments if comment_item['author_id']==assessment['assessor_id']]
+	comments=[comment_item['comment'] for comment_item in ce.submission_comments if comment_item['author_id']==assessment.reviewer_id]
 	for comment in comments:
 		msg+=comment+"\n"
 	if display:
@@ -720,9 +720,8 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 
 ######################################
 # Check for any work that is unreviewed.
-def checkForUnreviewed(assignment, openPage=False):
-	unreviewedCreations=[]
-	singlyReviewedCreations=[]
+def checkForUnreviewed(assignment, openPage=False):	
+	graderIDs=[x.id for x in students if x.role=='grader']
 	mostNumberOfReviewsReceived=0
 	for creation in creations:
 		student=creation.author	
@@ -752,15 +751,27 @@ def checkForUnreviewed(assignment, openPage=False):
 		for n in range(mostNumberOfReviewsReceived+1):
 			f.write("<td style='vertical-align:top; white-space: nowrap;'>")
 			for creation in creationsByNumberOfReviews[n]:
+				gradedByInstructor=len([r for r in creation.author.reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
+				gradedByGrader=len([r for r in creation.author.reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
 				url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-				f.write("<a href='"+ url +"' target='_blank'> " + creation.author.name + "</a><br>\n")
+				f.write("<a href='"+ url +"' target='_blank' style='")
+				if (gradedByInstructor):
+					f.write("color: blue;")
+				elif gradedByGrader:
+					f.write("color: green;")
+				else:
+					f.write("color: red;")			
+				f.write( "'> "+creation.author.name + "</a><br>\n")
 			f.write("</td>\n")
 		f.write("</tr></table>\n")
+		f.write("<span style='color: blue;'>Graded by instructor</span> | ")
+		f.write("<span style='color: green;'>Graded by grader</span> | ")
+		f.write("<span style='color: red;'>Only graded by peers</span>\n")
 		f.write("</ul></body></html>\n")
 		f.close()
 		if openPage:
 			subprocess.call(('open', fileName))
-	return unreviewedCreations
+	return creationsByNumberOfReviews[0]
 
 
 ######################################
@@ -1560,36 +1571,47 @@ def inputWithTimeout(prompt, timeout):
 	import signal, threading
 	prompt=formatWithBoldOptions(prompt)
 	stopFlag=False
-	def countdown(n, prompt):
-		msg=" "*len(str(n)) + " " + prompt + ": "
-		for i in range(n,0,-1):
-			if not stopFlag:
-				msg1= reverseText(str(i))  +msg[len(str(i)):]
-				print("\r"+msg1, end="")
-				for j in range(100):
-					if not stopFlag:
-						time.sleep(0.01)
-			printLine("",False)
-		print("\r",end="")
+	class Countdown:
+		def __init__(self):
+			self._running=True
+		
+		def terminate(self):
+			self._running = False
+	
+		def run(self,n, prompt):
+			msg=" "*len(str(n)) + " " + prompt + ": "
+			for i in range(n,0,-1):
+				if self._running:
+					msg1= reverseText(str(i))  +msg[len(str(i)):]
+					print("\r"+msg1, end="")
+					for j in range(100):
+						if self._running:
+							time.sleep(0.01)
+				printLine("",False)
+			print("\r",end="")
+			
 	def alarm_handler(signum, frame):
 		raise TimeoutExpired
 	msg=" "*len(str(timeout)) + " " + prompt + ": "
-	new_thread = threading.Thread(target=countdown, args=(timeout,prompt))
+	cnt=Countdown()
+	new_thread = threading.Thread(target=cnt.run, args=(timeout,prompt))
 	new_thread.start()	
 	signal.signal(signal.SIGALRM, alarm_handler)
 	signal.alarm(timeout) # produce SIGALRM in `timeout` seconds
 	try:
 		val= input()
-		stopFlag=True
+		cnt.terminate()
 		printLine("",False)
 		print("\r", end="")
 		time.sleep(0.1)
+		signal.alarm(0)
 		return val
 	except:
 		printLine("",False)
 		print("\r", end="")
-	finally:
-		signal.alarm(0) # cancel alarm
+	signal.alarm(0)
+	cnt.terminate()
+	time.sleep(0.1)
 	return None
 	
 ######################################
