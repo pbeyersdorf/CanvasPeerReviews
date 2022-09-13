@@ -738,14 +738,24 @@ def checkForUnreviewed(assignment, openPage=False):
 			print("All creations have been reviewed at least once")
 		fileName=status['dataDir'] + assignment.name + "_todo.html"
 		f = open(fileName, "w")
-		f.write('''<html><head>
-		<title>Submissions by number of completed reviews</title>
-		<style>
-		.instructor {color: blue;}
-		.grader {color: green;}
-		.student {color: black;}
-		</style>
-		</head><body>\n''')
+		f.write("<html><head><title>Submissions by number of completed reviews</title><style>\n")
+		f.write(".instructor {color: blue;}\n.grader {color: green;}\n.student {color: black;}\n")
+		f.write("a {text-decoration:none}\n")
+		f.write("a.instructor:link {color: #0000ff;}\n")
+		f.write("a.instructor:hover {color: #440044;}\n")
+		#f.write("a.instructor:visited {text-decoration:line-through;}\n")
+		f.write("a.grader:link {color: #008000;}\n")
+		f.write("a.grader:hover {color: #440044;}\n")
+		#f.write("a.grader:visited {text-decoration:line-through;}\n")
+		f.write("a.student:link {color: #000000;}\n")
+		f.write("a.student:hover {color: #440044;}\n")
+		#f.write("a.student:visited {text-decoration:line-through;}\n")
+		colors = ["#ffeeee", "#eeeeff"]		
+		ind=0
+		for key in sections:
+			ind=(ind+1)%len(colors)
+			#f.write(".sec"+sections[key][-2:] + "{background-color : " + colors[ind] +";}") 
+		f.write("</style></head><body>\n")
 		f.write("<h3>Submissions for "+assignment.name+" by number of completed reviews:</h3>\n<ul>\n")
 		f.write("<span class='instructor'>Graded by instructor</span> | ")
 		f.write("<span class='grader'>Graded by grader</span> | ")
@@ -761,18 +771,27 @@ def checkForUnreviewed(assignment, openPage=False):
 
 		for n in range(mostNumberOfReviewsReceived+1):
 			f.write("<td style='vertical-align:top; white-space: nowrap;'>")
-			for creation in creationsByNumberOfReviews[n]:
-				gradedByInstructor=len([r for r in creation.author.reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
-				gradedByGrader=len([r for r in creation.author.reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
-				url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-				f.write("<a href='"+ url +"' target='_blank' class='")
-				if (gradedByInstructor):
-					f.write("instructor")
-				elif gradedByGrader:
-					f.write("grader")
-				else:
-					f.write("student")			
-				f.write( "'> "+creation.author.name + "</a><br>\n")
+			for section in sorted(list(sections.values())):
+				if (len(sections)>1):
+					f.write("<hr>")
+					f.write("<div class='sec"+section[-2:]+"'>")
+					#f.write("Sec "+str(int(section[-2:]))  +"<br>"")
+				for creation in creationsByNumberOfReviews[n]:
+					gradedByInstructor=len([r for r in creation.author.reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
+					gradedByGrader=len([r for r in creation.author.reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
+					if creation.author.sectionName == section:
+						url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
+						f.write("<a href='"+ url +"' target='_blank' class='")
+						if (gradedByInstructor):
+							f.write("instructor")
+						elif gradedByGrader:
+							f.write("grader")
+						else:
+							f.write("student")			
+						f.write( "'> "+creation.author.name + "</a><br>\n")
+				if (len(sections)>1):
+					f.write("</div>")
+
 			f.write("</td>\n")
 		f.write("</tr></table>\n")
 		f.write("</ul></body></html>\n")
