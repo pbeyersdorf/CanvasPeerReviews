@@ -999,20 +999,6 @@ def regrade(assignmentList=None, studentsToGrade="All", reviewGradeFunc=None, re
 		return
 	if assignmentList==None:
 		assignmentList=[g for g in graded_assignments.values() if g.graded]
-# 		val=-1
-# 		assignmentList=[x for x in assignmentByNumber.values() if (x.graded and not x.regraded)]
-# 		if len(assignmentList) ==1:
-# 			assignment=assignmentList[0]
-# 		else:
-# 			while not val in assignmentByNumber:
-# 				for i,a in assignmentByNumber.items():
-# 					if (a.graded and not a.regraded) or len(assignmentList) ==0:
-# 						if a.id==lastAssignment.id:
-# 							print("\t"+str(i)+")",a.name,"<-most recent")
-# 						else:
-# 							print("\t"+str(i)+")",a.name)	
-# 				val=getNum()
-# 			assignment=assignmentByNumber[val]
 	assignmentList=makeList(assignmentList)
 	for assignment in assignmentList:
 		print("\nRegrading " + assignment.name + "...")

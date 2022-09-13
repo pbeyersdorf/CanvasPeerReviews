@@ -30,6 +30,7 @@ class Student:
 		self.role="student"
 		self.section=0
 		self.sectionName="unknown"
+		self._maxGradingPower=10
 
 					
 	def getGradingPower(self,cid):
@@ -40,7 +41,7 @@ class Student:
 			return 1
 		if (self.gradingPower[cid]==1):
 			return 1
-		return min(10,self.gradingPower[cid]/self.gradingPowerNormalizatoinFactor[cid])
+		return min(self._maxGradingPower,self.gradingPower[cid]/self.gradingPowerNormalizatoinFactor[cid])
 
 	def getDeviation(self,cid):
 		if not cid in self.deviation_by_category:
@@ -67,7 +68,7 @@ class Student:
 						self.deviation_by_category[cid] =0
 					else:	
 						self.deviation_by_category[cid] = (self.delta[cid] / self.numberOfComparisons[cid])
-					self.gradingPower[cid]=(1.0/self.rms_deviation_by_category[cid]**2)/self.getGradingPowerNormalizatoinFactor(cid)
+					self.gradingPower[cid]=min(self._maxGradingPower,(1.0/self.rms_deviation_by_category[cid]**2)/self.getGradingPowerNormalizatoinFactor(cid))
 					total+=self.gradingPower[cid]
 					totalDeviation+=self.deviation_by_category[cid]
 					cnt+=1
