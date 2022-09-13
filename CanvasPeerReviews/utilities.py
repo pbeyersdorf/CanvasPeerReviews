@@ -738,9 +738,20 @@ def checkForUnreviewed(assignment, openPage=False):
 			print("All creations have been reviewed at least once")
 		fileName=status['dataDir'] + assignment.name + "_todo.html"
 		f = open(fileName, "w")
-		f.write("<html><head><title>Submissions with few reviews</title></head><body>\n")
-		f.write("<h3>Submissions for "+assignment.name+" with few reviews:</h3>\n<ul>\n")
-		f.write("<table border='1'><tr>")
+		f.write('''<html><head>
+		<title>Submissions by number of completed reviews</title>
+		<style>
+		.instructor {color: blue;}
+		.grader {color: green;}
+		.student {color: black;}
+		</style>
+		</head><body>\n''')
+		f.write("<h3>Submissions for "+assignment.name+" by number of completed reviews:</h3>\n<ul>\n")
+		f.write("<span class='instructor'>Graded by instructor</span> | ")
+		f.write("<span class='grader'>Graded by grader</span> | ")
+		f.write("<span class='student'>Only graded by peers</span>\n")
+
+		f.write("<table border='0'><tr>")
 		for n in range(mostNumberOfReviewsReceived+1):
 			if n==1:
 				f.write("<th>" +str(n)+" review (" + str(len(creationsByNumberOfReviews[n]))+  ")</th>")
@@ -754,19 +765,16 @@ def checkForUnreviewed(assignment, openPage=False):
 				gradedByInstructor=len([r for r in creation.author.reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
 				gradedByGrader=len([r for r in creation.author.reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
 				url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-				f.write("<a href='"+ url +"' target='_blank' style='")
+				f.write("<a href='"+ url +"' target='_blank' class='")
 				if (gradedByInstructor):
-					f.write("color: blue;")
+					f.write("instructor")
 				elif gradedByGrader:
-					f.write("color: green;")
+					f.write("grader")
 				else:
-					f.write("color: red;")			
+					f.write("student")			
 				f.write( "'> "+creation.author.name + "</a><br>\n")
 			f.write("</td>\n")
 		f.write("</tr></table>\n")
-		f.write("<span style='color: blue;'>Graded by instructor</span> | ")
-		f.write("<span style='color: green;'>Graded by grader</span> | ")
-		f.write("<span style='color: red;'>Only graded by peers</span>\n")
 		f.write("</ul></body></html>\n")
 		f.close()
 		if openPage:
