@@ -1025,10 +1025,13 @@ def regrade(assignmentList=None, studentsToGrade="All", reviewGradeFunc=None, re
 				for key in student.creations:
 					c = student.creations[key]
 					printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
-					if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
-						if not (assignment.id in student.regrade): 
-							regradedStudents[c.edit().id]=student
-							printLine(student.name + " has a regrade request pending")
+					try:
+						if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
+							if not (assignment.id in student.regrade): 
+								regradedStudents[c.edit().id]=student
+								printLine(student.name + " has a regrade request pending")
+					except:
+						pass
 			printLine("",newLine=False)
 		else:
 			for student in makeList(studentsToGrade):
@@ -1079,7 +1082,7 @@ def regrade(assignmentList=None, studentsToGrade="All", reviewGradeFunc=None, re
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
 		if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
-			printLine("Posting regrade comments for", student.name, newLine=False)
+			printLine("Posting regrade comments for " + student.name, newLine=False)
 			student.comments[assignment.id]=student.regradeComments[assignment.id]
 			postGrades(assignment, listOfStudents=[student])
 			student.regrade[assignment.id]="Done"
