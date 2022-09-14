@@ -121,3 +121,23 @@ class Student:
 			if review.assignment_id == assignment_id:
 				count+=1
 		return count
+	
+	def pointsOnAssignment(self, assignment):
+		for key in self.reviewData[assignment.id]:
+			points=0
+			adjpoints=0
+			weights=0
+			pointsString="("
+			weightsString="["
+			for a in self.reviewData[assignment.id][key]:
+				points+=a['points']
+				adjpoints+=a['weight']*(a['points']-a['compensation'])
+				weights+=a['weight']
+				pointsString+='{:.4s}'.format('{:0.4f}'.format(a['points'])) + ", "
+				weightsString+='{:.4s}'.format('{:0.4f}'.format(a['weight']))	 + ", "
+				#weightsString+=str(a['weight']) + ", "
+			pointsString=pointsString[:-2]+ ") points"
+			weightsString=weightsString[:-2]+ "] weights"
+			#print(self.reviewData[assignment.id][key][0]['description'], round(adjpoints/weights,2), pointsString)
+			print('{0: <30}'.format(self.reviewData[assignment.id][key][0]['description'])+'{0: <7}'.format(str(round(adjpoints/weights,2)))+pointsString)
+			print('{0: <30}'.format("")+'{0: <7}'.format("")+ weightsString)
