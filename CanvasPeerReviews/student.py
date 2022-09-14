@@ -100,6 +100,9 @@ class Student:
 				msg+="\t\tAverage deviation of %+.2f" % self.deviation_by_category[cid] +"\n"
 			msg+="\t\tGrading power for this category is %.2f" % self.gradingPower[cid] +"\n"
 			msg+=""
+		msg+="\t Overall\n"
+		msg+="\t\tAverage deviation of %+.2f" % self.deviation_by_category[0] +"\n"
+		msg+="\t\tOverall Grading power is %.2f" % self.gradingPower[0] +"\n"
 		if returnInsteadOfPrint:
 			return(msg)
 		print(msg)

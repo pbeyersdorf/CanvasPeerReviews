@@ -1426,7 +1426,10 @@ def gradingDeviationRanking(theStudent="all", cid=0, percentile=False):
 	if theStudent=="all":
 		print("--Easiest graders--")
 		for (i,student) in enumerate(sortedStudents):
-			print(str(i+1)+")\t" + student.name + " %.2f" % student.getDeviation(cid))
+			if student.role == 'student':
+				print(str(i+1)+")\t" + student.name + " %.2f" % student.getDeviation(cid))
+			elif student.role == 'grader':
+				print(str(i+1)+")\t" + student.name + " %.2f  (grader)" % student.getDeviation(cid))
 		print("--Hardest graders--")
 		return
 	rank=0
