@@ -1075,9 +1075,11 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
 		log(msg,False)
 
+	print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
 	getStudentWork(assignment)
 	if (recalibrate):
 		calibrate()
+	print("OK, now lets go through each regraded student to post their scores and comments")
 	grade(assignment, studentsToGrade=list(regradedStudents.values()))
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
@@ -1086,6 +1088,9 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			student.comments[assignment.id]=student.regradeComments[assignment.id]
 			postGrades(assignment, listOfStudents=[student])
 			student.regrade[assignment.id]="Done"
+			print("Posted regrade for   " + student.name)
+		else:
+			print("Not posting anything for  " + student.name)
 	printLine()
 	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
 	######### Save student data for future sessions #########	

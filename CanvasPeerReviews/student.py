@@ -142,6 +142,10 @@ class Student:
 			weightsString=weightsString[:-2]+ "] weights"
 			compString=compString[:-2]+ "} compensations"
 			#print(self.reviewData[assignment.id][key][0]['description'], round(adjpoints/weights,2), pointsString)
-			print('{0: <30}'.format(self.reviewData[assignment.id][key][0]['description'])+'{0: <7}'.format(str(round(adjpoints/weights,2)))+pointsString)
+			if weights!=0:
+				avgStr=str(round(adjpoints/weights,2))
+			else:
+				avgStr='err'
+			print('{0: <30}'.format(self.reviewData[assignment.id][key][0]['description'])+'{0: <7}'.format(avgStr)+pointsString)
 			print('{0: <30}'.format("")+'{0: <7}'.format("")+ weightsString)
 			print('{0: <30}'.format("")+'{0: <7}'.format("")+ compString)
