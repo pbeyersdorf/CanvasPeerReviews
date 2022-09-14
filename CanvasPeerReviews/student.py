@@ -22,6 +22,7 @@ class Student:
 		self.grades=dict()
 		self.regrade=dict()
 		self.comments=dict()
+		self.reviewData=dict()
 		self.regradeComments=dict()
 		self.reviewCount=dict()
 		self.assignmentsGradedByInstructor=dict()
@@ -120,5 +121,3 @@ class Student:
 			if review.assignment_id == assignment_id:
 				count+=1
 		return count
-			
-			

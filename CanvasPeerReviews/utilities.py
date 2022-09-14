@@ -852,7 +852,12 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 						compensation=min(compensation, params.maxCompensationFraction* multiplier)
 						compensation=max(compensation, -params.maxCompensationFraction* multiplier)
 					except:
-						compensation=0			
+						compensation=0	
+					if not assignment.id in student.reviewData:
+						student.reviewData[assignment.id]=dict()
+					if not cid in student.reviewData[assignment.id]:
+						student.reviewData[assignment.id][cid]=[]
+					student.reviewData[assignment.id][cid].append({'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid]})
 					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
 					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
 						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
