@@ -695,17 +695,17 @@ def overrideDefaultPoints(assignment):
 ######################################
 # Process a list of students (or all of the students, calling the
 # gradeStudent function for each
-def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
+def grade(assignment, studentsToGrade="All"):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		for student in makeList(students):
-			gradeStudent(assignment, student, reviewGradeFunc)
+			gradeStudent(assignment, student)
 	else:
 		for student in makeList(studentsToGrade):
-			gradeStudent(assignment, student, reviewGradeFunc)
+			gradeStudent(assignment, student)
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
@@ -714,7 +714,7 @@ def grade(assignment, studentsToGrade="All", reviewGradeFunc=None):
 	
 	for cid in assignment.criteria_ids():
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
-	msg+="Using the following curve '" + assignment.curve + "'\n"
+	msg+="Using the following function for review '" + assignment.reviewCurve+ "' and a curve of '" + assignment.curve + "'\n"
 	log(msg)
 	getStatistics(assignment, text=False, hist=False)
 	######### Save student and assignment data for future sessions #########	
@@ -817,7 +817,7 @@ def checkForUnreviewed(assignment, openPage=False):
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student, reviewGradeFunc=None):
+def gradeStudent(assignment, student):
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
 	curveFunc=eval('lambda x:' + assignment.curve)
@@ -943,10 +943,13 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 	except:
 		reviewCount=params.numberOfReviews
 
-	if reviewGradeFunc == None:
-		reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-2*rms)))
-	else:
-		reviewGrade=reviewGradeFunc(rms)
+	#if reviewGradeFunc == None:
+	#	reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-2*rms)))
+	#else:
+	#	reviewGrade=reviewGradeFunc(rms)
+	reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
+	reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * reviewGradeFunc(rms)
+
 	if (reviewGrade<100):
 		student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
 	else:
@@ -1003,7 +1006,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
 
-def regrade(assignmentList=None, studentsToGrade="All", reviewGradeFunc=None, recalibrate=True):
+def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 	global status, activeAssignment
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
@@ -1075,7 +1078,7 @@ def regrade(assignmentList=None, studentsToGrade="All", reviewGradeFunc=None, re
 	getStudentWork(assignment)
 	if (recalibrate):
 		calibrate()
-	grade(assignment, studentsToGrade=list(regradedStudents.values()), reviewGradeFunc=reviewGradeFunc)
+	grade(assignment, studentsToGrade=list(regradedStudents.values()))
 	for student_key in regradedStudents:
 		student=regradedStudents[student_key]
 		if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":

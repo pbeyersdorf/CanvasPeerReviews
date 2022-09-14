@@ -13,6 +13,7 @@ class GradedAssignment:
 		self.get_submissions=assignment.get_submissions
 		self.multiplier=dict()
 		self.curve='x'
+		self.reviewCurve='max(0,min(100, 120*(1-2*rms)))'
 
 	def calibrate():
 		return
