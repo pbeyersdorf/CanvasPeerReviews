@@ -933,10 +933,6 @@ def gradeStudent(assignment, student):
 	except:
 		reviewCount=params.numberOfReviews
 
-	#if reviewGradeFunc == None:
-	#	reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-2*rms)))
-	#else:
-	#	reviewGrade=reviewGradeFunc(rms)
 	reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 	reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * reviewGradeFunc(rms)
 
@@ -965,23 +961,16 @@ def gradeStudent(assignment, student):
 	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
 	percentileRanking=gradingPowerRanking(student, percentile=True)
 	
-	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
-		msg="View the rubric table above to see details of your regrade.\n"
-		msg+="In total you received " + str(student.points[assignment.id]['creation']) + " points for your creation, "
-		msg+=" and " + str(student.points[assignment.id]['review']) + " points for your reviews, "
-		msg+=" giving a total of " + str(student.points[assignment.id]['total']) + " points"
-		if (assignment.curve!='x'):
-			msg+=" that when curved gives a score of " + str(student.points[assignment.id]['curvedTotal'])
-		student.regradeComments[assignment.id]=msg
 	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
-		student.reviewGradeExplanation="You did not completeany of your peer reviews, so your review grade was 0.  "
+		student.reviewGradeExplanation="You did not complete any of your peer reviews, so your review grade was 0.  "
 
 	#make a summary of their points
-	student.comments[assignment.id]="A weighted average of the reviews of your work give the following scores:\n"
+	scoringSummaryString=""
 	for cid in assignment.criteria_ids():
 		points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment.id),2)
-		student.comments[assignment.id]+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
-	student.comments[assignment.id]+="\n" 
+		scoringSummaryString+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
+	scoringSummaryString+="\n" 
+	student.comments[assignment.id]="A weighted average of the reviews of your work give the following scores:\n"+scoringSummaryString
 	student.comments[assignment.id]+=student.reviewGradeExplanation
 	if (percentileRanking >66):
 		student.comments[assignment.id]+=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
@@ -993,17 +982,17 @@ def gradeStudent(assignment, student):
 		curvedScoreString=""
 	else:
 		curvedScoreString=(("  This was curved to give an adjusted score of %." + str(digits) +"f.") % (curvedTotalPoints) )
-	student.comments[assignment.id]+=("  You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
-	student.comments[assignment.id]+=curvedScoreString
-	student.comments[assignment.id]+="\n\nIf you believe the score assigned is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked."
-
-
-		#student.comments[assignment.id]+=(("  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a raw score of %." + str(digits) +"f points.  This was curved to give an adjusted score of %." + str(digits) +"f.\n\n  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.") % 
-		#(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints, curvedTotalPoints ) )
-	
+	totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
+	totalScoringSummaryString+=curvedScoreString
+	student.comments[assignment.id]+="  " + totalScoringSummaryString+"\n\nIf you believe the score assigned is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked."
+		
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
 		student.comments[assignment.id]="No submission received"
+
+	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
+		student.regradeComments[assignment.id]="I've regraded your work.  My review of your work give the following scores:\n"+scoringSummaryString
+		student.regradeComments[assignment.id]+=totalScoringSummaryString
 
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
