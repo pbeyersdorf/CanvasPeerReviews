@@ -944,7 +944,7 @@ def gradeStudent(assignment, student, reviewGradeFunc=None):
 		reviewCount=params.numberOfReviews
 
 	if reviewGradeFunc == None:
-		reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-rms)))
+		reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * max(0,min(100, 120*(1-2*rms)))
 	else:
 		reviewGrade=reviewGradeFunc(rms)
 	if (reviewGrade<100):
@@ -1545,11 +1545,22 @@ def confirmText(msg,prompt="Is the following text ok?"):
 		os.remove(fileName)
 		msg="".join(lines)
 		return confirmText(msg, prompt)
+
+######################################
+# select a student by partial name match  
+def selectStudentByName(theName):
+	options=[s for s in students if s.name.lower().find(theName.lower())>-1]
+	if len(options)==0:
+		print("Unable to find a matching student")
+		return select(students,property="name", requireConfirmation=False)
+	elif len(options)==1:
+		return options[0]
+	else:
+		return select(options,property="name", requireConfirmation=False)
 		
 ######################################
 # List all objects in an array and prompt the user to select one.  
 # Once they confirm their choice it will be returned
-
 def select(objArray, property=None, prompt="Choose one", requireConfirmation=True):
 	for i,obj in enumerate(objArray):
 		if property==None:
@@ -1654,13 +1665,16 @@ def inputWithTimeout(prompt, timeout):
 	
 ######################################
 # print a line by printing white space
-def printLine(msg="", newLine=True):
+def printLine(msg="", newLine=True, line=False):
 	size=os.get_terminal_size()
 	cols=size.columns
+	if (line):
+		print("-"*cols)
 	if newLine:
 		print("\r{: <{width}}".format(msg, width=cols))		
 	else:
 		print("\r{: <{width}}".format(msg, width=cols),end="")	
+
 
 ######################################
 # clear a list without redefining it.  Allows it to be kept in global scope
