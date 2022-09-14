@@ -352,10 +352,7 @@ def assignCalibrationReviews(calibrations="auto"):
 			reviewer.reviewCount[calibration.assignment_id]=0
 		reviewer.reviewCount[calibration.assignment_id]+=1
 		calibration.reviewCount+=1
-	######### Save student data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
-		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+	saveStudents()
 	
 ######################################
 # Takes a student submission and a list of potential reviewers, and the number of reviews 
@@ -431,9 +428,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 					reviewer.reviewCount[creation.assignment_id]+=1
 					creation.graderReviewCount+=1
 					print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
-	######### Save student data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
-		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	saveStudents()
 	
 			
 ######################################
@@ -677,9 +672,7 @@ def calibrate(studentsToCalibrate="all"):
 			else:
 				student.gradingPowerNormalizatoinFactor[cid]=1
 
-	######### Save student data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
-		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	saveStudents()
 	status["calibrated"]=True
 
 ######################################
@@ -717,11 +710,8 @@ def grade(assignment, studentsToGrade="All"):
 	msg+="Using the following function for review '" + assignment.reviewCurve+ "' and a curve of '" + assignment.curve + "'\n"
 	log(msg)
 	getStatistics(assignment, text=False, hist=False)
-	######### Save student and assignment data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
-		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
-	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
-		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	saveAssignments()
+	saveStudents()
 
 
 ######################################
@@ -896,7 +886,7 @@ def gradeStudent(assignment, student):
 	tempDelta=dict()
 	tempTotalWeight=dict()
 	numberOfComparisons=0
-	student.reviewGradeExplanation=""
+	student.reviewGradeExplanation="On peer reviews the scores you gave out on average were:\n"
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
@@ -926,13 +916,13 @@ def gradeStudent(assignment, student):
 						except:
 							status['err']="Key error" 
 	for cid in tempDelta:
-		student.reviewGradeExplanation+="For '" + str(criteriaDescription[cid]) + "' you graded on average " 
 		if (tempDelta[cid]>0.05):
-			student.reviewGradeExplanation+=str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders\n"
+			student.reviewGradeExplanation+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders "
 		elif (tempDelta[cid]<-0.05):
-			student.reviewGradeExplanation+=str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders\n"
+			student.reviewGradeExplanation+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders "
 		else:
-			student.reviewGradeExplanation+=" about the same as other graders\n"
+			student.reviewGradeExplanation+="    " + " about the same as other graders "
+		student.reviewGradeExplanation+="for '" + str(criteriaDescription[cid]) +"'\n"
 
 	rms=2
 	
@@ -951,7 +941,8 @@ def gradeStudent(assignment, student):
 	reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * reviewGradeFunc(rms)
 
 	if (reviewGrade<100):
-		student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
+		pass
+		#student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
 	else:
 		student.reviewGradeExplanation+="Keep up the good work on your reviews"
 		
@@ -985,19 +976,30 @@ def gradeStudent(assignment, student):
 	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
 		student.reviewGradeExplanation="You did not completeany of your peer reviews, so your review grade was 0.  "
 
-	student.comments[assignment.id]=student.reviewGradeExplanation
+	#make a summary of their points
+	student.comments[assignment.id]="A weighted average of the reviews of your work give the following scores:\n"
+	for cid in assignment.criteria_ids():
+		points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment.id),2)
+		student.comments[assignment.id]+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
+	student.comments[assignment.id]+="\n" 
+	student.comments[assignment.id]+=student.reviewGradeExplanation
 	if (percentileRanking >66):
-		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
+		student.comments[assignment.id]+=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
 	elif (percentileRanking <33):
-		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully following the grading rubric.") % (percentileRanking ) )	
+		student.comments[assignment.id]+=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.") % (percentileRanking ) )	
 	else:
-		student.comments[assignment.id]+=(("\n\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
+		student.comments[assignment.id]+=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
 	if (curvedTotalPoints==totalPoints):
-		student.comments[assignment.id]+=(("  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a score of %." + str(digits) +"f points.\n\n If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.") % 
-		(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints ) )
+		curvedScoreString=""
 	else:
-		student.comments[assignment.id]+=(("  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a raw score of %." + str(digits) +"f points.  This was curved to give an adjusted score of %." + str(digits) +"f.\n\n  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.") % 
-		(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints, curvedTotalPoints ) )
+		curvedScoreString=(("  This was curved to give an adjusted score of %." + str(digits) +"f.") % (curvedTotalPoints) )
+	student.comments[assignment.id]+=("  You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
+	student.comments[assignment.id]+=curvedScoreString
+	student.comments[assignment.id]+="\n\nIf you believe the score assigned is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked."
+
+
+		#student.comments[assignment.id]+=(("  You earned %." + str(digits) +"f out of  %.f points for your submission and %." + str(digits) +"f points out of %.f for your reviews giving you a raw score of %." + str(digits) +"f points.  This was curved to give an adjusted score of %." + str(digits) +"f.\n\n  If you believe the peer reviews of your work have a significant error, explain in a comment in the next few days and include the word 'regrade' to have it double checked.") % 
+		#(creationPoints, 100*params.weightingOfCreation, reviewPoints, 100*params.weightingOfReviews, totalPoints, curvedTotalPoints ) )
 	
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
@@ -1005,16 +1007,17 @@ def gradeStudent(assignment, student):
 
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
-
 def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 	global status, activeAssignment
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
 		return
 	if assignmentList==None:
-		assignmentList=[g for g in graded_assignments.values() if g.graded]
+		assignmentList=list(set([g for g in graded_assignments.values() if g.graded and not g.regradesCompleted]))
 	assignmentList=makeList(assignmentList)
+	assignmentList.sort(key = lambda x : x.name)
 	for assignment in assignmentList:
+		unresolvedRegrades=False
 		print("\nRegrading " + assignment.name + "...")
 					
 		regradedStudents=dict()
@@ -1055,17 +1058,22 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					print("\n\n".join(comments[1:])+"\n")
 					#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
 					val="unknwon"
-					while not val in ["i","f","v",""]:
-						val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t<enter> to accept\n")
-						if val=='i' and assignment.id in student.regrade:
-							student.regrade.pop(assignment.id)
+					while not val in ["i","f","v","r","s"]:
+						val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(s) to submit\n")
+						if val=='i':
+							unresolvedRegrades=True
+							if  assignment.id in student.regrade:
+								student.regrade.pop(assignment.id)
 						if val=='f':
 							student.regrade[assignment.id]="ignore"
 						if val=="v":
 							val="unknwon"
 							print("Enter any regrade info and comments into the web browser")
 							webbrowser.open(previewUrl)
-						if val=="":
+						if val=="r":
+							val="unknwon"
+							student.pointsOnAssignment(assignment)
+						if val=="s":
 							student.regrade[assignment.id]="Started"
 		print("\n")
 		status["regraded"]=True
@@ -1075,29 +1083,44 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
 		log(msg,False)
 
-	print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
-	getStudentWork(assignment)
-	if (recalibrate):
-		calibrate()
-	print("OK, now lets go through each regraded student to post their scores and comments")
-	grade(assignment, studentsToGrade=list(regradedStudents.values()))
-	for student_key in regradedStudents:
-		student=regradedStudents[student_key]
-		if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
-			printLine("Posting regrade comments for " + student.name, newLine=False)
-			student.comments[assignment.id]=student.regradeComments[assignment.id]
-			postGrades(assignment, listOfStudents=[student])
-			student.regrade[assignment.id]="Done"
-			print("Posted regrade for   " + student.name)
+		#regenerate the dictionary with only students who need to be processed
+		regradedStudentsList=[s for s in students if assignment.id in s.regrade and s.regrade[assignment.id]!="ignore" and s.regrade[assignment.id]!="Done"]
+		regradedStudents=dict()
+		for rs in regradedStudentsList:
+			regradedStudents[rs.id]=rs
+			
+		if len(regradedStudents)>0:
+			if (recalibrate):
+				getStudentWork(assignment)
+				print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
+				calibrate()
+			print("OK, now lets go through each regraded student to post their scores and comments")
+			grade(assignment, studentsToGrade=list(regradedStudents.values()))
+			for student_key in regradedStudents:
+				student=regradedStudents[student_key]
+				if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
+					printLine("Posting regrade comments for " + student.name, newLine=False)
+					student.comments[assignment.id]=student.regradeComments[assignment.id]
+					postGrades(assignment, listOfStudents=[student])
+					student.regrade[assignment.id]="Done"
+					print("Posted regrade for   " + student.name)
+				else:
+					print("Not posting anything for  " + student.name)
 		else:
-			print("Not posting anything for  " + student.name)
-	printLine()
+			print("There are no pending regrade requests for " + assignment.name)
+		printLine()
+		if unresolvedRegrades:
+			assignment.regradesCompleted=False
+		else:
+			if confirm("Shall we finalize " + assignment.name + " and stop checking it for regrade requests?"):
+				assignment.regradesCompleted=True
+			else:
+				assignment.regradesCompleted=False
+				
 	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
-	######### Save student data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
-		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
-	
-
+	saveStudents()
+	saveAssignments()
+		
 
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated
@@ -1127,9 +1150,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 			printLine("No creation to post for " + student.name, newLine=False)
 	printLine()
 	assignment.gradesPosted=True	
-	######### Save assignment data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
-		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	saveAssignments()
 	log("Grades for " +assignment.name+ " posted")
 	status["posted"]=True
 
@@ -1194,9 +1215,7 @@ def postFromCSV(fileName=None, thisAssignment=None):
 				except:
 					status['err']="unable to process test student"
 	thisAssignment.gradesPosted=True	
-	######### Save assignment data for future sessions #########	
-	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
-		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	saveAssignments()
 	log("Grades for " +thisAssignment.name+ " posted via file'" + fileName + "'")
 	status["posted"]=True
 
@@ -1395,9 +1414,7 @@ def assignGraders():
 	listOfGraders=[s for s in students if s.role=='grader']
 	viewGraders()
 	if confirm("is this ok? "):
-		######### Save student data for future sessions #########	
-		with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
-			pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		saveStudents()
 		return
 	for (i,student) in enumerate(students):
 		print(str(i+1)+")\t" + student.name)
@@ -1588,6 +1605,19 @@ def select(objArray, property=None, prompt="Choose one", requireConfirmation=Tru
 		else:
 			confirmed = True
 	return objArray[selection]
+
+
+######################################
+# saves the student objects to file
+def saveStudents():
+	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+######################################
+# saves the graded_Assignments objects to file
+def saveAssignments():
+	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
+		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 ######################################
 # Take an array and return a shuffled version of it 

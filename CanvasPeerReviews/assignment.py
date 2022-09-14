@@ -14,6 +14,7 @@ class GradedAssignment:
 		self.multiplier=dict()
 		self.curve='x'
 		self.reviewCurve='max(0,min(100, 120*(1-2*rms)))'
+		self.regradesCompleted=False
 
 	def calibrate():
 		return
