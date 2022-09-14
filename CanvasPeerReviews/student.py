@@ -129,15 +129,19 @@ class Student:
 			weights=0
 			pointsString="("
 			weightsString="["
+			compString="{"
 			for a in self.reviewData[assignment.id][key]:
 				points+=a['points']
 				adjpoints+=a['weight']*(a['points']-a['compensation'])
 				weights+=a['weight']
 				pointsString+='{:.4s}'.format('{:0.4f}'.format(a['points'])) + ", "
 				weightsString+='{:.4s}'.format('{:0.4f}'.format(a['weight']))	 + ", "
+				compString+='{:.4s}'.format('{:0.4f}'.format(a['compensation']))	 + ", "
 				#weightsString+=str(a['weight']) + ", "
 			pointsString=pointsString[:-2]+ ") points"
 			weightsString=weightsString[:-2]+ "] weights"
+			compString=compString[:-2]+ "} compensations"
 			#print(self.reviewData[assignment.id][key][0]['description'], round(adjpoints/weights,2), pointsString)
 			print('{0: <30}'.format(self.reviewData[assignment.id][key][0]['description'])+'{0: <7}'.format(str(round(adjpoints/weights,2)))+pointsString)
 			print('{0: <30}'.format("")+'{0: <7}'.format("")+ weightsString)
+			print('{0: <30}'.format("")+'{0: <7}'.format("")+ compString)

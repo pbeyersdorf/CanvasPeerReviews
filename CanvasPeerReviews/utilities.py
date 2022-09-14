@@ -254,7 +254,7 @@ def getMostRecentAssignment():
 
 ######################################
 # Choose an assignment to work on
-def chooseAssignment():
+def chooseAssignment(requireConfirmation=True):
 	global graded_assignments, lastAssignment, activeAssignment
 	confirmed=False
 	defaultChoice=0
@@ -268,11 +268,14 @@ def chooseAssignment():
 				else:
 					print("\t" + str(key) +") " + assignmentByNumber[key].name )
 			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice)
-			if val in assignmentByNumber:
-				confirmed=confirm("You have chosen " + assignmentByNumber[val].name)
+			if requireConfirmation:
+				if val in assignmentByNumber:
+					confirmed=confirm("You have chosen " + assignmentByNumber[val].name)
+				else:
+					confirmed=False
+					print("Invalid choice")
 			else:
-				confirmed=False
-				print("Invalid choice")
+				confirmed=True
 			if confirmed:
 				activeAssignment=assignmentByNumber[val]
 		else:
@@ -289,7 +292,10 @@ def chooseAssignment():
 					assignmentKeyByNumber[i]=key
 					i+=1
 			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[1,i])
-			confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+			if requireConfirmation:
+				confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+			else:
+				confirmed=True
 			if confirmed:
 				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 	#print("using key " + str(assignmentKeyByNumber[val]))
@@ -1544,16 +1550,24 @@ def confirmText(msg,prompt="Is the following text ok?"):
 # List all objects in an array and prompt the user to select one.  
 # Once they confirm their choice it will be returned
 
-def select(objArray, prompt="Choose one"):
+def select(objArray, property=None, prompt="Choose one", requireConfirmation=True):
 	for i,obj in enumerate(objArray):
-		print(i , obj)
-
+		if property==None:
+			print(i , obj)
+		else:
+			print(i , eval("obj." + property))	
 	confirmed=False
-	while not confirmed:	
+	while not confirmed:
 		response=input(prompt + ": ")
 		selection=int(response)
-		response = input("type 'ok' to confirm or choose a new value" + str(objArray[selection]) + ": " ) 
-		confirmed = (response == 'ok')
+		if requireConfirmation:
+			if property==None:
+				response = input("type 'ok' to confirm or choose a new value [" + str(objArray[selection]) + "]: " )
+			else:
+				response = input("type 'ok' to confirm or choose a new value [" + str(eval("objArray[selection]." + property)) + "]: " )
+			confirmed = (response == 'ok')
+		else:
+			confirmed = True
 	return objArray[selection]
 
 ######################################
