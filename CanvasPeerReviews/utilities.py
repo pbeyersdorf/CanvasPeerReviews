@@ -172,6 +172,7 @@ def assignSections(students):
 # to that assignment as an array of objects
 def getStudentWork(thisAssignment='last'):
 	global creations, graded_assignments, status
+	printLine("Getting submissions",False)
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'getStudentWork'")
 		return
@@ -199,10 +200,13 @@ def getStudentWork(thisAssignment='last'):
 				creations.append(Creation(submission))
 				studentsById[submission.user_id].creations[thisAssignment.id]=creations[-1]
 				creationsByAuthorId[submission.user_id]=creations[-1]
-				printLine("Getting submission of " + studentsById[submission.user_id].name ,False)
-		except:
+				#printLine("Getting submission of " + studentsById[submission.user_id].name ,False)
+		except Exception:
 			status['err']="key error"
+	printLine("Getting reviews",False)
 	getReviews(creations)
+	printLine("",False)
+	print("\r",end="")
 	status["gotStudentsWork"]=True
 
 
@@ -1016,13 +1020,14 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			for i,student in enumerate(makeList(students)):
 				for key in student.creations:
 					c = student.creations[key]
-					printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
+					#printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
+					printLeftRight("Checking for a regrade request from " + student.name ,str(i+1)+"/"+str(len(makeList(students))), end="")
 					try:
 						if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
 							if not (assignment.id in student.regrade): 
 								regradedStudents[c.edit().id]=student
 								printLine(student.name + " has a regrade request pending")
-					except:
+					except Exception:
 						pass
 			printLine("",newLine=False)
 		else:
@@ -1695,13 +1700,35 @@ def inputWithTimeout(prompt, timeout):
 def printLine(msg="", newLine=True, line=False):
 	size=os.get_terminal_size()
 	cols=size.columns
+	hideCursor()
 	if (line):
 		print("-"*cols)
 	if newLine:
 		print("\r{: <{width}}".format(msg, width=cols))		
 	else:
-		print("\r{: <{width}}".format(msg, width=cols),end="")	
+		print("\r{: <{width}}".format(msg, width=cols),end="")
+	showCursor()	
 
+######################################
+# print a line with a left and right justified text
+def printLeftRight(left,right, end="\n"):
+	size=os.get_terminal_size()
+	cols=size.columns
+	rowsOfText=1+int((len(left+right))/cols)
+	hideCursor()
+	print("\r",end="")
+	print(f'{left:<{rowsOfText*cols-len(right)}}{right}',end=end)
+	showCursor()
+
+######################################
+# hide the cursor
+def hideCursor():
+	print('\033[?25l', end="")
+
+######################################
+# show the cursor
+def showCursor():
+	print('\033[?25h', end="")
 
 ######################################
 # clear a list without redefining it.  Allows it to be kept in global scope
