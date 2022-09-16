@@ -742,7 +742,7 @@ def checkForUnreviewed(assignment, openPage=False):
 		fileName=status['dataDir'] + assignment.name + "_todo.html"
 		f = open(fileName, "w")
 		f.write("<html><head><title>Submissions by number of completed reviews</title><style>\n")
-		f.write(".instructor {color: blue;}\n.grader {color: green;}\n.student {color: black;}\n")
+		f.write(".instructor {color: blue;}\n.grader {color: green;}\n.student {color: black;}\n.nobody {color: #660000;}")
 		f.write("a {text-decoration:none}\n")
 		f.write("a.instructor:link {color: #0000ff;}\n")
 		f.write("a.instructor:hover {color: #440044;}\n")
@@ -762,7 +762,8 @@ def checkForUnreviewed(assignment, openPage=False):
 		f.write("<h3>Submissions for "+assignment.name+" by number of completed reviews:</h3>\n<ul>\n")
 		f.write("<span class='instructor'>Graded by instructor</span> | ")
 		f.write("<span class='grader'>Graded by grader</span> | ")
-		f.write("<span class='student'>Only graded by peers</span>\n")
+		f.write("<span class='student'>Only graded by peers</span> | ")
+		f.write("<span class='nobody'>ungraded</span>\n")
 
 		f.write("<table border='0'><tr>")
 		for n in range(mostNumberOfReviewsReceived+1):
@@ -790,7 +791,10 @@ def checkForUnreviewed(assignment, openPage=False):
 						elif gradedByGrader:
 							f.write("grader")
 						else:
-							f.write("student")			
+							if n==0:
+								f.write("nobody")			
+							else:
+								f.write("student")			
 						f.write( "'> "+creation.author.name + "</a><br>\n")
 				if (len(sections)>1):
 					f.write("</div>")
