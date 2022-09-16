@@ -74,7 +74,7 @@ def loadCache():
 	status['prefix']="course_" + str(course.id) + "_"
 	status['message']=""
 	try:
-		with open( status['dataDir'] +status['prefix']+'students.pkl', 'rb') as handle:
+		with open( status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl', 'rb') as handle:
 			students=pickle.load(handle)
 		status['students']="loaded"
 		status['message']+="Loaded student data\n"
@@ -82,13 +82,13 @@ def loadCache():
 		status['students']="not loaded"
 		status['message']+="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
 	try:
-		with open( status['dataDir'] +status['prefix']+'assignments.pkl', 'rb') as handle:
+		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'assignments.pkl', 'rb') as handle:
 			graded_assignments=pickle.load(handle)
 		status['message']+="Loaded assginment data\n"
 	except:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
-		with open(status['dataDir'] +status['prefix']+'parameters.pkl', 'rb') as handle:
+		with open(status['dataDir'] +"PickleJar/"+ status['prefix']+'parameters.pkl', 'rb') as handle:
 			params = pickle.load(handle)
 		params.loadedFromFile=True
 	except:
@@ -101,11 +101,11 @@ def loadCache():
 def reset():
 	global status
 	try:
-		os.remove(status['dataDir'] +status['prefix']+'students.pkl')
+		os.remove(status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl')
 	except:
 		pass
 	try:
-		os.remove(status['dataDir'] +status['prefix']+'parameters.pkl')
+		os.remove(status['dataDir'] +"PickleJar/"+ status['prefix']+'parameters.pkl')
 	except:
 		pass
 	try:
@@ -386,15 +386,17 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		peersWithSubmissions=randmoize(peersWithSubmissions) 
 	reviewers=makeList(peersWithSubmissions)
 	#assign params.numberOfReviews reviews per creation
-	for creation in creationList:
-		for reviewer in reviewers:
+	for i, creation in enumerate(creationList):
+		for j,reviewer in enumerate(reviewers):
 			if not creation.assignment_id in reviewer.reviewCount:
 				reviewer.reviewCount[creation.assignment_id]=0
 			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 					creation.create_submission_peer_review(reviewer.id)
 					reviewer.reviewCount[creation.assignment_id]+=1
 					creation.reviewCount+=1
-					print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+					counter=str(i+1) + "." + str(j+1) + "/" + str(len(creationList))
+					printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
+					#print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
@@ -404,7 +406,8 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				creation.create_submission_peer_review(reviewer.id)
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
-				print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", "---")
+				#print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	if len(graders)==0:
 		return
 	# finally assign to graders
@@ -424,14 +427,16 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 			creationsListofList[-2] += creationsListofList[-1]
 		print("Assigning reviews to graders of ", sections[key])
 		for i,reviewer in enumerate(thisSectionsGraders):
-			for creation in creationsListofList[i]:
+			for j,creation in enumerate(creationsListofList[i]):
 				if not creation.assignment_id in reviewer.reviewCount:
 					reviewer.reviewCount[creation.assignment_id]=0
 				if (reviewer.id != creation.user_id ):
 					creation.create_submission_peer_review(reviewer.id)
 					reviewer.reviewCount[creation.assignment_id]+=1
 					creation.graderReviewCount+=1
-					print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+					counter=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
+					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
+					#print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	saveStudents()
 	
 			
@@ -685,9 +690,7 @@ def overrideDefaultPoints(assignment):
 	for cid in assignment.criteria_ids():
 		val=getNum("How many points (out of 100) should be awarded for '" + criteriaDescription[cid]+ "'?", params.pointsForCid(cid, assignment.id))
 		params.pointsForCid(cid,assignment.id ,val)
-	#save the parameters
-	with open(status['dataDir'] +status['prefix'] + 'parameters.pkl', 'wb') as handle:
-		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)	
+	saveParameters()	
 
 ######################################
 # Process a list of students (or all of the students, calling the
@@ -1269,8 +1272,7 @@ def getParameters(ignoreFile=False):
 		else:
 			params.maxCompensationFraction=0;
 	logFile.close()
-	with open(status['dataDir'] +status['prefix'] + 'parameters.pkl', 'wb') as handle:
-		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	saveParameters()
 	status["gotParameters"]=True
 	return params
 
@@ -1605,14 +1607,20 @@ def select(objArray, property=None, prompt="Choose one", requireConfirmation=Tru
 ######################################
 # saves the student objects to file
 def saveStudents():
-	with open(status['dataDir'] +status['prefix'] + 'students.pkl', 'wb') as handle:
+	with open(status['dataDir'] +status['prefix'] + "PickleJar/"+'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 ######################################
 # saves the graded_Assignments objects to file
 def saveAssignments():
-	with open(status['dataDir'] +status['prefix'] + 'assignments.pkl', 'wb') as handle:
+	with open(status['dataDir'] +status['prefix'] +"PickleJar/"+ 'assignments.pkl', 'wb') as handle:
 		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+######################################
+# saves the graded_Assignments objects to file
+def saveParameters():
+	with open(status['dataDir'] +"PickleJar/"+status['prefix'] + 'parameters.pkl', 'wb') as handle:
+		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)	
 
 ######################################
 # Take an array and return a shuffled version of it 
