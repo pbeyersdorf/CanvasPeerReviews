@@ -29,6 +29,7 @@ import subprocess
 import csv
 import math
 import time
+from colorama import Fore, Back, Style
 if errormsg!="":
 	raise Exception(errormsg)
 
@@ -223,10 +224,11 @@ def getGradedAssignments(course):
 			assignment.courseid=course.id
 			if not assignment.id in graded_assignments: # no need to recreate if it was already loaded from the cache
 				graded_assignments[assignment.id]=GradedAssignment(assignment)
-			try:
-				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[assignment.id].name))))]=graded_assignments[assignment.id]
-			except:
-				pass
+	for key in graded_assignments:
+		try:
+			assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
+		except:
+			print("Unable to add " + assignment.name + " to assignmentByNumber")	
 	status["gotGradedAssignments"]=True
 
 
@@ -262,12 +264,17 @@ def chooseAssignment(requireConfirmation=True):
 	global graded_assignments, lastAssignment, activeAssignment
 	confirmed=False
 	defaultChoice=0
+	print("graded_assignments")
+	print(graded_assignments)
+	print()
+	print("assignmentByNumber")
+	print(assignmentByNumber)
 	while not confirmed:
-		if len(graded_assignments)-1 == len(assignmentByNumber):
+		if len([key for key in graded_assignments if isinstance(key, int)]) == len(assignmentByNumber):
 			print("\nAssignments with peer reviews enabled: ")
 			for key in assignmentByNumber:
 				if assignmentByNumber[key] == graded_assignments['last']:
-					print("\t" + str(key) +") " + assignmentByNumber[key].name + "  <---- last assignment")
+					print("\t"+Fore.BLUE + str(key) +") " + assignmentByNumber[key].name + Style.RESET_ALL + "  <---- last assignment")
 					defaultChoice=key
 				else:
 					print("\t" + str(key) +") " + assignmentByNumber[key].name )
@@ -289,7 +296,7 @@ def chooseAssignment(requireConfirmation=True):
 			for key in graded_assignments:
 				if (key != 'last'):
 					if graded_assignments[key] == graded_assignments['last']:
-						print("\t" + str(i) +") " + graded_assignments[key].name + "  <---- last assignment")
+						print("\t" + Fore.BLUE + str(i) +") " + graded_assignments[key].name + Style.RESET_ALL+ "  <---- last assignment")
 						defaultChoice=i
 					else:
 						print("\t" + str(i) +") " + graded_assignments[key].name)
@@ -1676,7 +1683,8 @@ def inputWithTimeout(prompt, timeout):
 			msg=" "*len(str(n)) + " " + prompt + ": "
 			for i in range(n,0,-1):
 				if self._running:
-					msg1= reverseText(str(i))  +msg[len(str(i)):]
+					#msg1= reverseText(str(i))  +msg[len(str(i)):]
+					msg1=Fore.YELLOW  + str(i) + Style.RESET_ALL +msg[len(str(i)):] 
 					print("\r"+msg1, end="")
 					for j in range(100):
 						if self._running:

@@ -123,6 +123,9 @@ class Student:
 		return count
 	
 	def pointsOnAssignment(self, assignment):
+		if not assignment.id in self.reviewData:
+			print("No reviews of work on " + assignment.name)
+			return
 		for key in self.reviewData[assignment.id]:
 			points=0
 			adjpoints=0
