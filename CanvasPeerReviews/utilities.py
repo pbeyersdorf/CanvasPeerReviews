@@ -997,7 +997,10 @@ def gradeStudent(assignment, student):
 	#make a summary of their points
 	scoringSummaryString=""
 	for cid in assignment.criteria_ids():
-		points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment.id),2)
+		if student.pointsByCriteria[assignment.id][cid]!='':
+			points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment.id),2)
+		else:
+			points=0
 		scoringSummaryString+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
 	scoringSummaryString+="\n" 
 	student.comments[assignment.id]="A weighted average of the reviews of your work give the following scores:\n"+scoringSummaryString
@@ -1647,19 +1650,19 @@ def printGroups():
 ######################################
 # saves the student objects to file
 def saveStudents():
-	with open(status['dataDir'] +status['prefix'] + "PickleJar/"+'students.pkl', 'wb') as handle:
+	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 ######################################
 # saves the graded_Assignments objects to file
 def saveAssignments():
-	with open(status['dataDir'] +status['prefix'] +"PickleJar/"+ 'assignments.pkl', 'wb') as handle:
+	with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'assignments.pkl', 'wb') as handle:
 		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 ######################################
 # saves the graded_Assignments objects to file
 def saveParameters():
-	with open(status['dataDir'] +"PickleJar/"+status['prefix'] + 'parameters.pkl', 'wb') as handle:
+	with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'parameters.pkl', 'wb') as handle:
 		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)	
 
 ######################################
