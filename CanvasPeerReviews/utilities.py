@@ -1394,22 +1394,23 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 				'"' + student.sortable_name + '"' + delimiter + 
 				str(student.sis_user_id) + delimiter)
 			if assignment!=None:
-				points=student.points[assignment.id]			
-				for cid in assignment.criteria_ids():
-					if assignment.id in student.pointsByCriteria and cid in student.pointsByCriteria[assignment.id]:
-						line+=str(student.pointsByCriteria[assignment.id][cid]) + delimiter
-					else:
-						line+="" + delimiter
-				line+=(str(points['creation']) + delimiter + 
-					str(points['review']) + delimiter + 
-					str(points['total']) + delimiter + 
-					str(points['curvedTotal']) + delimiter + 
-					'"' + student.comments[assignment.id] + '"' + delimiter +
-					'"' + student.gradingExplanation + '"' + delimiter +
-					'"' + student.reviewGradeExplanation + '"'
-					) + '\n'
+				if assignment.id in student.points:
+					points=student.points[assignment.id]	
+					for cid in assignment.criteria_ids():
+						if assignment.id in student.pointsByCriteria and cid in student.pointsByCriteria[assignment.id]:
+							line+=str(student.pointsByCriteria[assignment.id][cid]) + delimiter
+						else:
+							line+="" + delimiter
+					line+=(str(points['creation']) + delimiter + 
+						str(points['review']) + delimiter + 
+						str(points['total']) + delimiter + 
+						str(points['curvedTotal']) + delimiter + 
+						'"' + student.comments[assignment.id] + '"' + delimiter +
+						'"' + student.gradingExplanation + '"' + delimiter +
+						'"' + student.reviewGradeExplanation + '"')
 			else:
-				line+= ',\n'
+				line+= ','
+			line+='\n'
 			if saveToFile:
 				f.write(line)
 			if display:
@@ -1626,6 +1627,22 @@ def select(objArray, property=None, prompt="Choose one", requireConfirmation=Tru
 			confirmed = True
 	return objArray[selection]
 
+######################################
+# print groups and membership
+def printGroups():
+	#groupsSets=utilities.course.get_group_categories()[0]
+	groupsSets=course.get_group_categories()[0]
+	for group in groupsSets.get_groups():
+		print (group.name + ":")
+		for membership in group.get_memberships():
+			member=studentsById[membership.user_id]
+			print("\t" + member.name)
+		print()
+	print("List of all students in a group")
+	for group in groupsSets.get_groups():
+		for membership in group.get_memberships():
+			member=studentsById[membership.user_id]
+			print( member.name)
 
 ######################################
 # saves the student objects to file
