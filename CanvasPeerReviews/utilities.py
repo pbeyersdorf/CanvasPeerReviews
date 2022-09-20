@@ -247,7 +247,7 @@ def getMostRecentAssignment():
 			thisDelta=datetime.utcnow()-graded_assignment.due_at_date.replace(tzinfo=None)
 			delta=thisDelta.total_seconds()
 			delta+=offsetHours*3600
-			if (delta > 0  and delta < minTimeDelta) :
+			if (delta > 0  and delta < minTimeDelta and graded_assignment.published) :
 				minTimeDelta=delta
 				lastAssignment=graded_assignment
 		except:
@@ -403,6 +403,15 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 					creation.reviewCount+=1
 					counter=str(i+1) + "." + str(j+1) + "/" + str(len(creationList))
 					printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
+		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
+			reviewer=random.choice(reviewers)
+			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+				creation.create_submission_peer_review(reviewer.id)
+				reviewer.reviewCount[creation.assignment_id]+=1
+				creation.reviewCount+=1
+				counter=str(i+1) + "." + str(j+1) + "/" + str(len(creationList))
+				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation (as an additional assignment)", counter)	
+		
 					#print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
