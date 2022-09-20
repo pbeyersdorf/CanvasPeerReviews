@@ -372,7 +372,7 @@ def assignCalibrationReviews(calibrations="auto"):
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
 #xxx need to ensure reviews are assigned to students in the same section
-def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999):
+def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999, AssignPeerReviewsToGraderSubmissions=False):
 	startTime=time.time()
 
 	global status
@@ -383,7 +383,10 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		getStudentWork()
 		
 	countAssignedReviews(creationsToConsider)
-	creationList=makeList(creationsToConsider)
+	if AssignPeerReviewsToGraderSubmissions:
+		creationsToConsider=makeList(creationsToConsider)
+	else:
+		creationsToConsider=[c for c in makeList(creationsToConsider) if c.author.role=='student']
 	#countAssignedReviews(creationList) #is this necessary?
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	peersWithSubmissions=[x for x in studentsWithSubmissions if x.role=='student']
@@ -398,11 +401,11 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 			if not creation.assignment_id in reviewer.reviewCount:
 				reviewer.reviewCount[creation.assignment_id]=0
 			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-					creation.create_submission_peer_review(reviewer.id)
-					reviewer.reviewCount[creation.assignment_id]+=1
-					creation.reviewCount+=1
-					counter=str(i+1) + "." + str(j+1) + "/" + str(len(creationList))
-					printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
+				creation.create_submission_peer_review(reviewer.id)
+				reviewer.reviewCount[creation.assignment_id]+=1
+				creation.reviewCount+=1
+				counter=str(i+1) + "." + str(j+1) + "/" + str(len(creationList))
+				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
 			reviewer=random.choice(reviewers)
 			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
