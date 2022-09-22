@@ -353,7 +353,7 @@ def assignCalibrationReviews(calibrations="auto"):
 			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
 		calibration = calibrations[i%len(calibrations)]
-		printLine(str(i)+"assigning" +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (" + studentsById[calibrations[i%len(calibrations)].author_id].sectionName +") to be reviewed by "+ studentsById[reviewer.id].name+ "(" ,studentsById[reviewer.id].sectionName + ")", False )
+		printLine(str(i)+"assigning" +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name+ "(" ,studentsById[reviewer.id].sectionName + ")", newLine=False )
 		i+=1
 		if (studentsById[calibrations[i%len(calibrations)].author_id].name!=studentsById[reviewer.id].name):
 			calibration.create_submission_peer_review(reviewer.id)
@@ -387,6 +387,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		creationsToConsider=makeList(creationsToConsider)
 	else:
 		creationsToConsider=[c for c in makeList(creationsToConsider) if c.author.role=='student']
+	creationList=creationsToConsider
 	#countAssignedReviews(creationList) #is this necessary?
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	peersWithSubmissions=[x for x in studentsWithSubmissions if x.role=='student']
@@ -425,7 +426,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				creation.create_submission_peer_review(reviewer.id)
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
-				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", "---")
+				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", "---",  end="")
 				#print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	if len(graders)==0:
 		return
@@ -454,7 +455,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 					reviewer.reviewCount[creation.assignment_id]+=1
 					creation.graderReviewCount+=1
 					counter=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
-					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
+					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter, end="")
 					#print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
 	saveStudents()
 	
@@ -1118,12 +1119,20 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 				print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
 				calibrate()
 			print("OK, now lets go through each regraded student to post their scores and comments")
+			oldReviewCurve=assignment.reviewCurve #xxx
+			print("SEARCH FOR #xxx AND DELETE THOSE LINES") #xxx
+			print("Existing review function is " +oldReviewCurve) #xxx
+			assignment.reviewCurve=confirm("Enter new reviewCurve: ", requireResponse=True) #xxx
 			grade(assignment, studentsToGrade=list(regradedStudents.values()))
+			changeToREviewFunc=(oldReviewCurve.strip() != assignment.reviewCurve.strip())
+			assignment.reviewCurve=oldReviewCurve #xxx
 			for student_key in regradedStudents:
 				student=regradedStudents[student_key]
 				if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
 					printLine("Posting regrade comments for " + student.name, newLine=False)
 					student.comments[assignment.id]=student.regradeComments[assignment.id]
+					if changeToREviewFunc: #xxx
+						student.comments[assignment.id]+="\nYour review score was recomputed" #xxx
 					postGrades(assignment, listOfStudents=[student])
 					student.regrade[assignment.id]="Done"
 					print("Posted regrade for   " + student.name)
@@ -1700,7 +1709,7 @@ def reverseText(msg):
 	
 ######################################
 # Prompt for user input, but give up after a timeout
-def inputWithTimeout(prompt, timeout):
+def inputWithTimeout(prompt, timeout=10):
 	import signal, threading
 	prompt=formatWithBoldOptions(prompt)
 	stopFlag=False
