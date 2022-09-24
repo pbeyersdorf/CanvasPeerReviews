@@ -1326,6 +1326,21 @@ def log(msg, display=True, fileName=None):
 	f.write("\n\n") 
 	f.close()
 
+######################################
+# look in the log to see if the serchText esists
+def findInLog(serchText, fileName=None):
+	if fileName==None:
+		#fileName=status['prefix']+"log.txt"
+		fileName=status['prefix']+"log.txt"
+	theFile=status['dataDir'] + fileName
+	f = open(theFile, "r")
+	lines = f.readlines()
+	f.close()
+	for line in lines:
+		if serchText in line:
+			return True
+	return False
+
 
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
