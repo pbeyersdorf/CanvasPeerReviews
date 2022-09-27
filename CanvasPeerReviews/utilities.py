@@ -1076,6 +1076,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					comments=[com['comment'] for com in c.edit().submission_comments if keyword in com['comment'].lower()]
 					#print("regrade requested by " + student.name + "for assignment at: ")
 					previewUrl=c.edit().preview_url.replace("preview=1&","")
+					speedGraderURL=previewURL.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=").replace("?version=1","")
 					#webbrowser.open(previewUrl)
 					#print(previewUrl)
 					print("\n---------- " + student.name + " says: ---------- \n")
@@ -1093,7 +1094,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						if val=="v":
 							val="unknwon"
 							print("Enter any regrade info and comments into the web browser")
-							webbrowser.open(previewUrl)
+							webbrowser.open(speedGraderURL)
 						if val=="r":
 							val="unknwon"
 							student.pointsOnAssignment(assignment)
