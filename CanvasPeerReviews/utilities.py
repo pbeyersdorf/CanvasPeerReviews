@@ -922,7 +922,16 @@ def gradeStudent(assignment, student):
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
 			for otherReview in reviewsById[thisGivenReview.submission_id]:
-				if (otherReview.reviewer_id != student.id): #don't compare this review to itself
+				if not assignment.id in student.givenReviewData:
+						student.givenReviewData[assignment.id]=dict()
+				if not otherReview.submission_id in student.givenReviewData[assignment.id]:
+						student.givenReviewData[assignment.id][otherReview.submission_id]=[]
+				try:
+					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
+				except:
+					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
+				if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
+					student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
 					for cid in thisGivenReview.scores:
 						if otherReview.review_type == "peer_review":
 							try:

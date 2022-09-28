@@ -23,6 +23,7 @@ class Student:
 		self.regrade=dict()
 		self.comments=dict()
 		self.reviewData=dict()
+		self.givenReviewData=dict()
 		self.regradeComments=dict()
 		self.reviewCount=dict()
 		self.assignmentsGradedByInstructor=dict()
