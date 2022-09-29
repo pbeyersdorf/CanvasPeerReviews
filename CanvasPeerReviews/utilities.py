@@ -1039,7 +1039,7 @@ def gradeStudent(assignment, student):
 
 ######################################
 # Get a review grade based only on calibrations that the instructor graded
-def reviewGradeonCalibrations(assignment, student):
+def reviewGradeOnCalibrations(assignment, student):
 	delta2=0
 	tempDelta=dict()
 	tempTotalWeight=dict()
@@ -1086,11 +1086,7 @@ def reviewGradeonCalibrations(assignment, student):
 	
 	curveFunc=eval('lambda x:' + assignment.curve)
 	totalGradeDetla= round(reviewGrade-oldReviewGrade)
-	totalPointsDetla= round(totalGradeDetla * params.weightingOfReviews)
-
-	#student.grades[assignment.id]['review'] =reviewGrade#, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
-	#student.points[assignment.id]=['review']=  reviewPoints#, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
-	
+	totalPointsDetla= round(totalGradeDetla * params.weightingOfReviews)	
 	if not assignment.id in student.regradeComments:
 		student.regradeComments[assignment.id]=student.calibrationGradeExplanation[assignment.id]
 	student.regradeComments[assignment.id]+="After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
@@ -1103,10 +1099,10 @@ def reviewGradeonCalibrations(assignment, student):
 		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
 		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total']))
 	elif (totalPointsDetla) < 0:
-		student.regradeComments[assignment.id]+="This would actually lower your review grade."
+		student.regradeComments[assignment.id]+="This would actually lower your review grade, but I chose to leave it as is.  "
 		#student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
 	else:
-		student.regradeComments[assignment.id]+="This did not change your grade"
+		student.regradeComments[assignment.id]+="This did not change your review grade."
 	return student.points[assignment.id]['curvedTotal']
 
 ######################################
@@ -1203,7 +1199,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			grade(assignment, studentsToGrade=list(regradedStudents.values()))
 			for student_key in regradedStudents:
 				student=regradedStudents[student_key]
-				reviewGradeonCalibrations(assignment,student)
+				reviewGradeOnCalibrations(assignment,student)
 				if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
 					printLine("Posting regrade comments for " + student.name, newLine=False)
 					student.comments[assignment.id]=student.regradeComments[assignment.id]
