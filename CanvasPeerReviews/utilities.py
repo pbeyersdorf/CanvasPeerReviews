@@ -1038,6 +1038,78 @@ def gradeStudent(assignment, student):
 		student.regradeComments[assignment.id]+=totalScoringSummaryString
 
 ######################################
+# Get a review grade based only on calibrations that the instructor graded
+def reviewGradeonCalibrations(assignment, student):
+	delta2=0
+	tempDelta=dict()
+	tempTotalWeight=dict()
+	numberOfComparisons=0
+	oldReviewGrade=student.grades[assignment.id]['review'] 
+	try:
+		student.calibrationGradeExplanation
+	except:
+		student.calibrationGradeExplanation=dict()
+	student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by the instructor, compared to the instructor the scores you gave out on average were:\n"
+	for key, thisGivenReview in student.reviewsGiven.items():
+		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
+		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
+			for otherReview in reviewsById[thisGivenReview.submission_id]:
+				if otherReview.review_type == "grading":
+					weight=1
+					for cid in thisGivenReview.scores:
+						if cid in tempDelta:
+							tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
+							tempTotalWeight[cid]+=weight
+						else:
+							tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
+							tempTotalWeight[cid]=weight						
+						delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
+					numberOfComparisons+=weight 
+	for cid in tempDelta:
+		if (tempDelta[cid]>0.05):
+			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than the instructor "
+		elif (tempDelta[cid]<-0.05):
+			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than the instructor "
+		else:
+			student.calibrationGradeExplanation[assignment.id]+="    " + " about the same as the instructor "
+		student.calibrationGradeExplanation[assignment.id]+="for '" + str(criteriaDescription[cid]) +"'\n"
+	
+	if numberOfComparisons!=0:
+		rms=(delta2/numberOfComparisons)**0.5
+	else:
+		print(student.name + " did not grade any calibration assignments on " + assignment.name)
+		return
+	
+	reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
+	reviewGrade=reviewGradeFunc(rms)
+
+	
+	curveFunc=eval('lambda x:' + assignment.curve)
+	totalGradeDetla= round(reviewGrade-oldReviewGrade)
+	totalPointsDetla= round(totalGradeDetla * params.weightingOfReviews)
+
+	#student.grades[assignment.id]['review'] =reviewGrade#, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+	#student.points[assignment.id]=['review']=  reviewPoints#, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
+	
+	if not assignment.id in student.regradeComments:
+		student.regradeComments[assignment.id]=student.calibrationGradeExplanation[assignment.id]
+	student.regradeComments[assignment.id]+="After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
+	if (totalPointsDetla) > 0:
+		student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
+		student.grades[assignment.id]['review']=reviewGrade
+		student.points[assignment.id]['review']=round(reviewGrade * params.weightingOfReviews)
+		student.grades[assignment.id]['total']=student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation
+		student.points[assignment.id]['total']=round(student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation)
+		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
+		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total']))
+	elif (totalPointsDetla) < 0:
+		student.regradeComments[assignment.id]+="This would actually lower your review grade."
+		#student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
+	else:
+		student.regradeComments[assignment.id]+="This did not change your grade"
+	return student.points[assignment.id]['curvedTotal']
+
+######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
 def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 	global status, activeAssignment
@@ -1128,23 +1200,20 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 				print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
 				calibrate()
 			print("OK, now lets go through each regraded student to post their scores and comments")
-			oldReviewCurve=assignment.reviewCurve #xxx
-			print("SEARCH FOR #xxx AND DELETE THOSE LINES") #xxx
-			print("Existing review function is " +oldReviewCurve) #xxx
-			assignment.reviewCurve=confirm("Enter new reviewCurve: ", requireResponse=True) #xxx
 			grade(assignment, studentsToGrade=list(regradedStudents.values()))
-			changeToREviewFunc=(oldReviewCurve.strip() != assignment.reviewCurve.strip())
-			assignment.reviewCurve=oldReviewCurve #xxx
 			for student_key in regradedStudents:
 				student=regradedStudents[student_key]
+				reviewGradeonCalibrations(assignment,student)
 				if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
 					printLine("Posting regrade comments for " + student.name, newLine=False)
 					student.comments[assignment.id]=student.regradeComments[assignment.id]
-					if changeToREviewFunc: #xxx
-						student.comments[assignment.id]+="\nYour review score was recomputed" #xxx
-					postGrades(assignment, listOfStudents=[student])
-					student.regrade[assignment.id]="Done"
-					print("Posted regrade for   " + student.name)
+					print("xxx---xxx")
+					print(student.comments[assignment.id])
+					print("Score to be posted is ", student.points[assignment.id]['curvedTotal'])
+					if confirm("Ok to post?"):
+						postGrades(assignment, listOfStudents=[student])
+						student.regrade[assignment.id]="Done"
+						print("Posted regrade for   " + student.name)
 				else:
 					print("Not posting anything for  " + student.name)
 		else:
