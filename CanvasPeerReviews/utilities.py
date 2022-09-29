@@ -353,7 +353,7 @@ def assignCalibrationReviews(calibrations="auto"):
 			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
 		calibration = calibrations[i%len(calibrations)]
-		printLine(str(i)+"assigning" +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name+ "(" ,studentsById[reviewer.id].sectionName + ")", newLine=False )
+		printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name, newLine=False )
 		i+=1
 		if (studentsById[calibrations[i%len(calibrations)].author_id].name!=studentsById[reviewer.id].name):
 			calibration.create_submission_peer_review(reviewer.id)
@@ -405,7 +405,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				creation.create_submission_peer_review(reviewer.id)
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
-				counter=str(i+1) + "." + str(j+1) + "/" + str(len(creationList))
+				counter=str(i+1) + "/" + str(len(creationList))
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
 			reviewer=random.choice(reviewers)
@@ -413,7 +413,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				creation.create_submission_peer_review(reviewer.id)
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
-				counter=str(i+1) + "." + str(j+1) + "/" + str(len(creationList))
+				counter=str(i+1) + "/" + str(len(creationList))
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation (as an additional assignment)", counter)	
 		
 					#print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
@@ -537,9 +537,6 @@ def countAssignedReviews(creations):
 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
 	global students
 	creations=makeList(creations)
-	#for student in students:
-	#	clearList(student.reviewCount)
-	print("commented out lines 487-488 in utilites that clears the student reviewcount")
 	for student in students:
 		student.reviewCount[creations[0].assignment_id]=0	
 	print("Checking how many peer reviews each students has already been assigned...")
