@@ -1089,15 +1089,15 @@ def reviewGradeOnCalibrations(assignment, student):
 	totalPointsDetla= round(totalGradeDetla * params.weightingOfReviews)	
 	if not assignment.id in student.regradeComments:
 		student.regradeComments[assignment.id]=student.calibrationGradeExplanation[assignment.id]
-	student.regradeComments[assignment.id]+="After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
+	student.regradeComments[assignment.id]+="  After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
 	if (totalPointsDetla) > 0:
-		student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
 		student.grades[assignment.id]['review']=reviewGrade
 		student.points[assignment.id]['review']=round(reviewGrade * params.weightingOfReviews)
 		student.grades[assignment.id]['total']=student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation
 		student.points[assignment.id]['total']=round(student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation)
 		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
 		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total']))
+		student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
 	elif (totalPointsDetla) < 0:
 		student.regradeComments[assignment.id]+="This would actually lower your review grade, but I chose to leave it as is.  "
 		#student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
@@ -1144,7 +1144,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						if not (assignment.id in student.regrade):
 							regradedStudents[c.edit().id]=student
 		#process list of students needing a regrade
-		for student_key in regradedStudents:
+		for i, student_key in enumerate(regradedStudents):
 			student=regradedStudents[student_key]
 			for key in student.creations:
 				c = student.creations[key]
@@ -1155,7 +1155,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					speedGraderURL=previewUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=").replace("?version=1","")
 					#webbrowser.open(previewUrl)
 					#print(previewUrl)
-					print("\n---------- " + student.name + " says: ---------- \n")
+					print("\n---------- " + student.name + " says: ---------- " +str(i+1)+"/" +str(len(regradedStudents))+ " \n")
 					print("\n\n".join(comments[1:])+"\n")
 					#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
 					val="unknwon"
