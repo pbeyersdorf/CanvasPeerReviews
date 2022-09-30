@@ -1888,6 +1888,15 @@ def clearList(lst):
 		while lst:
 			lst.popitem()
 
+######################################
+# exit to a debugger with instructions
+def interact():
+	print("Precede any commands with a '!'")
+	print("Type 'c' in debugger to continue with script")
+	breakpoint()
+	return
+
+
 # def detectKeyPress(key=' ',duration=1):
 # 	import keyboard, time
 # 	start=time.time()
