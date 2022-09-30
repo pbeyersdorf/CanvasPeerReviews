@@ -24,7 +24,7 @@ except:
 import webbrowser
 import copy
 import random
-import os
+import sys, os
 import subprocess
 import csv
 import math
@@ -32,6 +32,15 @@ import time
 from colorama import Fore, Back, Style
 if errormsg!="":
 	raise Exception(errormsg)
+
+homeFolder = os.path.expanduser('~')
+try:
+	from credentials import *
+	DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH
+	writeCredentials=False
+except:
+	writeCredentials=True
+
 
 
 ######################################
@@ -139,6 +148,16 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	course = canvas.get_course(COURSE_ID)
 	if printCommand:
 		print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
+		if 	writeCredentials==True:
+			print("Generating a credentials template file to use in the future")
+			f = open("credentials.py", "a")
+			f.write("# credentials automatically generated ["+str(datetime.now())+"] for the canvas course to be used by the other python scripts int his folder\n"
+				+ "COURSE_ID = " +str(COURSE_ID) +" #6 digit code that appears in the URL of your canvas course\n"
+				+ "CANVAS_URL = '" + CANVAS_URL + "'\n"
+				+ "TOKEN = '" + TOKEN+  "' # the canvas token for accessing your course.  See https://community.canvaslms.com/t5/Admin-Guide/How-do-I-obtain-an-API-access-token-in-the-Canvas-Data-Portal/ta-p/157\n"
+				+ "RELATIVE_DATA_PATH='" + os.path.abspath(dataDirectory).replace(homeFolder,"")+"/" + "' # location of data directory relative to home directory.  Example '/Nextcloud/Phys 51/Grades/CanvasPeerReviews/Data/'\n"
+			)
+			f.close()
 	loadCache()
 	#print(status['message'],end="")
 	printLine(status['message'],False)
@@ -1546,11 +1565,12 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 def viewGraders():
 	listOfGraders=[s for s in students if s.role=='grader']
 	if len(listOfGraders) > 0:
-		print("\nCurrent graders are ")
+		print("\n\nCurrent graders are ")
 		for g in listOfGraders:
 			print("\t"+g.name)
 	else:
 		print("The class has no graders.")
+	print()
 ######################################
 # Select students to be assigned as graders
 def assignGraders():
