@@ -1023,6 +1023,7 @@ def gradeStudent(assignment, student):
 	else:
 		curvedScoreString=(("  This was curved to give an adjusted score of %." + str(digits) +"f.") % (curvedTotalPoints) )
 	totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
+	regradedScoringSummaryString=("Based on the regrading you earned %." + str(digits) +"f%% for your submission") % (creationGrade ) 
 	totalScoringSummaryString+=curvedScoreString
 	student.comments[assignment.id]+="  " + totalScoringSummaryString+"\n\nIf you believe the score assigned is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked."
 		
@@ -1032,7 +1033,7 @@ def gradeStudent(assignment, student):
 
 	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
 		student.regradeComments[assignment.id]="I've regraded your work.  My review of your work give the following scores:\n"+scoringSummaryString
-		student.regradeComments[assignment.id]+=totalScoringSummaryString
+		student.regradeComments[assignment.id]+=regradedScoringSummaryString
 
 ######################################
 # Get a review grade based only on calibrations that the instructor graded
@@ -1046,7 +1047,7 @@ def reviewGradeOnCalibrations(assignment, student):
 		student.calibrationGradeExplanation
 	except:
 		student.calibrationGradeExplanation=dict()
-	student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by the instructor, compared to the instructor the scores you gave out on average were:\n"
+	#student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by the instructor, compared to the instructor the scores you gave out on average were:\n"
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
@@ -1062,24 +1063,23 @@ def reviewGradeOnCalibrations(assignment, student):
 							tempTotalWeight[cid]=weight						
 						delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
 					numberOfComparisons+=weight 
-	for cid in tempDelta:
-		if (tempDelta[cid]>0.05):
-			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than the instructor "
-		elif (tempDelta[cid]<-0.05):
-			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than the instructor "
-		else:
-			student.calibrationGradeExplanation[assignment.id]+="    " + " about the same as the instructor "
-		student.calibrationGradeExplanation[assignment.id]+="for '" + str(criteriaDescription[cid]) +"'\n"
-	
+# 	for cid in tempDelta:
+# 		if (tempDelta[cid]>0.05):
+# 			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than the instructor "
+# 		elif (tempDelta[cid]<-0.05):
+# 			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than the instructor "
+# 		else:
+# 			student.calibrationGradeExplanation[assignment.id]+="    " + " about the same as the instructor "
+# 		student.calibrationGradeExplanation[assignment.id]+="for '" + str(criteriaDescription[cid]) +"'\n"
+
 	if numberOfComparisons!=0:
 		rms=(delta2/numberOfComparisons)**0.5
 	else:
 		print(student.name + " did not grade any calibration assignments on " + assignment.name)
 		return
-	
 	reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 	reviewGrade=reviewGradeFunc(rms)
-
+	student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by me we differed on (rms) average by %.2f points per category, resulting in a regaded review score of %.f\n"%(rms,reviewGrade)	
 	
 	curveFunc=eval('lambda x:' + assignment.curve)
 	totalGradeDetla= round(reviewGrade-oldReviewGrade)
@@ -1116,7 +1116,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 	for assignment in assignmentList:
 		unresolvedRegrades=False
 		print("\nRegrading " + assignment.name + "...")				
-		regradedStudents=dict()
+		studentsNeedingRegrade=dict()
 		keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
 		#make list of students needing a regrade
 		if studentsToGrade.lower()=="all":
@@ -1128,7 +1128,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					try:
 						if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
 							if not (assignment.id in student.regrade): 
-								regradedStudents[c.edit().id]=student
+								studentsNeedingRegrade[c.edit().id]=student
 								printLine(student.name + " has a regrade request pending")
 					except Exception:
 						pass
@@ -1139,10 +1139,10 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					c = student.creations[key]
 					if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
 						if not (assignment.id in student.regrade):
-							regradedStudents[c.edit().id]=student
+							studentsNeedingRegrade[c.edit().id]=student
 		#process list of students needing a regrade
-		for i, student_key in enumerate(regradedStudents):
-			student=regradedStudents[student_key]
+		for i, student_key in enumerate(studentsNeedingRegrade):
+			student=studentsNeedingRegrade[student_key]
 			for key in student.creations:
 				c = student.creations[key]
 				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>0:
@@ -1152,18 +1152,19 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					speedGraderURL=previewUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=").replace("?version=1","")
 					#webbrowser.open(previewUrl)
 					#print(previewUrl)
-					print("\n---------- " + student.name + " says: ---------- " +str(i+1)+"/" +str(len(regradedStudents))+ " \n")
+					print("\n---------- " + student.name + " says: ---------- " +str(i+1)+"/" +str(len(studentsNeedingRegrade))+ " \n")
 					print("\n\n".join(comments[1:])+"\n")
 					#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
 					val="unknwon"
-					while not val in ["i","f","v","r","s"]:
-						val=input("\t(v) to view student work \n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(s) to submit\n")
+					webbrowser.open(speedGraderURL)
+					while not val in ["i","f","v","r","ec", "er","e"]:
+						val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(ec) to evaluate creation (only)\t(er) to evaluate review (only)\t(e) to evaluate creation and review\n")
 						if val=='i':
 							unresolvedRegrades=True
 							if  assignment.id in student.regrade:
 								student.regrade.pop(assignment.id)
 						if val=='f':
-							student.regrade[assignment.id]="ignore"
+							student.regrade[assignment.id]="Forget"
 						if val=="v":
 							val="unknwon"
 							print("Enter any regrade info and comments into the web browser")
@@ -1171,8 +1172,12 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						if val=="r":
 							val="unknwon"
 							student.pointsOnAssignment(assignment)
-						if val=="s":
-							student.regrade[assignment.id]="Started"
+						if val=="e":
+							student.regrade[assignment.id]="Started creation and review"
+						if val=="ec":
+							student.regrade[assignment.id]="Started creation"
+						if val=="er":
+							student.regrade[assignment.id]="Started review"
 		print("\n")
 		status["regraded"]=True
 		assignment.regraded=True
@@ -1182,33 +1187,52 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		log(msg,False)
 
 		#regenerate the dictionary with only students who need to be processed
-		regradedStudentsList=[s for s in students if assignment.id in s.regrade and s.regrade[assignment.id]!="ignore" and s.regrade[assignment.id]!="Done"]
-		regradedStudents=dict()
-		for rs in regradedStudentsList:
-			regradedStudents[rs.id]=rs
-			
-		if len(regradedStudents)>0:
+		studentsNeedingCreationRegradeList=[s for s in students if assignment.id in s.regrade and "creation" in s.regrade[assignment.id]]
+		studentsNeedingReviewRegradeList=[s for s in students if assignment.id in s.regrade  and "review" in s.regrade[assignment.id]]
+		studentsNeedingCreationRegrade=dict()
+		studentsNeedingReviewRegrade=dict()
+		for rs in studentsNeedingCreationRegradeList:
+			studentsNeedingCreationRegrade[rs.id]=rs
+		for rs in studentsNeedingReviewRegradeList:
+			studentsNeedingReviewRegrade[rs.id]=rs
+		studentsNeedingRegrade = studentsNeedingCreationRegrade | studentsNeedingReviewRegrade
+		print("xxx-remove the next three lines if they are working")
+		print(f'{studentsNeedingCreationRegrade=}')
+		print(f'{studentsNeedingReviewRegrade=}')
+		print(f'{studentsNeedingRegrade=}')
+		if len(studentsNeedingRegrade)>0:
 			if (recalibrate):
 				getStudentWork(assignment)
 				print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
 				calibrate()
 			print("OK, now lets go through each regraded student to post their scores and comments")
-			grade(assignment, studentsToGrade=list(regradedStudents.values()))
-			for student_key in regradedStudents:
-				student=regradedStudents[student_key]
-				reviewGradeOnCalibrations(assignment,student)
-				if assignment.id in student.regrade and student.regrade[assignment.id]!="ignore" and student.regrade[assignment.id]!="Done":
+			grade(assignment, studentsToGrade=list(studentsNeedingCreationRegrade.values()))
+			for student_key in studentsNeedingRegrade:
+				student=studentsNeedingRegrade[student_key]
+				if student in studentsNeedingReviewRegradeList:
+					reviewGradeOnCalibrations(assignment,student)
+				digits=int(2-math.log10(assignment.points_possible))
+				creationGrade=student.grades[assignment.id]['creation']
+				reviewGrade=student.grades[assignment.id]['review']
+				totalPoints=student.grades[assignment.id]['total']
+				totalPoints=student.grades[assignment.id]['total']
+				curvedTotalPoints=student.grades[assignment.id]['curvedTotal']
+				totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
+				if (curvedTotalPoints!=totalPoints):
+					totalScoringSummaryString+=(("  When curved this gives a final regraded score of %." + str(digits) +"f.") % (curvedTotalPoints) )
+				student.regradeComments[assignment.id] += totalScoringSummaryString
+				if assignment.id in student.regrade and student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done":
 					printLine("Posting regrade comments for " + student.name, newLine=False)
-					student.comments[assignment.id]=student.regradeComments[assignment.id]
-					print("xxx---xxx")
-					print(student.comments[assignment.id])
+					print("---xxx---xxx---xxx---")
+					print(student.regradeComments[assignment.id])
 					print("Score to be posted is ", student.points[assignment.id]['curvedTotal'])
 					if confirm("Ok to post?"):
+						student.comments[assignment.id]=student.regradeComments[assignment.id]
 						postGrades(assignment, listOfStudents=[student])
 						student.regrade[assignment.id]="Done"
-						print("Posted regrade for   " + student.name)
+						print("Posted regrade for " + student.name)
 				else:
-					print("Not posting anything for  " + student.name)
+					print("Not posting anything for " + student.name)
 		else:
 			print("There are no pending regrade requests for " + assignment.name)
 		printLine()
@@ -1220,7 +1244,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			else:
 				assignment.regradesCompleted=False
 				
-	#postGrades(assignment, listOfStudents=list(regradedStudents.values()))
+	#postGrades(assignment, listOfStudents=list(studentsNeedingRegrade.values()))
 	saveStudents()
 	saveAssignments()
 		
