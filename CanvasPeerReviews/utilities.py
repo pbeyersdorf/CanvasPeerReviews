@@ -283,11 +283,6 @@ def chooseAssignment(requireConfirmation=True):
 	global graded_assignments, lastAssignment, activeAssignment
 	confirmed=False
 	defaultChoice=0
-	print("graded_assignments")
-	print(graded_assignments)
-	print()
-	print("assignmentByNumber")
-	print(assignmentByNumber)
 	while not confirmed:
 		if len([key for key in graded_assignments if isinstance(key, int)]) == len(assignmentByNumber):
 			print("\nAssignments with peer reviews enabled: ")
