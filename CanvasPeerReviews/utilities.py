@@ -926,6 +926,7 @@ def gradeStudent(assignment, student):
 	#calculate review grades
 	delta2=0
 	tempDelta=dict()
+	tempDelta2=dict()
 	tempTotalWeight=dict()
 	numberOfComparisons=0
 	student.reviewGradeExplanation="On peer reviews the scores you gave out on average were:\n"
@@ -958,22 +959,27 @@ def gradeStudent(assignment, student):
 					try:
 						if cid in tempDelta:
 							tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
+							tempDelta2[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )**2
 							tempTotalWeight[cid]+=weight
 						else:
 							tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
+							tempDelta2[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )	**2	
 							tempTotalWeight[cid]=weight						
 						delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
 						numberOfComparisons+=weight 
 					except:
 						status['err']="Key error" 
 	for cid in tempDelta:
-		if (tempDelta[cid]>0.05):
-			student.reviewGradeExplanation+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders "
-		elif (tempDelta[cid]<-0.05):
-			student.reviewGradeExplanation+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders "
+		if (tempDelta[cid]>0):
+			#student.reviewGradeExplanation+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
+			student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
+		elif (tempDelta[cid]<0):
+			#student.reviewGradeExplanation+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
+			student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
 		else:
-			student.reviewGradeExplanation+="    " + " about the same as other graders "
-		student.reviewGradeExplanation+="for '" + str(criteriaDescription[cid]) +"'\n"
+			#student.reviewGradeExplanation+="    " + " about the same as other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
+			student.reviewGradeExplanation+="    %.2f points off from other graders " % ( math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))
+		student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
 
 	rms=2
 	
@@ -1026,12 +1032,17 @@ def gradeStudent(assignment, student):
 	scoringSummaryString+="\n" 
 	student.comments[assignment.id]="A weighted average of the reviews of your work give the following scores:\n"+scoringSummaryString
 	student.comments[assignment.id]+=student.reviewGradeExplanation
+	commentAboutRanking=""
 	if (percentileRanking >66):
-		student.comments[assignment.id]+=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
+		commentAboutRanking="Over the course of the semester the quality of your reviews puts you in the top third of all of the student graders.  Good job - as one of the better graders in the class your peer reviews will carry additional weight."
+		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
 	elif (percentileRanking <33):
-		student.comments[assignment.id]+=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.") % (percentileRanking ) )	
+		commentAboutRanking="Over the course of the semester the quality of your reviews is well below average compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.  Until you improve your ranking your reviews will be weighted less that those by other students."
+		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.") % (percentileRanking ) )	
 	else:
-		student.comments[assignment.id]+=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
+		commentAboutRanking="Over the course of the semester the quality of your reviews is middle-of-the-pack compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions."
+		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
+
 	if (curvedTotalPoints==totalPoints):
 		curvedScoreString=""
 	else:
@@ -1039,7 +1050,9 @@ def gradeStudent(assignment, student):
 	totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
 	regradedScoringSummaryString=("Based on the regrading you earned %." + str(digits) +"f%% for your submission") % (creationGrade ) 
 	totalScoringSummaryString+=curvedScoreString
-	student.comments[assignment.id]+="  " + totalScoringSummaryString+"\n\nIf you believe the score assigned is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked."
+	student.comments[assignment.id]+="\n" + totalScoringSummaryString
+	student.comments[assignment.id]+="\n\n" + commentAboutRanking
+	student.comments[assignment.id]+="\n\nIf you believe the score assigned is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked."
 		
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
