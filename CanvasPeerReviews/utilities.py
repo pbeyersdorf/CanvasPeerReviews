@@ -934,38 +934,38 @@ def gradeStudent(assignment, student):
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
 			for otherReview in reviewsById[thisGivenReview.submission_id]:
 				if not assignment.id in student.givenReviewData:
-						student.givenReviewData[assignment.id]=dict()
+					student.givenReviewData[assignment.id]=dict()
 				if not otherReview.submission_id in student.givenReviewData[assignment.id]:
-						student.givenReviewData[assignment.id][otherReview.submission_id]=[]
+					student.givenReviewData[assignment.id][otherReview.submission_id]=[]
 				try:
 					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
 				except:
 					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
 				if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
 					student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
-					for cid in thisGivenReview.scores:
-						if otherReview.review_type == "peer_review":
-							try:
-								weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
-								if (studentsById[otherReview.reviewer_id]).role == 'grader':
-									weight=params.gradingPowerForGraders
-							except:
-								weight=1
-							
-						elif otherReview.review_type == "grading":
-							weight=params.gradingPowerForInstructors
-
+				for cid in thisGivenReview.scores:
+					if otherReview.review_type == "peer_review":
 						try:
-							if cid in tempDelta:
-								tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
-								tempTotalWeight[cid]+=weight
-							else:
-								tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
-								tempTotalWeight[cid]=weight						
-							delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
-							numberOfComparisons+=weight 
+							weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
+							if (studentsById[otherReview.reviewer_id]).role == 'grader':
+								weight=params.gradingPowerForGraders
 						except:
-							status['err']="Key error" 
+							weight=1
+						
+					elif otherReview.review_type == "grading":
+						weight=params.gradingPowerForInstructors
+
+					try:
+						if cid in tempDelta:
+							tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
+							tempTotalWeight[cid]+=weight
+						else:
+							tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
+							tempTotalWeight[cid]=weight						
+						delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
+						numberOfComparisons+=weight 
+					except:
+						status['err']="Key error" 
 	for cid in tempDelta:
 		if (tempDelta[cid]>0.05):
 			student.reviewGradeExplanation+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders "
