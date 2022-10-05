@@ -1144,7 +1144,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		unresolvedRegrades=False
 		print("\nRegrading " + assignment.name + "...")				
 		studentsNeedingRegrade=dict()
-		keyword="regrade" # if this keyword is in the comments flag the submission for a regrade
+		keyword="regrade" # if this keyword is in a student comments flag the submission for a regrade
 		#make list of students needing a regrade
 		if studentsToGrade.lower()=="all":
 			for i,student in enumerate(makeList(students)):
@@ -1153,10 +1153,14 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					#printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
 					printLeftRight("Checking for a regrade request from " + student.name ,str(i+1)+"/"+str(len(makeList(students))), end="")
 					try:
-						if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
-							if not (assignment.id in student.regrade): 
-								studentsNeedingRegrade[c.edit().id]=student
-								printLine(student.name + " has a regrade request pending")
+						if c.assignment_id == assignment.id:
+							comments=c.edit().submission_comments
+							for comment in comments:
+								if comment['author']['id'] == c.author_id and comment['comment'].count(keyword):
+									if not (assignment.id in student.regrade): 
+										if c.edit().id not in studentsNeedingRegrade:
+											studentsNeedingRegrade[c.edit().id]=student
+											printLine(student.name + " has a regrade request pending")
 					except Exception:
 						pass
 			printLine("",newLine=False)
@@ -1164,28 +1168,30 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			for student in makeList(studentsToGrade):
 				for key in student.creations:
 					c = student.creations[key]
-					if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>1:
-						if not (assignment.id in student.regrade):
-							studentsNeedingRegrade[c.edit().id]=student
+					comments=c.edit().submission_comments
+					if c.assignment_id == assignment.id:
+						for comment in comments:
+							if comment['author']['id'] == c.author_id and comment['comment'].count(keyword):
+								if not (assignment.id in student.regrade):
+									studentsNeedingRegrade[c.edit().id]= student
 		#process list of students needing a regrade
 		for i, student_key in enumerate(studentsNeedingRegrade):
 			student=studentsNeedingRegrade[student_key]
 			for key in student.creations:
 				c = student.creations[key]
-				if c.assignment_id == assignment.id and str(c.edit().submission_comments).lower().count(keyword)>0:
-					comments=[com['comment'] for com in c.edit().submission_comments if keyword in com['comment'].lower()]
+				if c.assignment_id == assignment.id:
+					comments=[com['comment'] for com in c.edit().submission_comments if com['author']['id'] == student.id]
 					#print("regrade requested by " + student.name + "for assignment at: ")
 					previewUrl=c.edit().preview_url.replace("preview=1&","")
 					speedGraderURL=previewUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=").replace("?version=1","")
 					#webbrowser.open(previewUrl)
 					#print(previewUrl)
 					print("\n---------- " + student.name + " says: ---------- " +str(i+1)+"/" +str(len(studentsNeedingRegrade))+ " \n")
-					print("\n\n".join(comments[1:])+"\n")
-					#print("With comments: " + "\n\n".join(comments[1:]) + "\n")
+					print("\n\n".join(comments)+"\n")
 					val="unknwon"
 					webbrowser.open(speedGraderURL)
 					while not val in ["i","f","v","r","ec", "er","e"]:
-						val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(ec) to evaluate creation (only)\t(er) to evaluate review (only)\t(e) to evaluate creation and review\n")
+						val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(ec) to evaluate creation (only)\n\t(er) to evaluate review (only)\n\t(e) to evaluate creation and review\n")
 						if val=='i':
 							unresolvedRegrades=True
 							if  assignment.id in student.regrade:
@@ -1223,10 +1229,6 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		for rs in studentsNeedingReviewRegradeList:
 			studentsNeedingReviewRegrade[rs.id]=rs
 		studentsNeedingRegrade = studentsNeedingCreationRegrade | studentsNeedingReviewRegrade
-		print("xxx-remove the next three lines if they are working")
-		print(f'{studentsNeedingCreationRegrade=}')
-		print(f'{studentsNeedingReviewRegrade=}')
-		print(f'{studentsNeedingRegrade=}')
 		if len(studentsNeedingRegrade)>0:
 			if (recalibrate):
 				getStudentWork(assignment)
