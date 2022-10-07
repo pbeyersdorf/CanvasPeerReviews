@@ -354,8 +354,6 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	reviewers=randmoize(studentsWithSubmissions) 
 	
-	print("studentsWithSubmissions ->" , len(studentsWithSubmissions))
-
 	calibrations=makeList(calibrations)
 	print("Professor has already graded submissions by ", end="")
 	for c in calibrations:
@@ -382,7 +380,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 			reviewer.reviewCount[calibration.assignment_id]=0
 		reviewer.reviewCount[calibration.assignment_id]+=1
 		calibration.reviewCount+=1
-	printLine(str(i)+" Assigned " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed                                      ", newLine=False )
+	#printLine(str(i)+" Assigned " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed", newLine=False )
 
 	saveStudents()
 	
