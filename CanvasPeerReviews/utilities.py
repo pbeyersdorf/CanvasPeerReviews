@@ -259,13 +259,13 @@ def getMostRecentAssignment():
 	if len(graded_assignments)==0:
 		getGradedAssignments(course)
 	minTimeDelta=3650*24*3600
-	offsetHours=9 # move the due dates earlier by this amount so that an assignment that is almost due will show up as the last assignment.
+	offset = 5+(time.timezone if (time.localtime().tm_isdst == 0) else time.altzone) # move the due dates earlier by this amount so that an assignment that is almost due will show up as the last assignment.
 	
 	for key, graded_assignment in graded_assignments.items():
 		try:
 			thisDelta=datetime.utcnow()-graded_assignment.due_at_date.replace(tzinfo=None)
 			delta=thisDelta.total_seconds()
-			delta+=offsetHours*3600
+			delta+=offset
 			#print(graded_assignment.name, delta/(3600), delta > 0 , delta < minTimeDelta, graded_assignment.published)
 			if (delta > 0  and delta < minTimeDelta and graded_assignment.published) :
 				minTimeDelta=delta
