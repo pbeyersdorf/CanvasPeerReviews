@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+import pytz
+
 class GradedAssignment:
 	def __init__(self, assignment):	
 		if hasattr(assignment, 'rubric'):
@@ -15,7 +18,29 @@ class GradedAssignment:
 		self.curve='x'
 		self.reviewCurve='max(0,min(100, 130*(1-1.5*rms)))'
 		self.regradesCompleted=False
+		self.date=self.getDate(assignment)
 
+	def sync(self, assignment):
+		if assignment.id == self.id:
+			self.__dict__.update(assignment.__dict__)
+			self.date=self.getDate(assignment)
+	
+	def secondsPastDue(self):
+		now=datetime.utcnow().replace(tzinfo=pytz.UTC)
+		try:
+			delta=now-self.date
+			return delta.total_seconds()
+		except:
+			return -99999999
+	
+	def getDate(self, assignment):
+		d=assignment.due_at_date
+		for o in assignment.get_overrides():
+			do=o.due_at_date
+			if (do>d):
+				d=do
+		return do
+		
 	def calibrate():
 		return
 		

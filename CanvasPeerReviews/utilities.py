@@ -243,12 +243,16 @@ def getGradedAssignments(course):
 			assignment.courseid=course.id
 			if not assignment.id in graded_assignments: # no need to recreate if it was already loaded from the cache
 				graded_assignments[assignment.id]=GradedAssignment(assignment)
+			else:
+				graded_assignments[assignment.id].sync(assignment)
 	for key in graded_assignments:
 		try:
 			assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
 		except:
 			print("Unable to add " + assignment.name + " to assignmentByNumber")	
 	status["gotGradedAssignments"]=True
+
+
 
 
 ######################################
@@ -259,23 +263,18 @@ def getMostRecentAssignment():
 	if len(graded_assignments)==0:
 		getGradedAssignments(course)
 	minTimeDelta=3650*24*3600
-	offsetHours=12 # move the due dates earlier by this amount so that an assignment that is almost due will show up as the last assignment.
-	
+
 	for key, graded_assignment in graded_assignments.items():
-		try:
-			thisDelta=datetime.utcnow()-graded_assignment.due_at_date.replace(tzinfo=None)
-			delta=thisDelta.total_seconds()
-			delta+=offsetHours*3600
-			if (delta > 0  and delta < minTimeDelta and graded_assignment.published) :
-				minTimeDelta=delta
-				lastAssignment=graded_assignment
-		except:
-			print("Trouble getting date of",graded_assignment,", likely it was an unscedhueld assignment")
+		delta=graded_assignment.secondsPastDue()
+		if (delta > 0  and delta < minTimeDelta and graded_assignment.published) :
+			minTimeDelta=delta
+			lastAssignment=graded_assignment
 	graded_assignments['last']=lastAssignment
 	if lastAssignment==None:
 		print("Couldn't find an assignment with peer reviews that is past due.")
 	status["gotMostRecentAssignment"]=True
-	return lastAssignment
+	return lastAssignment	
+
 
 ######################################
 # Choose an assignment to work on
@@ -331,16 +330,20 @@ def chooseAssignment(requireConfirmation=True):
 #This takes a list of submissions which are to be used as calibration reviews
 # and assigns one to each student in the class, making sure to avoid assigning
 # a calibration to its own author if possible
-def assignCalibrationReviews(calibrations="auto"):
+def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	global status, creations
+	if assignment=="last":
+		assignment=graded_assignments['last']
+
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'assignCalibrationReviews'")
 		return
 	elif not status['gotStudentsWork']:
 		print("getting student work")
-		getStudentWork()
+		getStudentWork(assignment)
 	if calibrations=="auto":
-		professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[graded_assignments['last'].id]]
+		print("professor reviews for ", assignment.name, assignment.id)
+		professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id]]
 		calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
 		#return
 	else:
@@ -349,8 +352,6 @@ def assignCalibrationReviews(calibrations="auto"):
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	reviewers=randmoize(studentsWithSubmissions) 
 	
-	print("studentsWithSubmissions ->" , len(studentsWithSubmissions))
-
 	calibrations=makeList(calibrations)
 	print("Professor has already graded submissions by ", end="")
 	for c in calibrations:
@@ -377,6 +378,8 @@ def assignCalibrationReviews(calibrations="auto"):
 			reviewer.reviewCount[calibration.assignment_id]=0
 		reviewer.reviewCount[calibration.assignment_id]+=1
 		calibration.reviewCount+=1
+	#printLine(str(i)+" Assigned " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed", newLine=False )
+
 	saveStudents()
 	
 ######################################
