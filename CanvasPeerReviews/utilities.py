@@ -75,6 +75,7 @@ status={'message': '',
 	'regraded': False,
 	'posted': False,
 	'dataDir': './'}
+additionalGradingComment=""
 
 
 ######################################
@@ -1033,7 +1034,8 @@ def gradeStudent(assignment, student):
 			points=0
 		scoringSummaryString+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
 	scoringSummaryString+="\n" 
-	student.comments[assignment.id]="A weighted average of the reviews of your work give the following scores:\n"+scoringSummaryString
+	student.comments[assignment.id]=additionalGradingComment
+	student.comments[assignment.id]+="A weighted average of the reviews of your work give the following scores:\n"+scoringSummaryString
 	student.comments[assignment.id]+=student.reviewGradeExplanation
 	commentAboutRanking=""
 	if (percentileRanking >66):
@@ -1437,6 +1439,10 @@ def getParameters(ignoreFile=False):
 	saveParameters()
 	status["gotParameters"]=True
 	return params
+
+def setPoints(assignment):
+	params.setPoints(assignment)
+	saveParameters()
 
 ######################################
 # save data to a log file

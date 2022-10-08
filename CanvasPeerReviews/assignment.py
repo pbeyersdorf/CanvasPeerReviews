@@ -19,6 +19,7 @@ class GradedAssignment:
 		self.reviewCurve='max(0,min(100, 120*(1-1.5*rms)))'
 		self.regradesCompleted=False
 		self.date=self.getDate(assignment)
+		self.pointsByCidOverride=dict()
 
 	def sync(self, assignment):
 		if assignment.id == self.id:
