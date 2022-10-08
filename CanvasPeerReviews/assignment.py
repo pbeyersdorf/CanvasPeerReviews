@@ -64,6 +64,7 @@ class GradedAssignment:
 			cnt+=1
 		return cnt
 		
+	#points defined by the criteria rubric	
 	def criteria_points(self, cid):
 		for criteria in self.rubric:
 			if "id" in criteria:
@@ -73,6 +74,28 @@ class GradedAssignment:
 				if cid == None:
 					return criteria['points']
 		return 0
+
+	#points that the score should be scaled to for grading
+	def setPoints(self, defaults={}):
+		print("Set an override to the defaul points on " + self.name + ":\n")
+		for criteria in self.rubric:
+			cid=criteria['id']
+			defaultVal=self.criteria_points(cid)
+			if cid in self.multiplier:
+				defaultVal=self.multiplier[cid]
+			elif cid in defaults:
+				defaultVal=defaults[cid]
+			val=input("How many points (out of 100) for '" + criteria['description'] + "' criteria [" +str(defaultVal)+ "]? ")
+			try:
+				val=float(val)
+			except:
+				val=defaultVal
+			self.multiplier[cid]=val
+
+	def pointsForCid(self, cid):
+		if cid in self.multiplier:
+			return self.multiplier[cid]
+		return "default"	
 			
 	def criteria_ids(self):
 		cids=[]

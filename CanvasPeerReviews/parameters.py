@@ -11,24 +11,7 @@ class Parameters:
 	def weeklyDegradationFactor(self):
 		return 0.5**(1.0/self.halfLife)	
 		
-	def setPoints(self, assignment):
-		for criteria in assignment.rubric:
-			cid=criteria['id']
-			val=input("How many points (out of 100) for '" + criteria['description'] + "' creiteria [" +str( self.multiplier[cid])+ "]? ")
-			try:
-				val=float(val)
-			except:
-				val=self.multiplier[cid]
-			key="assignment=" + str(assignment.id) + "&criteria=" + str(cid)
-			print("setting multiplier[" + key + "]=" + str(val))
-			self.multiplier[key]=val
-
-	def pointsForCid(self, cid, assignmentid, val=None):
-		key="assignment=" + str(assignmentid) + "&criteria=" + str(cid)
-		if val!=None:
-			self.multiplier[key]=val
-			return
-		if key in self.multiplier:
-			return self.multiplier[key]
-		else:
-			return self.multiplier[cid]
+	def pointsForCid(self, cid, assignment, val=None):
+		if assignment.pointsForCid(cid) != "default":
+			return assignment.pointsForCid(cid)
+		return self.multiplier[cid]

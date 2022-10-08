@@ -7,6 +7,7 @@ class Student:
 		self.sjsuid=user.sis_user_id
 		self.creations=dict()
 		self.rms_deviation_by_category=dict()
+		self.rms_deviation_by_assignment=dict()
 		self.deviation_by_category=dict()
 		self.reviewsReceivedBy=dict()
 		self.reviewsGiven=dict()

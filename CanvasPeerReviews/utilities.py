@@ -702,12 +702,15 @@ def calibrate(studentsToCalibrate="all"):
 
 	#		Now that all of the students grading powers have been updated, normalize everything so that the average
 	#		grading power for all of the students is 1
+	total0, numberCounted0 = 0 , 0
 	for cid in cids:
 		total, numberCounted = 0 , 0
 		for student in students:
 			if cid in student.rms_deviation_by_category: 
 				total+=student.getGradingPower(cid)
 				numberCounted+=1
+				total0+=student.getGradingPower(cid)
+				numberCounted0+=1
 		else:
 			student.gradingPower[cid]=1
 		for student in students:
@@ -715,6 +718,11 @@ def calibrate(studentsToCalibrate="all"):
 				student.gradingPowerNormalizatoinFactor[cid]*=total/numberCounted
 			else:
 				student.gradingPowerNormalizatoinFactor[cid]=1
+	for student in students:
+		if numberCounted0!=0:
+			student.gradingPowerNormalizatoinFactor[cid]*=total0/numberCounted0
+		else:
+			student.gradingPowerNormalizatoinFactor[cid]=1
 
 	saveStudents()
 	status["calibrated"]=True
@@ -723,8 +731,8 @@ def calibrate(studentsToCalibrate="all"):
 # adjust point distribution for a specific assignment
 def overrideDefaultPoints(assignment):
 	for cid in assignment.criteria_ids():
-		val=getNum("How many points (out of 100) should be awarded for '" + criteriaDescription[cid]+ "'?", params.pointsForCid(cid, assignment.id))
-		params.pointsForCid(cid,assignment.id ,val)
+		val=getNum("How many points (out of 100) should be awarded for '" + criteriaDescription[cid]+ "'?", params.pointsForCid(cid, assignment))
+		params.pointsForCid(cid,assignment ,val)
 	saveParameters()	
 
 ######################################
@@ -748,7 +756,7 @@ def grade(assignment, studentsToGrade="All"):
 		msg=assignment.name +  " regraded with the following point values:\n"
 	
 	for cid in assignment.criteria_ids():
-		msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
+		msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
 	msg+="Using the following function for review '" + assignment.reviewCurve+ "' and a curve of '" + assignment.curve + "'\n"
 	log(msg)
 	getStatistics(assignment, text=False, hist=False)
@@ -868,7 +876,7 @@ def gradeStudent(assignment, student):
 		total, numberCount, weightCount = 0, 0, 0
 		student.gradingExplanation+=str(criteriaDescription[cid]) + ":\n"
 		gradingExplanationLine=""
-		multiplier=params.pointsForCid(cid, assignment.id)
+		multiplier=params.pointsForCid(cid, assignment)
 		for review in student.reviewsReceived:
 			if review.assignment_id == assignment.id:
 				weight=0
@@ -993,6 +1001,7 @@ def gradeStudent(assignment, student):
 		reviewCount=student.reviewCount[creation.assignment_id]
 	except:
 		reviewCount=params.numberOfReviews
+	student.rms_deviation_by_assignment[assignment.id]=rms
 
 	reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 	reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * reviewGradeFunc(rms)
@@ -1029,7 +1038,7 @@ def gradeStudent(assignment, student):
 	scoringSummaryString=""
 	for cid in assignment.criteria_ids():
 		if student.pointsByCriteria[assignment.id][cid]!='':
-			points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment.id),2)
+			points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
 		else:
 			points=0
 		scoringSummaryString+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
@@ -1150,6 +1159,8 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		print("\nRegrading " + assignment.name + "...")				
 		studentsNeedingRegrade=dict()
 		keyword="regrade" # if this keyword is in a student comments flag the submission for a regrade
+		keywordReview="review" # if this keyword is in a student comments flag the submission for a regrade
+		keywordCreation="creation" # if this keyword is in a student comments flag the submission for a regrade
 		#make list of students needing a regrade
 		if studentsToGrade.lower()=="all":
 			for i,student in enumerate(makeList(students)):
@@ -1165,7 +1176,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 									if not (assignment.id in student.regrade): 
 										if c.edit().id not in studentsNeedingRegrade:
 											studentsNeedingRegrade[c.edit().id]=student
-											printLine(student.name + " has a regrade request pending")
+											printLine(student.name + " has a new regrade request pending")										
 					except Exception:
 						pass
 			printLine("",newLine=False)
@@ -1178,14 +1189,15 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						for comment in comments:
 							if comment['author']['id'] == c.author_id and comment['comment'].count(keyword):
 								if not (assignment.id in student.regrade):
-									studentsNeedingRegrade[c.edit().id]= student
+									studentsNeedingRegrade[c.edit().id]= student									
+
 		#process list of students needing a regrade
 		for i, student_key in enumerate(studentsNeedingRegrade):
 			student=studentsNeedingRegrade[student_key]
 			for key in student.creations:
 				c = student.creations[key]
 				if c.assignment_id == assignment.id:
-					comments=[com['comment'] for com in c.edit().submission_comments if com['author']['id'] == student.id]
+					comments=[com['comment'] for com in c.edit().submission_comments if com['author']['id'] == student.id]					
 					#print("regrade requested by " + student.name + "for assignment at: ")
 					previewUrl=c.edit().preview_url.replace("preview=1&","")
 					speedGraderURL=previewUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=").replace("?version=1","")
@@ -1196,6 +1208,12 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					val="unknwon"
 					webbrowser.open(speedGraderURL)
 					while not val in ["i","f","v","r","ec", "er","e"]:
+						if " ".join(comments).count(keywordReview) and not " ".join(comments).count(keywordCreation):
+							print("Student indicated they only want the reviews regraded (er)")
+						elif " ".join(comments).count(keywordCreation):
+							print("Student indicated they only want the creations regraded (ec)")
+						else:
+							print("Student wants both reviews and creations reviewed (e)")
 						val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(ec) to evaluate creation (only)\n\t(er) to evaluate review (only)\n\t(e) to evaluate creation and review\n")
 						if val=='i':
 							unresolvedRegrades=True
@@ -1221,7 +1239,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		assignment.regraded=True
 		msg=assignment.name +  " regraded with the following point values:\n"
 		for cid in assignment.criteria_ids():
-			msg+= "\t(" +str(params.pointsForCid(cid,assignment.id ))+ ") " + criteriaDescription[cid] + "\n"
+			msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
 		log(msg,False)
 
 		#regenerate the dictionary with only students who need to be processed
@@ -1441,8 +1459,9 @@ def getParameters(ignoreFile=False):
 	return params
 
 def setPoints(assignment):
-	params.setPoints(assignment)
-	saveParameters()
+	global params
+	assignment.setPoints(params.multiplier)
+	saveAssignments()
 
 ######################################
 # save data to a log file
@@ -1761,6 +1780,7 @@ def selectStudentByName(theName):
 		print("Unable to find a matching student")
 		return select(students,property="name", requireConfirmation=False)
 	elif len(options)==1:
+		print(options[0].name)
 		return options[0]
 	else:
 		return select(options,property="name", requireConfirmation=False)
