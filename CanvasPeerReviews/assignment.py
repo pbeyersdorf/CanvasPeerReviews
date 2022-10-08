@@ -16,7 +16,7 @@ class GradedAssignment:
 		self.get_submissions=assignment.get_submissions
 		self.multiplier=dict()
 		self.curve='x'
-		self.reviewCurve='max(0,min(100, 120*(1-1.5*rms)))'
+		self.reviewCurve='max(0,min(100, 130*(1-1.5*rms)))'
 		self.regradesCompleted=False
 		self.date=self.getDate(assignment)
 		self.pointsByCidOverride=dict()
