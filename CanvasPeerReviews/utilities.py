@@ -613,10 +613,7 @@ def getReviews(creations):
 			for creation in creations:
 				for assessment in rubric.assessments:
 					if ((assessment['assessment_type']=='grading' or assessment['assessment_type']=='peer_review') and creation.id == assessment['artifact_id'] ):
-						data=assessment['data']
-						reviewer_id = assessment['assessor_id']
-						review_type = assessment['assessment_type']
-						review=Review(review_type, reviewer_id, creation.user_id, creation.assignment_id, creation.id, data)
+						review=Review(assessment, creation)
 						alreadyProcessed = any(thisReview.fingerprint() == review.fingerprint() for thisReview in studentsById[creation.user_id].reviewsReceived)
 						if not alreadyProcessed:
 							studentsById[creation.user_id].reviewsReceived.append(review)
@@ -635,9 +632,9 @@ def getReviews(creations):
 								professorsReviews[creation.assignment_id].append(review)
 							else:
 								professorsReviews[creation.assignment_id]=[review]
-						elif reviewer_id in studentsById:
+						elif review.reviewer_id in studentsById:
 							# if not already assigned assignment.multiplier[cid]
-							studentsById[reviewer_id].reviewsGiven[review.submission_id]=review
+							studentsById[review.reviewer_id].reviewsGiven[review.submission_id]=review
 						allReviews.append(review)
 	status["gotReviews"]=True
 	return allReviews
