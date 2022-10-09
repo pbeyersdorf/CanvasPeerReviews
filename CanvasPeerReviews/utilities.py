@@ -48,7 +48,7 @@ except:
 studentsById=dict()
 reviewsById=dict()
 creationsByAuthorId=dict()
-reviewsById=dict()
+reviewsByCreationId=dict()
 params=Parameters()
 students=[]
 creations=[]
@@ -625,10 +625,10 @@ def getReviews(creations):
 							for i,thisReview in enumerate(studentsById[creation.user_id].reviewsReceived):
 								if thisReview.fingerprint() == review.fingerprint() and assessment['assessment_type']=="grading":
 									studentsById[creation.user_id].reviewsReceived[i]=review			
-						if creation.id in reviewsById:
-							reviewsById[creation.id].append(review)
+						if creation.id in reviewsByCreationId:
+							reviewsByCreationId[creation.id].append(review)
 						else:
-							reviewsById[creation.id]=[review]
+							reviewsByCreationId[creation.id]=[review]
 						if assessment['assessment_type']=='grading':
 							if creation.assignment_id in professorsReviews:
 								professorsReviews[creation.assignment_id].append(review)
@@ -673,7 +673,7 @@ def calibrate(studentsToCalibrate="all"):
 			alreadyCalibratedAgainst=thisGivenReview.submission_id in student.submissionsCalibratedAgainst
 			if not blankCreation and not alreadyCalibratedAgainst: #don't bother if creation is blank or we've already calibrated against this review 
 				student.submissionsCalibratedAgainst[thisGivenReview.submission_id]=True
-				for otherReview in reviewsById[thisGivenReview.submission_id]:
+				for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
 					if (otherReview.reviewer_id != student.id): #don't compare this review to itself
 						for cid in thisGivenReview.scores:
 							cids[cid]=True
@@ -944,7 +944,7 @@ def gradeStudent(assignment, student):
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
-			for otherReview in reviewsById[thisGivenReview.submission_id]:
+			for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
 				if not assignment.id in student.givenReviewData:
 					student.givenReviewData[assignment.id]=dict()
 				if not otherReview.submission_id in student.givenReviewData[assignment.id]:
@@ -1091,7 +1091,7 @@ def reviewGradeOnCalibrations(assignment, student):
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
-			for otherReview in reviewsById[thisGivenReview.submission_id]:
+			for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
 				if otherReview.review_type == "grading":
 					weight=1
 					for cid in thisGivenReview.scores:

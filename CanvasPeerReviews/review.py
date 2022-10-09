@@ -12,6 +12,14 @@ class Review:
 		self.scores=dict()
 		self.comments=dict()
 		self.minimumRequiredCommentLength=2
+		#reviewURL # https://sjsu.instructure.com/courses/1490126/assignments/6272805/anonymous_submissions/Yp4en
+		#previewURL #https://sjsu.instructure.com/courses/1490126/assignments/6272805/submissions/4552373?preview=1&version=1
+		#self.url=creation.preview_url.split("submissions/")[0] + "anonymous_submissions/"
+		self.urls=[]
+		for attachment in self.creation.attachments:
+			previewURL=attachment['url'].split("/download")[0]
+			self.urls.append(previewURL)
+		self.url=self.urls[0]
 		for s in self.data:
 			try:
 				self.scores[s['criterion_id']]=s['points']
