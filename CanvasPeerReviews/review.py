@@ -1,5 +1,6 @@
 class Review:
 	def __init__(self, assessment, creation):
+		self.creation=creation
 		self.review_type=assessment['assessment_type']
 		self.reviewer_id = assessment['assessor_id']
 		self.author_id = creation.user_id
@@ -10,17 +11,34 @@ class Review:
 		self.data = assessment['data']
 		self.scores=dict()
 		self.comments=dict()
+		self.minimumRequiredCommentLength=2
 		for s in self.data:
 			try:
 				self.scores[s['criterion_id']]=s['points']
 				self.comments[s['criterion_id']]=s['comments']
 			except:
 				err="Unscored criteria"
-		ce=creation.edit()
-		self.comments[0]="\n\n".join([comment_item['comment'] for comment_item in ce.submission_comments if comment_item['author_id']==self.reviewer_id])
-		self.allComments="\n".join(self.comments.values())
-		self.commented=len(self.allComments)>2
-				
+
+	def getComments(self): # this takes a bit of time so we have it as a separate function outside the init block so that we don't have to spend the time if we don't need it.
+		for s in self.data:
+			try:
+				self.comments[s['criterion_id']]=s['comments']
+			except:
+				err="Unscored criteria"
+		ce=self.creation.edit()
+		if (self.review_type == "grading"):
+			commentToIgnore=self.creation.author.comments[self.assignment_id]
+			self.commentToIgnore=commentToIgnore
+			self.ce=ce
+			theComments=[comment_item['comment'] for comment_item in ce.submission_comments if comment_item['author_id']==self.reviewer_id]
+			theCommentsToInclude=[c for c in theComments if c!=commentToIgnore]
+			self.comments[0]="\n\n".join(theCommentsToInclude)
+		else:
+			self.comments[0]="\n\n".join([comment_item['comment'] for comment_item in ce.submission_comments if comment_item['author_id']==self.reviewer_id])
+		self.allComments="\n".join(self.comments.values()).strip()
+		self.commented=len(self.allComments)>self.minimumRequiredCommentLength 
+		return self.allComments
+					
 				
 	def disp(self):
 		msg = "(" + str(self.reviewer_id) + ") review of submission by (" + str(self.author_id) + "): "

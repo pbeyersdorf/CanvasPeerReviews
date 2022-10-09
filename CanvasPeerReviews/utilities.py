@@ -46,6 +46,7 @@ except:
 ######################################
 # Define some global variables to be used in this module
 studentsById=dict()
+reviewsById=dict()
 creationsByAuthorId=dict()
 reviewsById=dict()
 params=Parameters()
@@ -614,6 +615,7 @@ def getReviews(creations):
 				for assessment in rubric.assessments:
 					if ((assessment['assessment_type']=='grading' or assessment['assessment_type']=='peer_review') and creation.id == assessment['artifact_id'] ):
 						review=Review(assessment, creation)
+						reviewsById[review.id]=review
 						alreadyProcessed = any(thisReview.fingerprint() == review.fingerprint() for thisReview in studentsById[creation.user_id].reviewsReceived)
 						if not alreadyProcessed:
 							studentsById[creation.user_id].reviewsReceived.append(review)
