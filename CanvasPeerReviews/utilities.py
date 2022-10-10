@@ -280,13 +280,15 @@ def getMostRecentAssignment():
 
 ######################################
 # Choose an assignment to work on
-def chooseAssignment(requireConfirmation=True):
+def chooseAssignment(requireConfirmation=True, allowAll=False):
 	global graded_assignments, lastAssignment, activeAssignment
 	confirmed=False
 	defaultChoice=0
 	while not confirmed:
 		if len([key for key in graded_assignments if isinstance(key, int)]) == len(assignmentByNumber):
 			print("\nAssignments with peer reviews enabled: ")
+			if allowAll:
+				print("\t0) All" )
 			for key in assignmentByNumber:
 				if assignmentByNumber[key] == graded_assignments['last']:
 					print("\t"+Fore.BLUE + str(key) +") " + assignmentByNumber[key].name + Style.RESET_ALL + "  <---- last assignment")
@@ -297,17 +299,30 @@ def chooseAssignment(requireConfirmation=True):
 			if requireConfirmation:
 				if val in assignmentByNumber:
 					confirmed=confirm("You have chosen " + assignmentByNumber[val].name)
+				elif val==0 and allowAll:
+					confirmed=confirm("You've chose all assignments")
+					if confirmed:
+						return "all"
 				else:
 					confirmed=False
 					print("Invalid choice")
 			else:
-				confirmed=True
+				if val==0 and not allowAll:
+					confirmed=False
+					print("Invalid choice")
+				else:
+					confirmed=True
 			if confirmed:
-				activeAssignment=assignmentByNumber[val]
+				if val==0:
+					activeAssignment="all"
+				else:
+					activeAssignment=assignmentByNumber[val]
 		else:
 			i=1
 			assignmentKeyByNumber=dict()
 			print("\nAssignments with peer reviews enabled: ")
+			if allowAll:
+				print("\t0) All" )
 			for key in graded_assignments:
 				if (key != 'last'):
 					if graded_assignments[key] == graded_assignments['last']:
@@ -317,13 +332,22 @@ def chooseAssignment(requireConfirmation=True):
 						print("\t" + str(i) +") " + graded_assignments[key].name)
 					assignmentKeyByNumber[i]=key
 					i+=1
-			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[1,i])
+			lowerLimit=1
+			if allowAll:
+				lowerLimit=0
+			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[lowerLimit,i])
 			if requireConfirmation:
-				confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+				if allowAll and val==0:
+					confirmed=confirm("You have chosen all assignments")
+				else:
+					confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
 			else:
 				confirmed=True
 			if confirmed:
-				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
+				if val==0:
+					activeAssignment="all"
+				else:
+					activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 	#print("using key " + str(assignmentKeyByNumber[val]))
 	return activeAssignment
 
