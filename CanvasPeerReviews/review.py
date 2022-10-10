@@ -18,7 +18,8 @@ class Review:
 		self.urls=[]
 		for attachment in self.creation.attachments:
 			previewURL=attachment['url'].split("/download")[0]
-			self.urls.append(previewURL)
+			self.urls.append(attachment['url'])
+			#self.urls.append(previewURL)
 		self.url=self.urls[0]
 		for s in self.data:
 			try:
