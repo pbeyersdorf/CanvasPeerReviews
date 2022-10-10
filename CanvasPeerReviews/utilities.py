@@ -930,7 +930,10 @@ def gradeStudent(assignment, student):
 						student.reviewData[assignment.id]=dict()
 					if not cid in student.reviewData[assignment.id]:
 						student.reviewData[assignment.id][cid]=[]
-					student.reviewData[assignment.id][cid].append({'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid]})
+					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid]}
+					#xxx the block below is meant to avoid having the same review recorded multiple times.  It isn't yet tested.
+					if len([itm for itm in student.reviewData[assignment.id][cid] if itm['reviewerID']==review.reviewer_id])==0:
+						student.reviewData[assignment.id][cid].append(newData)
 					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
 					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
 						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
@@ -1223,13 +1226,20 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					comments=[com['comment'] for com in c.edit().submission_comments if com['author']['id'] == student.id]					
 					#print("regrade requested by " + student.name + "for assignment at: ")
 					previewUrl=c.edit().preview_url.replace("preview=1&","")
-					speedGraderURL=previewUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=").replace("?version=1","")
+					previewBaseUrl=previewUrl.split("?")[0]
+					speedGraderURL=previewBaseUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=")
 					#webbrowser.open(previewUrl)
 					#print(previewUrl)
-					print("\n---------- " + student.name + " says: ---------- " +str(i+1)+"/" +str(len(studentsNeedingRegrade))+ " \n")
-					print("\n\n".join(comments)+"\n")
+					
+					print("\n---------- " + student.name + " (Sec "+ str(int(student.sectionName[-2:])) +") says: ---------- " +str(i+1)+"/" +str(len(studentsNeedingRegrade))+ " \n")
+					print(Fore.GREEN +  Style.BRIGHT +"\n\n".join(comments)+Style.RESET_ALL + "\n")
+					
+					alreadyGradedByProfessor=student.id in [pr.author_id for pr in professorsReviews[assignment.id]]
+					if alreadyGradedByProfessor:
+						print(Fore.BLUE +  Style.BRIGHT  +"Already graded by professor"+Style.RESET_ALL)
+					else:
+						webbrowser.open(speedGraderURL)
 					val="unknwon"
-					webbrowser.open(speedGraderURL)
 					while not val in ["i","f","v","r","ec", "er","e"]:
 						if " ".join(comments).count(keywordReview) and not " ".join(comments).count(keywordCreation):
 							print("Student indicated they only want the reviews regraded (er)")
@@ -1237,7 +1247,10 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 							print("Student indicated they only want the creations regraded (ec)")
 						else:
 							print("Student wants both reviews and creations reviewed (e)")
-						val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(ec) to evaluate creation (only)\n\t(er) to evaluate review (only)\n\t(e) to evaluate creation and review\n")
+						if not alreadyGradedByProfessor:
+							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(ec) to evaluate creation (only)\n\t(er) to evaluate review (only)\n\t(e) to evaluate creation and review\n")
+						else:
+							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(v) to view stueddnts work in a web browser\n\t(ec) to evaluate creation (only)\n\t(er) to evaluate review (only)\n\t(e) to evaluate creation and review\n")						
 						if val=='i':
 							unresolvedRegrades=True
 							if  assignment.id in student.regrade:
@@ -1274,7 +1287,8 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			studentsNeedingCreationRegrade[rs.id]=rs
 		for rs in studentsNeedingReviewRegradeList:
 			studentsNeedingReviewRegrade[rs.id]=rs
-		studentsNeedingRegrade = studentsNeedingCreationRegrade | studentsNeedingReviewRegrade
+		studentsNeedingRegrade=studentsNeedingCreationRegrade.copy()
+		studentsNeedingRegrade.update(studentsNeedingReviewRegrade)
 		if len(studentsNeedingRegrade)>0:
 			if (recalibrate):
 				getStudentWork(assignment)

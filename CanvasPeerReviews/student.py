@@ -124,6 +124,13 @@ class Student:
 				count+=1
 		return count
 	
+	def graderIDsForAssignment(self, assignmentID):
+		try:
+			flat_list = [item['reviewerID'] for sublist in (list(self.reviewData[assignmentID].values())) for item in sublist]
+			return flat_list
+		except:
+			return []
+	
 	def pointsOnAssignment(self, assignment):
 		if not assignment.id in self.reviewData:
 			print("No reviews of work on " + assignment.name)
