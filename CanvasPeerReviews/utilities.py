@@ -280,7 +280,7 @@ def getMostRecentAssignment():
 
 ######################################
 # Choose an assignment to work on
-def chooseAssignment(requireConfirmation=True, allowAll=False):
+def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
 	global graded_assignments, lastAssignment, activeAssignment
 	confirmed=False
 	defaultChoice=0
@@ -295,7 +295,10 @@ def chooseAssignment(requireConfirmation=True, allowAll=False):
 					defaultChoice=key
 				else:
 					print("\t" + str(key) +") " + assignmentByNumber[key].name )
-			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice)
+			if timeout==None:
+				val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice)
+			else:
+				val=int(inputWithTimeout("test",timeout=3, default=defaultChoice))
 			if requireConfirmation:
 				if val in assignmentByNumber:
 					confirmed=confirm("You have chosen " + assignmentByNumber[val].name)
@@ -1915,7 +1918,7 @@ def reverseText(msg):
 	
 ######################################
 # Prompt for user input, but give up after a timeout
-def inputWithTimeout(prompt, timeout=10):
+def inputWithTimeout(prompt, timeout=10, default=None):
 	import signal, threading
 	prompt=formatWithBoldOptions(prompt)
 	stopFlag=False
@@ -1927,7 +1930,10 @@ def inputWithTimeout(prompt, timeout=10):
 			self._running = False
 	
 		def run(self,n, prompt):
-			msg=" "*len(str(n)) + " " + prompt + ": "
+			msg=" "*len(str(n)) + " " + prompt 
+			if default!=None:
+				msg+="[" +str(default) +"]"
+			msg+= ": "
 			for i in range(n,0,-1):
 				if self._running:
 					#msg1= reverseText(str(i))  +msg[len(str(i)):]
@@ -1961,7 +1967,7 @@ def inputWithTimeout(prompt, timeout=10):
 	signal.alarm(0)
 	cnt.terminate()
 	time.sleep(0.1)
-	return None
+	return default
 	
 ######################################
 # print a line by printing white space
