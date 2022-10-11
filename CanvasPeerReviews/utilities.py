@@ -746,9 +746,9 @@ def calibrate(studentsToCalibrate="all"):
 				student.gradingPowerNormalizatoinFactor[cid]=1
 	for student in students:
 		if numberCounted0!=0:
-			student.gradingPowerNormalizatoinFactor[cid]*=total0/numberCounted0
+			student.gradingPowerNormalizatoinFactor[0]*=total0/numberCounted0
 		else:
-			student.gradingPowerNormalizatoinFactor[cid]=1
+			student.gradingPowerNormalizatoinFactor[0]=1
 
 	saveStudents()
 	status["calibrated"]=True
@@ -1312,7 +1312,10 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 				totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
 				if (curvedTotalPoints!=totalPoints):
 					totalScoringSummaryString+=(("  When curved this gives a final regraded score of %." + str(digits) +"f.") % (curvedTotalPoints) )
-				student.regradeComments[assignment.id] += totalScoringSummaryString
+				if assignment.id in student.regradeComments:
+					student.regradeComments[assignment.id] += totalScoringSummaryString
+				else:
+					student.regradeComments[assignment.id] = totalScoringSummaryString
 				if assignment.id in student.regrade and student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done":
 					printLine("Posting regrade comments for " + student.name, newLine=False)
 					print("---xxx---xxx---xxx---")
