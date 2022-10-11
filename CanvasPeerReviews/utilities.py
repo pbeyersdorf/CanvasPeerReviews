@@ -1932,7 +1932,7 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 		def run(self,n, prompt):
 			msg=" "*len(str(n)) + " " + prompt 
 			if default!=None:
-				msg+="[" +str(default) +"]"
+				msg+=" [" +str(default) +"]"
 			msg+= ": "
 			for i in range(n,0,-1):
 				if self._running:
