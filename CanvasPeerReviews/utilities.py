@@ -298,7 +298,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
 			if timeout==None:
 				val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice)
 			else:
-				val=int(inputWithTimeout("test",timeout=3, default=defaultChoice))
+				val=int(inputWithTimeout("Enter a number for the assignment to work on",timeout=5, default=defaultChoice))
 			if requireConfirmation:
 				if val in assignmentByNumber:
 					confirmed=confirm("You have chosen " + assignmentByNumber[val].name)
