@@ -1074,7 +1074,7 @@ def gradeStudent(assignment, student):
 			points=0
 		scoringSummaryString+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
 	scoringSummaryString+="\n" 
-	scoringSummaryString+="Note this week I doubled the weighting of the 'Physics Concepts' category and halved the weighting of the 'mathematical implementation' and 'solution accuracy' categories.\n\n"
+	#scoringSummaryString+="Note this week I doubled the weighting of the 'Physics Concepts' category and halved the weighting of the 'mathematical implementation' and 'solution accuracy' categories.\n\n"
 
 	
 	student.comments[assignment.id]=additionalGradingComment
