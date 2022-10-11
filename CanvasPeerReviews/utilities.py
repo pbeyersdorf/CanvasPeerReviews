@@ -1160,7 +1160,8 @@ def reviewGradeOnCalibrations(assignment, student):
 	totalPointsDetla= round(totalGradeDetla * params.weightingOfReviews)	
 	if not assignment.id in student.regradeComments:
 		student.regradeComments[assignment.id]=student.calibrationGradeExplanation[assignment.id]
-	student.regradeComments[assignment.id]+="  After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
+	else:
+		student.regradeComments[assignment.id]+="  After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
 	if (totalPointsDetla) > 0:
 		student.grades[assignment.id]['review']=reviewGrade
 		student.points[assignment.id]['review']=round(reviewGrade * params.weightingOfReviews)
