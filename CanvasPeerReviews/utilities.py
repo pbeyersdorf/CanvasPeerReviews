@@ -1968,6 +1968,8 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 	signal.alarm(timeout) # produce SIGALRM in `timeout` seconds
 	try:
 		val= input()
+		if default!=None and val=="":
+			val=default
 		cnt.terminate()
 		printLine("",False)
 		print("\r", end="")

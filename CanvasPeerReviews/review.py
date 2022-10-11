@@ -1,6 +1,6 @@
 class Review:
 	def __init__(self, assessment, creation):
-		self.creationID=creation.id
+		self.creation=creation
 		self.review_type=assessment['assessment_type']
 		self.reviewer_id = assessment['assessor_id']
 		self.author_id = creation.user_id
