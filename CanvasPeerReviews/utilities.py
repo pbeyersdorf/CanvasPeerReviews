@@ -1118,21 +1118,24 @@ def reviewGradeOnCalibrations(assignment, student):
 	except:
 		student.calibrationGradeExplanation=dict()
 	#student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by the instructor, compared to the instructor the scores you gave out on average were:\n"
+
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
 			for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
 				if otherReview.review_type == "grading":
-					weight=1
+					totalCriteriaPoints=0
+					numberOfCriteria=0
 					for cid in thisGivenReview.scores:
+						totalCriteriaPoints+=assignment.criteria_points(cid)
+						numberOfCriteria+=1
 						if cid in tempDelta:
-							tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
-							tempTotalWeight[cid]+=weight
+							tempDelta[cid]+=thisGivenReview.scores[cid] - otherReview.scores[cid] 
 						else:
-							tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
-							tempTotalWeight[cid]=weight						
-						delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
-					numberOfComparisons+=weight 
+							tempDelta[cid]=thisGivenReview.scores[cid] - otherReview.scores[cid] 		
+						tempTotalWeight[cid]=1						
+						delta2+=((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
+						numberOfComparisons+=1 
 # 	for cid in tempDelta:
 # 		if (tempDelta[cid]>0.05):
 # 			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than the instructor "
@@ -1141,7 +1144,8 @@ def reviewGradeOnCalibrations(assignment, student):
 # 		else:
 # 			student.calibrationGradeExplanation[assignment.id]+="    " + " about the same as the instructor "
 # 		student.calibrationGradeExplanation[assignment.id]+="for '" + str(criteriaDescription[cid]) +"'\n"
-
+	
+	averagePointsPerCriteria=totalCriteriaPoints/numberOfCriteria
 	if numberOfComparisons!=0:
 		rms=(delta2/numberOfComparisons)**0.5
 	else:
@@ -1149,7 +1153,7 @@ def reviewGradeOnCalibrations(assignment, student):
 		return
 	reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 	reviewGrade=reviewGradeFunc(rms)
-	student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by me we differed on (rms) average by %.2f points per category, resulting in a regaded review score of %.f\n"%(rms,reviewGrade)	
+	student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by me we differed on (rms) average by %.2f points per category, resulting in a regaded review score of %.f\n"%(rms*averagePointsPerCriteria,reviewGrade)	
 	
 	curveFunc=eval('lambda x:' + assignment.curve)
 	totalGradeDetla= round(reviewGrade-oldReviewGrade)
