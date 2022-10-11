@@ -216,7 +216,6 @@ def getStudentWork(thisAssignment='last'):
 		try:
 			submission.courseid=thisAssignment.courseid
 			submission.reviewCount=0
-			submission.author=studentsById[submission.user_id]
 			submission.author_id=submission.user_id
 			if not submission.missing:
 				creations.append(Creation(submission))
@@ -385,9 +384,9 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	print("Professor has already graded submissions by ", end="")
 	for c in calibrations:
 		if c!=calibrations[-1]:
-			print(c.author.name,end=",")
+			print(studentsById[c.author_id].name,end=",")
 		else:
-			print(" and " + c.author.name)			
+			print(" and " + studentsById[c.author_id].name)			
 	i=0
 	for reviewer in reviewers:
 		tic=time.time()
@@ -432,7 +431,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	if AssignPeerReviewsToGraderSubmissions:
 		creationsToConsider=makeList(creationsToConsider)
 	else:
-		creationsToConsider=[c for c in makeList(creationsToConsider) if c.author.role=='student']
+		creationsToConsider=[c for c in makeList(creationsToConsider) if studentsById[c.author_id].role=='student']
 	creationList=creationsToConsider
 	#countAssignedReviews(creationList) #is this necessary?
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
@@ -452,7 +451,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				counter=str(i+1) + "/" + str(len(creationList))
-				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter)
+				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
 			reviewer=random.choice(reviewers)
 			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
@@ -460,9 +459,9 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				counter=str(i+1) + "/" + str(len(creationList))
-				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation (as an additional assignment)", counter)	
+				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation (as an additional assignment)", counter)	
 		
-					#print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+					#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
@@ -472,8 +471,8 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				creation.create_submission_peer_review(reviewer.id)
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
-				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", "---",  end="")
-				#print("assigning " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", "---",  end="")
+				#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
 	if len(graders)==0:
 		return
 	# finally assign to graders
@@ -482,7 +481,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		sections[grader.section] = grader.sectionName
 	for key in sections:
 		thisSectionsGraders=[x for x in students if (x.role=='grader' and x.section == key)]
-		thisSectionsCreations=[x for x in creationList if (x.author.section == key)]
+		thisSectionsCreations=[x for x in creationList if (studentsById[x.author_id].section == key)]
 		reviewsPerGrader=int(len(thisSectionsCreations)/len(thisSectionsGraders))
 		thisSectionsGraders=makeList(thisSectionsGraders)
 		#lol(list,sublistSize) takes a list and returns a list-of-lists with each sublist of size sublistSize
@@ -501,8 +500,8 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 					reviewer.reviewCount[creation.assignment_id]+=1
 					creation.graderReviewCount+=1
 					counter=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
-					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation", counter, end="")
-					#print("assigning grader " + str(reviewer.name)	 + " to review " + str(creation.author.name) + "'s creation")			
+					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter, end="")
+					#print("assigning grader " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
 	saveStudents()
 	
 			
@@ -587,7 +586,7 @@ def countAssignedReviews(creations):
 		student.reviewCount[creations[0].assignment_id]=0	
 	print("Checking how many peer reviews each students has already been assigned...")
 	for i,creation in enumerate(creations):
-		printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + creation.author.name, False)
+		printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + studentsById[creation.author_id].name, False)
 		for thesePeerReviews in creation.get_submission_peer_reviews():
 			if thesePeerReviews.assessor_id in studentsById:
 				reviewer=studentsById[thesePeerReviews.assessor_id]
@@ -746,7 +745,10 @@ def calibrate(studentsToCalibrate="all"):
 				student.gradingPowerNormalizatoinFactor[cid]=1
 	for student in students:
 		if numberCounted0!=0:
-			student.gradingPowerNormalizatoinFactor[0]*=total0/numberCounted0
+			if 0 in student.gradingPowerNormalizatoinFactor:
+				student.gradingPowerNormalizatoinFactor[0]*=total0/numberCounted0
+			else:
+				student.gradingPowerNormalizatoinFactor[0]=total0/numberCounted0
 		else:
 			student.gradingPowerNormalizatoinFactor[0]=1
 
@@ -796,12 +798,12 @@ def checkForUnreviewed(assignment, openPage=False):
 	graderIDs=[x.id for x in students if x.role=='grader']
 	mostNumberOfReviewsReceived=0
 	for creation in creations:
-		student=creation.author	
+		student=studentsById[creation.author_id]	
 		mostNumberOfReviewsReceived=max(mostNumberOfReviewsReceived,student.numberOfReviewsReceivedOnAssignment(assignment.id))
 
 	creationsByNumberOfReviews=[0]*(mostNumberOfReviewsReceived+1)
 	for n in range(mostNumberOfReviewsReceived+1):
-		creationsByNumberOfReviews[n]=[c for c in creations if c.author.numberOfReviewsReceivedOnAssignment(assignment.id)==n and c.author.role=='student']
+		creationsByNumberOfReviews[n]=[c for c in creations if studentsById[c.author_id].numberOfReviewsReceivedOnAssignment(assignment.id)==n and studentsById[c.author_id].role=='student']
 				
 	if len(creationsByNumberOfReviews[0])==0 and len(creationsByNumberOfReviews[1])==0:
 		print("All creations have been reviewed at least twice")
@@ -850,9 +852,9 @@ def checkForUnreviewed(assignment, openPage=False):
 					f.write("<div class='sec"+section[-2:]+"'>")
 					#f.write("Sec "+str(int(section[-2:]))  +"<br>"")
 				for creation in creationsByNumberOfReviews[n]:
-					gradedByInstructor=len([r for r in creation.author.reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
-					gradedByGrader=len([r for r in creation.author.reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
-					if creation.author.sectionName == section:
+					gradedByInstructor=len([r for r in studentsById[creation.author_id].reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
+					gradedByGrader=len([r for r in studentsById[creation.author_id].reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
+					if studentsById[creation.author_id].sectionName == section:
 						url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
 						f.write("<a href='"+ url +"' target='_blank' class='")
 						if (gradedByInstructor):
@@ -864,7 +866,7 @@ def checkForUnreviewed(assignment, openPage=False):
 								f.write("nobody")			
 							else:
 								f.write("student")			
-						f.write( "'> "+creation.author.name + "</a><br>\n")
+						f.write( "'> "+studentsById[creation.author_id].name + "</a><br>\n")
 				if (len(sections)>1):
 					f.write("</div>")
 
@@ -1072,6 +1074,9 @@ def gradeStudent(assignment, student):
 			points=0
 		scoringSummaryString+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
 	scoringSummaryString+="\n" 
+	scoringSummaryString+="Note this week I doubled the weighting of the 'Physics Concepts' category and halved the weighting of the 'mathematical implementation' and 'solution accuracy' categories.\n\n"
+
+	
 	student.comments[assignment.id]=additionalGradingComment
 	student.comments[assignment.id]+="A weighted average of the reviews of your work give the following scores:\n"+scoringSummaryString
 	student.comments[assignment.id]+=student.reviewGradeExplanation
@@ -1095,7 +1100,7 @@ def gradeStudent(assignment, student):
 	totalScoringSummaryString+=curvedScoreString
 	student.comments[assignment.id]+="\n" + totalScoringSummaryString
 	student.comments[assignment.id]+="\n\n" + commentAboutRanking
-	student.comments[assignment.id]+="\n\nIf you believe the score assigned is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked."
+	student.comments[assignment.id]+="\n\nIf you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked.  If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to reviews performed by the professor.  To have it recalculated enter a comment with the word 'recalculate' in it."
 		
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
@@ -1192,9 +1197,9 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		unresolvedRegrades=False
 		print("\nRegrading " + assignment.name + "...")				
 		studentsNeedingRegrade=dict()
-		keyword="regrade" # if this keyword is in a student comments flag the submission for a regrade
-		keywordReview="review" # if this keyword is in a student comments flag the submission for a regrade
-		keywordCreation="creation" # if this keyword is in a student comments flag the submission for a regrade
+		#keyword="regrade" # if this keyword is in a student comments flag the submission for a regrade
+		keywordReview="recalculate" # if this keyword is in a student comments flag the submission for a regrade
+		keywordCreation="regrade" # if this keyword is in a student comments flag the submission for a regrade
 		#make list of students needing a regrade
 		if studentsToGrade.lower()=="all":
 			for i,student in enumerate(makeList(students)):
@@ -1206,7 +1211,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						if c.assignment_id == assignment.id:
 							comments=c.edit().submission_comments
 							for comment in comments:
-								if comment['author']['id'] == c.author_id and comment['comment'].count(keyword):
+								if comment['author']['id'] == c.author_id and  (comment['comment'].count(keywordCreation) or comment['comment'].count(keywordReview) ):
 									if not (assignment.id in student.regrade): 
 										if c.edit().id not in studentsNeedingRegrade:
 											studentsNeedingRegrade[c.edit().id]=student
@@ -1221,9 +1226,9 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					comments=c.edit().submission_comments
 					if c.assignment_id == assignment.id:
 						for comment in comments:
-							if comment['author']['id'] == c.author_id and comment['comment'].count(keyword):
+							if comment['author']['id'] == c.author_id and (comment['comment'].count(keywordCreation) or comment['comment'].count(keywordReview) ):
 								if not (assignment.id in student.regrade):
-									studentsNeedingRegrade[c.edit().id]= student									
+									studentsNeedingRegrade[c.edit().id]=student									
 
 		#process list of students needing a regrade
 		for i, student_key in enumerate(studentsNeedingRegrade):
