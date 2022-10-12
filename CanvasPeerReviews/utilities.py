@@ -95,15 +95,16 @@ def loadCache():
 		status['message']+="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'assignments.pkl', 'rb') as handle:
-			graded_assignments=pickle.load(handle)
+			_graded_assignments=pickle.load(handle)
+		graded_assignments.update(_graded_assignments)
 		loadedData.append("assginment data")
 	except:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
-			[reviewsById_temp,reviewsByCreationId_temp]=pickle.load(handle)
-		reviewsById.update(reviewsById_temp)
-		reviewsByCreationId.update(reviewsByCreationId_temp)
+			[_reviewsById,_reviewsByCreationId]=pickle.load(handle)
+		reviewsById.update(_reviewsById)
+		reviewsByCreationId.update(_reviewsByCreationId)
 		loadedData.append("review data")
 	except:
 		status['message']+="Unable to find 'reviewsById.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
