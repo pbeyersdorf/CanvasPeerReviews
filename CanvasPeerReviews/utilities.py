@@ -101,7 +101,9 @@ def loadCache():
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
-			[reviewsById,reviewsByCreationId]=pickle.load(handle)
+			[reviewsById_temp,reviewsByCreationId_temp]=pickle.load(handle)
+		reviewsById.update(reviewsById_temp)
+		reviewsByCreationId.update(reviewsByCreationId_temp)
 		loadedData.append("review data")
 	except:
 		status['message']+="Unable to find 'reviewsById.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
