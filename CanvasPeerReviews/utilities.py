@@ -85,26 +85,24 @@ def loadCache():
 	global course, status, params, dataDir, students, graded_assignments, reviewsById, reviewsByCreationId
 	status['prefix']="course_" + str(course.id) + "_"
 	status['message']=""
+	loadedData=[]
 	try:
 		with open( status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl', 'rb') as handle:
 			students=pickle.load(handle)
-		status['students']="loaded"
-		status['message']+="Loaded student data\n"
+		loadedData.append("student data")
 	except:
 		status['students']="not loaded"
 		status['message']+="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'assignments.pkl', 'rb') as handle:
 			graded_assignments=pickle.load(handle)
-		status['message']+="Loaded assginment data\n"
+		loadedData.append("assginment data")
 	except:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
 			[reviewsById,reviewsByCreationId]=pickle.load(handle)
-		status['message']+="Loaded reviews data\n"
-		print("reviewsById",len(reviewsById))
-		print("reviewsByCreationId",len(reviewsByCreationId))
+		loadedData.append("review data")
 	except:
 		status['message']+="Unable to find 'reviewsById.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 
@@ -116,6 +114,9 @@ def loadCache():
 		params=Parameters()
 		params.loadedFromFile=False 
 	
+	status['message']+="loaded " + ", ".join(loadedData)
+	print(status['message'])
+
 
 ######################################
 # delete the files that cache student data and parameters
@@ -203,7 +204,7 @@ def assignSections(students):
 # to that assignment as an array of objects
 def getStudentWork(thisAssignment='last'):
 	global creations, graded_assignments, status
-	printLine("Getting submissions",False)
+	printLine("Getting submissions for " + thisAssignment.name,False)
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'getStudentWork'")
 		return
@@ -233,7 +234,7 @@ def getStudentWork(thisAssignment='last'):
 				#printLine("Getting submission of " + studentsById[submission.user_id].name ,False)
 		except Exception:
 			status['err']="key error"
-	printLine("Getting reviews",False)
+	printLine("Getting reviews for " + thisAssignment.name,False)
 	getReviews(creations)
 	printLine("",False)
 	print("\r",end="")
