@@ -100,20 +100,13 @@ def loadCache():
 	except:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
-		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviewsById.pkl', 'rb') as handle:
-			reviewsById=pickle.load(handle)
-		status['message']+="Loaded reviewsById data\n"
+		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
+			[reviewsById,reviewsByCreationId]=pickle.load(handle)
+		status['message']+="Loaded reviews data\n"
 		print("reviewsById",len(reviewsById))
+		print("reviewsByCreationId",len(reviewsByCreationId))
 	except:
 		status['message']+="Unable to find 'reviewsById.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
-	try:
-		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviewsByCreationId.pkl', 'rb') as handle:
-			reviewsByCreationId=pickle.load(handle)
-		print("reviewsByCreationId",len(reviewsByCreationId))
-		status['message']+="Loaded reviewsByCreationId data\n"
-	except:
-		status['message']+="Unable to find 'reviewsByCreationId.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
-
 
 	try:
 		with open(status['dataDir'] +"PickleJar/"+ status['prefix']+'parameters.pkl', 'rb') as handle:
@@ -647,7 +640,7 @@ def reviewSummary(assessment, display=False):
 # those peer reviews get attached to the student objects for both the author of the 
 # submission and the students performing the reviews.  Nothing is returned. 
 def getReviews(creations):
-	global course, reviewsById
+	global course, reviewsById, allReviews
 	rubrics=course.get_rubrics()
 	allReviews=[]
 	for rubric in rubrics:
@@ -1918,10 +1911,8 @@ def printGroups():
 ######################################
 # saves the review objects to file
 def saveReviews():
-	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviewsById.pkl', 'wb') as handle:
-		pickle.dump(reviewsById, handle, protocol=pickle.HIGHEST_PROTOCOL)
-	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviewsByCreationId.pkl', 'wb') as handle:
-		pickle.dump(reviewsByCreationId, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviews.pkl', 'wb') as handle:
+		pickle.dump([reviewsById,reviewsByCreationId], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 ######################################
