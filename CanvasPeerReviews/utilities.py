@@ -1201,7 +1201,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		keywordReview="recalculate" # if this keyword is in a student comments flag the submission for a regrade
 		keywordCreation="regrade" # if this keyword is in a student comments flag the submission for a regrade
 		#make list of students needing a regrade
-		if studentsToGrade.lower()=="all":
+		if str(studentsToGrade)==studentsToGrade and studentsToGrade.lower()=="all":
 			for i,student in enumerate(makeList(students)):
 				for key in student.creations:
 					c = student.creations[key]
@@ -1211,7 +1211,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						if c.assignment_id == assignment.id:
 							comments=c.edit().submission_comments
 							for comment in comments:
-								if comment['author']['id'] == c.author_id and  (comment['comment'].count(keywordCreation) or comment['comment'].count(keywordReview) ):
+								if comment['author']['id'] == c.author_id and  (comment['comment'].lower().count(keywordCreation) or comment['comment'].lower().count(keywordReview) ):
 									if not (assignment.id in student.regrade): 
 										if c.edit().id not in studentsNeedingRegrade:
 											studentsNeedingRegrade[c.edit().id]=student
@@ -1221,12 +1221,13 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 			printLine("",newLine=False)
 		else:
 			for student in makeList(studentsToGrade):
+				print("Looking for a regrade request from " + str(student.name))
 				for key in student.creations:
 					c = student.creations[key]
 					comments=c.edit().submission_comments
 					if c.assignment_id == assignment.id:
 						for comment in comments:
-							if comment['author']['id'] == c.author_id and (comment['comment'].count(keywordCreation) or comment['comment'].count(keywordReview) ):
+							if comment['author']['id'] == c.author_id and (comment['comment'].lower().count(keywordCreation) or comment['comment'].lower().count(keywordReview) ):
 								if not (assignment.id in student.regrade):
 									studentsNeedingRegrade[c.edit().id]=student									
 
@@ -1254,9 +1255,9 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						webbrowser.open(speedGraderURL)
 					val="unknwon"
 					while not val in ["i","f","v","r","ec", "er","e"]:
-						if " ".join(comments).count(keywordReview) and not " ".join(comments).count(keywordCreation):
+						if " ".join(comments).lower().count(keywordReview) and not " ".join(comments).lower().count(keywordCreation):
 							print("Student indicated they only want the reviews regraded (er)")
-						elif " ".join(comments).count(keywordCreation):
+						elif " ".join(comments).lower().count(keywordCreation):
 							print("Student indicated they only want the creations regraded (ec)")
 						else:
 							print("Student wants both reviews and creations reviewed (e)")
