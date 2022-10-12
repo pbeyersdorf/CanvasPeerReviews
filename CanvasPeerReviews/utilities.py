@@ -82,7 +82,7 @@ additionalGradingComment=""
 ######################################
 # Try loading any cached data
 def loadCache():
-	global course, status, params, dataDir, students, graded_assignments
+	global course, status, params, dataDir, students, graded_assignments, reviewsById, reviewsByCreationId
 	status['prefix']="course_" + str(course.id) + "_"
 	status['message']=""
 	try:
@@ -99,6 +99,22 @@ def loadCache():
 		status['message']+="Loaded assginment data\n"
 	except:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
+	try:
+		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviewsById.pkl', 'rb') as handle:
+			reviewsById=pickle.load(handle)
+		status['message']+="Loaded reviewsById data\n"
+		print("reviewsById",len(reviewsById))
+	except:
+		status['message']+="Unable to find 'reviewsById.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
+	try:
+		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviewsByCreationId.pkl', 'rb') as handle:
+			reviewsByCreationId=pickle.load(handle)
+		print("reviewsByCreationId",len(reviewsByCreationId))
+		status['message']+="Loaded reviewsByCreationId data\n"
+	except:
+		status['message']+="Unable to find 'reviewsByCreationId.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
+
+
 	try:
 		with open(status['dataDir'] +"PickleJar/"+ status['prefix']+'parameters.pkl', 'rb') as handle:
 			params = pickle.load(handle)
@@ -631,7 +647,7 @@ def reviewSummary(assessment, display=False):
 # those peer reviews get attached to the student objects for both the author of the 
 # submission and the students performing the reviews.  Nothing is returned. 
 def getReviews(creations):
-	global course
+	global course, reviewsById
 	rubrics=course.get_rubrics()
 	allReviews=[]
 	for rubric in rubrics:
@@ -665,6 +681,7 @@ def getReviews(creations):
 							studentsById[review.reviewer_id].reviewsGiven[review.submission_id]=review
 						allReviews.append(review)
 	status["gotReviews"]=True
+	saveReviews()
 	return allReviews
 	
 ######################################
@@ -699,6 +716,9 @@ def calibrate(studentsToCalibrate="all"):
 			alreadyCalibratedAgainst=thisGivenReview.submission_id in student.submissionsCalibratedAgainst
 			if not blankCreation and not alreadyCalibratedAgainst: #don't bother if creation is blank or we've already calibrated against this review 
 				student.submissionsCalibratedAgainst[thisGivenReview.submission_id]=True
+				if not thisGivenReview.submission_id in reviewsByCreationId:
+					print(len(reviewsByCreationId), len(reviewsById))
+					print("error for " + thisGivenReview.fingerprint())
 				for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
 					if (otherReview.reviewer_id != student.id): #don't compare this review to itself
 						for cid in thisGivenReview.scores:
@@ -1264,17 +1284,23 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					else:
 						webbrowser.open(speedGraderURL)
 					val="unknwon"
-					while not val in ["i","f","v","r","ec", "er","e"]:
+					default="unknown"
+					while not val in ["i","f","v","r","c", "p","cp", "pc", "e"]:
 						if " ".join(comments).lower().count(keywordReview) and not " ".join(comments).lower().count(keywordCreation):
-							print("Student indicated they only want the reviews regraded (er)")
-						elif " ".join(comments).lower().count(keywordCreation):
-							print("Student indicated they only want the creations regraded (ec)")
+							print("Student indicated they want the reviews regraded (e) or (p) to evaluate peer review scores")
+							default="p"
+						elif " ".join(comments).lower().count(keywordCreation) and not " ".join(comments).lower().count(keywordReview):
+							print("Student indicated they want the creations regraded (e) or (c) to evaluate creation score")
+							default="c"
 						else:
-							print("Student wants both reviews and creations reviewed (e)")
+							print("Student wants both reviews and creations reviewed (e) or (cp) to evaluate both")
+							default="cp"
 						if not alreadyGradedByProfessor:
-							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(ec) to evaluate creation (only)\n\t(er) to evaluate review (only)\n\t(e) to evaluate creation and review\n")
+							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to rescore creation and review\n")
 						else:
-							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(v) to view stueddnts work in a web browser\n\t(ec) to evaluate creation (only)\n\t(er) to evaluate review (only)\n\t(e) to evaluate creation and review\n")						
+							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(v) to view stueddnts work in a web browser\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to evaluate creation and review\n")						
+						if val=='e':
+							val=default
 						if val=='i':
 							unresolvedRegrades=True
 							if  assignment.id in student.regrade:
@@ -1288,11 +1314,11 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						if val=="r":
 							val="unknwon"
 							student.pointsOnAssignment(assignment)
-						if val=="e":
+						if val=="cp" or val=="pc":
 							student.regrade[assignment.id]="Started creation and review"
-						if val=="ec":
+						if val=="c":
 							student.regrade[assignment.id]="Started creation"
-						if val=="er":
+						if val=="p":
 							student.regrade[assignment.id]="Started review"
 		print("\n")
 		status["regraded"]=True
@@ -1888,6 +1914,15 @@ def printGroups():
 		for membership in group.get_memberships():
 			member=studentsById[membership.user_id]
 			print( member.name)
+
+######################################
+# saves the review objects to file
+def saveReviews():
+	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviewsById.pkl', 'wb') as handle:
+		pickle.dump(reviewsById, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviewsByCreationId.pkl', 'wb') as handle:
+		pickle.dump(reviewsByCreationId, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 ######################################
 # saves the student objects to file
