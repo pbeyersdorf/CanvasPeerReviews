@@ -1163,23 +1163,32 @@ def reviewGradeOnCalibrations(assignment, student):
 	
 	curveFunc=eval('lambda x:' + assignment.curve)
 	totalGradeDetla= round(reviewGrade-oldReviewGrade)
-	totalPointsDetla= round(totalGradeDetla * params.weightingOfReviews)	
+	totalPointsDelta= round(totalGradeDetla * params.weightingOfReviews)	
 	if not assignment.id in student.regradeComments:
 		student.regradeComments[assignment.id]=student.calibrationGradeExplanation[assignment.id]
 	else:
 		student.regradeComments[assignment.id]+="  After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
-	if (totalPointsDetla) > 0:
+
+	useReducedScore=False
+	if (totalPointsDelta) < 0:
+		print(f"\nRecalcualtion of {student.name}'s review score resulted in a lower grade:")
+		print(f'    review scores went from {round(student.grades[assignment.id]["review"])} -> {reviewGrade}')
+		print(f'    curved score went from {student.grades[assignment.id]["curvedTotal"]} -> {round(curveFunc(student.grades[assignment.id]["total"]))}')
+		useReducedScore=confirm("Reduce score for "+student.name+" by " + str(-totalPointsDelta) + " points? ")
+		if not useReducedScore:
+			student.regradeComments[assignment.id]+="This would actually lower your review grade, but I chose to leave it as is.  "
+	if (totalPointsDelta) > 0 or useReducedScore:
 		student.grades[assignment.id]['review']=reviewGrade
 		student.points[assignment.id]['review']=round(reviewGrade * params.weightingOfReviews)
 		student.grades[assignment.id]['total']=student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation
 		student.points[assignment.id]['total']=round(student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation)
 		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
 		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total']))
-		student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
-	elif (totalPointsDetla) < 0:
-		student.regradeComments[assignment.id]+="This would actually lower your review grade, but I chose to leave it as is.  "
-		#student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
-	else:
+		if (totalPointsDelta) > 0:
+			student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
+		else:
+			student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
+	elif totalPointsDelta==0:
 		student.regradeComments[assignment.id]+="This did not change your review grade."
 	return student.points[assignment.id]['curvedTotal']
 
