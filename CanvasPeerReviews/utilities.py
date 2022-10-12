@@ -787,7 +787,8 @@ def grade(assignment, studentsToGrade="All"):
 		msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
 	msg+="Using the following function for review '" + assignment.reviewCurve+ "' and a curve of '" + assignment.curve + "'\n"
 	log(msg)
-	getStatistics(assignment, text=False, hist=False)
+	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
+		getStatistics(assignment, text=False, hist=False)
 	saveAssignments()
 	saveStudents()
 
