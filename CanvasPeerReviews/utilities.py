@@ -409,12 +409,13 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
 		calibration = calibrations[i%len(calibrations)]
-		printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name, newLine=False )
+		#printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name, newLine=False )
+		printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name, newLine=False )
 		i+=1
 		if (studentsById[calibrations[i%len(calibrations)].author_id].name!=studentsById[reviewer.id].name):
 			calibration.create_submission_peer_review(reviewer.id)
 		else:
-			printLine("skipping self review", False)
+			printLine("skipping self review", newLine=False)
 		if not calibration.assignment_id in reviewer.reviewCount:
 			reviewer.reviewCount[calibration.assignment_id]=0
 		reviewer.reviewCount[calibration.assignment_id]+=1
