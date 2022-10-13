@@ -1103,7 +1103,7 @@ def gradeStudent(assignment, student):
 		commentAboutRanking="Over the course of the semester the quality of your reviews puts you in the top third of all of the student graders.  Good job - as one of the better graders in the class your peer reviews will carry additional weight."
 		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
 	elif (percentileRanking <33):
-		commentAboutRanking="Over the course of the semester the quality of your reviews is well below average compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.  Until you improve your ranking your reviews will be weighted less that those by other students."
+		commentAboutRanking="Over the course of the semester the quality of your reviews is well below average compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.  Until you improve your ranking your reviews will be weighted less than those by other students."
 		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.") % (percentileRanking ) )	
 	else:
 		commentAboutRanking="Over the course of the semester the quality of your reviews is middle-of-the-pack compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions."
@@ -1118,7 +1118,7 @@ def gradeStudent(assignment, student):
 	totalScoringSummaryString+=curvedScoreString
 	student.comments[assignment.id]+="\n" + totalScoringSummaryString
 	student.comments[assignment.id]+="\n\n" + commentAboutRanking
-	student.comments[assignment.id]+="\n\nIf you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked.  If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to reviews performed by the professor.  To have it recalculated enter a comment with the word 'recalculate' in it."
+	student.comments[assignment.id]+="\n\nIf you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked.  If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word 'recalculate' in it."
 		
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
