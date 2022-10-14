@@ -107,7 +107,7 @@ def loadCache():
 		reviewsByCreationId.update(_reviewsByCreationId)
 		loadedData.append("review data")
 	except:
-		status['message']+="Unable to find 'reviewsById.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
+		status['message']+="Unable to find 'reviews.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 
 	try:
 		with open(status['dataDir'] +"PickleJar/"+ status['prefix']+'parameters.pkl', 'rb') as handle:
@@ -118,7 +118,6 @@ def loadCache():
 		params.loadedFromFile=False 
 	
 	status['message']+="loaded " + ", ".join(loadedData)
-	print(status['message'])
 
 
 ######################################
@@ -665,7 +664,7 @@ def getReviews(creations):
 							for i,thisReview in enumerate(studentsById[creation.user_id].reviewsReceived):
 								if thisReview.fingerprint() == review.fingerprint() and assessment['assessment_type']=="grading":
 									studentsById[creation.user_id].reviewsReceived[i]=review			
-						if creation.id in reviewsByCreationId:
+						if creation.id in reviewsByCreationId and not review in reviewsByCreationId[creation.id]:
 							reviewsByCreationId[creation.id].append(review)
 						else:
 							reviewsByCreationId[creation.id]=[review]
