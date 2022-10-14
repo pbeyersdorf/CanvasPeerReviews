@@ -299,13 +299,17 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
 		if len([key for key in graded_assignments if isinstance(key, int)]) == len(assignmentByNumber):
 			print("\nAssignments with peer reviews enabled: ")
 			if allowAll:
-				print("\t0) All" )
+				#print("\t0) All" )
+				print(f"\t{str(0)+')':<5}All")
 			for key in assignmentByNumber:
+				keyStr=str(key)+")"
 				if assignmentByNumber[key] == graded_assignments['last']:
-					print("\t"+Fore.BLUE + str(key) +") " + assignmentByNumber[key].name + Style.RESET_ALL + "  <---- last assignment")
+					#print("\t"+Fore.BLUE + str(key) +") " + assignmentByNumber[key].name + Style.RESET_ALL + "  <---- last assignment")
+					print(f"\t{Fore.BLUE}{keyStr:<5}{assignmentByNumber[key].name}{Style.RESET_ALL}  <---- last assignment")
 					defaultChoice=key
 				else:
-					print("\t" + str(key) +") " + assignmentByNumber[key].name )
+					print(f"\t{keyStr:<5}{assignmentByNumber[key].name}")
+					#print("\t" + str(key) +") " + assignmentByNumber[key].name )
 			if timeout==None:
 				val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice)
 			else:
@@ -333,6 +337,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
 					activeAssignment=assignmentByNumber[val]
 		else:
 			i=1
+			iStr=str(i)+")"
 			assignmentKeyByNumber=dict()
 			print("\nAssignments with peer reviews enabled: ")
 			if allowAll:
@@ -340,10 +345,12 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
 			for key in graded_assignments:
 				if (key != 'last'):
 					if graded_assignments[key] == graded_assignments['last']:
-						print("\t" + Fore.BLUE + str(i) +") " + graded_assignments[key].name + Style.RESET_ALL+ "  <---- last assignment")
+						#print("\t" + Fore.BLUE + str(i) +") " + graded_assignments[key].name + Style.RESET_ALL+ "  <---- last assignment")
+						print(f"\t{Fore.BLUE}{iStr:<3}){assignmentByNumber[key].name}{Style.RESET_ALL}  <---- last assignment")
 						defaultChoice=i
 					else:
-						print("\t" + str(i) +") " + graded_assignments[key].name)
+						print(f"\t{iStr:<3}){assignmentByNumber[key].name}")
+						#print("\t" + str(i) +") " + graded_assignments[key].name)
 					assignmentKeyByNumber[i]=key
 					i+=1
 			lowerLimit=1
@@ -1135,6 +1142,8 @@ def reviewGradeOnCalibrations(assignment, student):
 	tempDelta=dict()
 	tempTotalWeight=dict()
 	numberOfComparisons=0
+	if not assignment.id in student.grades:
+		gradeStudent(assignment,student)
 	oldReviewGrade=student.grades[assignment.id]['review'] 
 	try:
 		student.calibrationGradeExplanation
@@ -1216,11 +1225,14 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
 		return
-	if assignmentList==None:
+	if assignmentList==None or assignmentList.lower()=="all":
 		assignmentList=list(set([g for g in graded_assignments.values() if g.graded and not g.regradesCompleted]))
+	if len(assignmentList)==0:
+		assignmentList.append(activeAssignment)
 	assignmentList=makeList(assignmentList)
 	assignmentList.sort(key = lambda x : x.name)
 	for assignment in assignmentList:
+		getStudentWork(assignment) # does this slow things down too much?
 		unresolvedRegrades=False
 		print("\nRegrading " + assignment.name + "...")				
 		studentsNeedingRegrade=dict()
@@ -1230,21 +1242,29 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		#make list of students needing a regrade
 		if str(studentsToGrade)==studentsToGrade and studentsToGrade.lower()=="all":
 			for i,student in enumerate(makeList(students)):
-				for key in student.creations:
-					c = student.creations[key]
-					#printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
-					printLeftRight("Checking for a regrade request from " + student.name ,str(i+1)+"/"+str(len(makeList(students))), end="")
-					try:
-						if c.assignment_id == assignment.id:
-							comments=c.edit().submission_comments
-							for comment in comments:
-								if comment['author']['id'] == c.author_id and  (comment['comment'].lower().count(keywordCreation) or comment['comment'].lower().count(keywordReview) ):
-									if not (assignment.id in student.regrade): 
-										if c.edit().id not in studentsNeedingRegrade:
-											studentsNeedingRegrade[c.edit().id]=student
-											printLine(student.name + " has a new regrade request pending")										
-					except Exception:
-						pass
+				if assignment.id not in student.regrade or (student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done"):
+					for key in student.creations:
+						c = student.creations[key]
+						#printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
+						printLeftRight("Checking for a regrade request from " + student.name ,str(i+1)+"/"+str(len(makeList(students))), end="")
+						try:
+							if c.assignment_id == assignment.id:
+								comments=c.edit().submission_comments
+								for comment in comments:
+									if comment['author']['id'] not in studentsById and "I've regraded your work" in comment['comment']:
+										print(student.name + " had a regrade processed alerady")
+									elif comment['author']['id'] == c.author_id and  (comment['comment'].lower().count(keywordCreation) ):
+										if not (assignment.id in student.regrade): 
+											if c.edit().id not in studentsNeedingRegrade:
+												studentsNeedingRegrade[c.edit().id]=student
+												printLine(student.name + " has a new regrade request pending")										
+									if comment['author']['id'] == c.author_id and  ( comment['comment'].lower().count(keywordReview) ):
+										if not (assignment.id in student.regrade): 
+											if c.edit().id not in studentsNeedingRegrade:
+												studentsNeedingRegrade[c.edit().id]=student
+												printLine(student.name + " has a new recalculation request pending")										
+						except KeyboardInterrupt:
+							exit()
 			printLine("",newLine=False)
 		else:
 			for student in makeList(studentsToGrade):
@@ -1361,8 +1381,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 				else:
 					student.regradeComments[assignment.id] = totalScoringSummaryString
 				if assignment.id in student.regrade and student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done":
-					printLine("Posting regrade comments for " + student.name, newLine=False)
-					print("---xxx---xxx---xxx---")
+					printLine("\nPosting regrade comments for " + student.name, newLine=False)
 					print(student.regradeComments[assignment.id])
 					print("Score to be posted is ", student.points[assignment.id]['curvedTotal'])
 					if confirm("Ok to post?"):
@@ -1478,7 +1497,7 @@ def postFromCSV(fileName=None, thisAssignment=None):
 							msg+="\tcomment: '" + row[commentCol] +"'\n"
 						print(msg, end="")
 
-				except:
+				except Exception:
 					status['err']="unable to process test student"
 	thisAssignment.gradesPosted=True	
 	saveAssignments()
@@ -1599,8 +1618,8 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 				reviewGrade.append(grades['review'])
 				rawTotal.append(grades['total'])
 				curvedTotal.append(points['curvedTotal'])
-			except:
-				pass
+			except KeyboardInterrupt:
+				exit()
 		else:
 			zeros.append(0)
 	if len(curvedTotal)==0 or not assignment.graded:
