@@ -418,8 +418,11 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		#printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name, newLine=False )
 		printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name, newLine=False )
 		i+=1
-		if (studentsById[calibrations[i%len(calibrations)].author_id].name!=studentsById[reviewer.id].name):
-			calibration.create_submission_peer_review(reviewer.id)
+		author=studentsById[calibrations[i%len(calibrations)].author_id]
+		if (author.name!=studentsById[reviewer.id].name):
+			review=calibration.create_submission_peer_review(reviewer.id)
+			reviewer=studentsById[review.assessor_id]
+			reviewer.assignedReviews[assignment.id]=review
 		else:
 			printLine("skipping self review", newLine=False)
 		if not calibration.assignment_id in reviewer.reviewCount:
@@ -467,7 +470,8 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 			if not creation.assignment_id in reviewer.reviewCount:
 				reviewer.reviewCount[creation.assignment_id]=0
 			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-				creation.create_submission_peer_review(reviewer.id)
+				review=creation.create_submission_peer_review(reviewer.id)
+				reviewer.assignedReviews[creation.assignment_id]=review
 				reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				counter=str(i+1) + "/" + str(len(creationList))

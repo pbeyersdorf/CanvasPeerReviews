@@ -11,6 +11,7 @@ class Student:
 		self.deviation_by_category=dict()
 		self.reviewsReceivedBy=dict()
 		self.reviewsGiven=dict()
+		self.assignedReviews=dict()
 		self.reviewsReceived=[]
 		self.gradingPower = dict()
 		self.delta2=dict()
@@ -109,7 +110,7 @@ class Student:
 		if returnInsteadOfPrint:
 			return(msg)
 		print(msg)
-		
+
 	def numberOfReviewsGivenOnAssignment(self, assignment_id):
 		relevantReviews=dict()
 		for key,review in self.reviewsGiven.items():
