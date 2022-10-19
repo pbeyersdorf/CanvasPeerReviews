@@ -20,11 +20,36 @@ class GradedAssignment:
 		self.regradesCompleted=False
 		self.date=self.getDate(assignment)
 		self.pointsByCidOverride=dict()
+		self.reviewScoreMethod="calibrated grading"
 
 	def sync(self, assignment):
 		if assignment.id == self.id:
 			self.__dict__.update(assignment.__dict__)
 			self.date=self.getDate(assignment)
+	
+	def setReviewScoringMethod(self):
+		print()
+		try:
+			currentMethod =  self.reviewScoreMethod
+		except:
+			self.reviewScoreMethod = "calibrated grading"
+			currentMethod =  self.reviewScoreMethod
+		methods=["calibrated grading","percent completed", "ignore"]
+		for i, method in enumerate(methods):
+			if self.reviewScoreMethod == method:
+				print(f"{i+1}) {method} <---- current value")
+			else:
+				print(f"{i+1}) {method}")
+		val=0
+		while val<1 or val>len(methods):
+			val=input("Which method do you want to use? ")
+			try:
+				val=int(val)
+			except:
+				val=0
+		self.reviewScoreMethod=methods[val-1]
+		print("Set reviewScoreMethod to " + self.reviewScoreMethod + " for " + self.name)
+			
 	
 	def secondsPastDue(self):
 		now=datetime.utcnow().replace(tzinfo=pytz.UTC)
@@ -36,11 +61,14 @@ class GradedAssignment:
 	
 	def getDate(self, assignment):
 		d=assignment.due_at_date
-		for o in assignment.get_overrides():
-			do=o.due_at_date
-			if (do>d):
-				d=do
-		return do
+		try:
+			for o in self.get_overrides():
+				do=o.due_at_date
+				if (do>d):
+					d=do
+		except AttributeError:
+			pass
+		return d
 		
 	def calibrate():
 		return

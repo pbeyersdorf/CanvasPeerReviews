@@ -11,7 +11,7 @@ class Student:
 		self.deviation_by_category=dict()
 		self.reviewsReceivedBy=dict()
 		self.reviewsGiven=dict()
-		self.assignedReviews=dict()
+		self._assignedReviews=dict()
 		self.reviewsReceived=[]
 		self.gradingPower = dict()
 		self.delta2=dict()
@@ -57,6 +57,26 @@ class Student:
 			return self.gradingPowerNormalizatoinFactor[cid]
 		except:
 			return 1
+
+	def recordAssignedReview(self, assignment, peer_review):
+		assignmentID=self.idOfAssignment(assignment)
+		if not assignmentID in self._assignedReviews:
+			self._assignedReviews[assignmentID]=[]
+		#fingerprint="assignment_id=" + str(assignmentID) + "&author_id=" + str(peer_review.user_id) + "&reviewer_id="+str(peer_review.assessor_id)
+		if not peer_review.id in [pr.id for pr in self._assignedReviews[assignmentID]]:
+			self._assignedReviews[assignmentID].append(peer_review)
+			#print("adding review #" + str(peer_review.id) + " to " + self.name +"'s list of assigned reviews" )
+			
+
+	def amountReviewed(self,assignment):
+		assignmentID=self.idOfAssignment(assignment)
+		#completed=len([1 for pr in self.assignedReviews(assignmentID) if pr.workflow_state=='completed'])
+		completed=self.numberOfReviewsGivenOnAssignment(assignmentID)
+		#assigned=len([1 for pr in self.assignedReviews(assignmentID)])
+		assigned=self.numberOfReviewsAssignedOnAssignment(assignmentID)
+		if assigned>0:
+			return min(1.0,completed*1.0/assigned)
+		return 0
 
 	def updateGradingPower(self):
 		total=0
@@ -111,21 +131,48 @@ class Student:
 			return(msg)
 		print(msg)
 
-	def numberOfReviewsGivenOnAssignment(self, assignment_id):
+	def idOfAssignment(self, assignment):
+		if isinstance(assignment,int):
+			returnVal=assignment
+		else:
+			returnVal=assignment.id
+		return returnVal
+
+	def assignedReviews(self, assignment):
+		assignmentID=self.idOfAssignment(assignment)
+		if assignmentID not in self._assignedReviews:
+			self._assignedReviews[assignmentID]=[]
+		return self._assignedReviews[assignmentID]
+
+	def numberOfReviewsAssignedOnAssignment(self, assignment):
+		assignmentID=self.idOfAssignment(assignment)
+		return len(self.assignedReviews(assignmentID))
+
+	def removeAssignedReview(self, peer_review):
+		for key in self._assignedReviews:
+			for i,assignedReview in enumerate(self._assignedReviews[review.assignment_id]):
+				if assignedReview.id==peer_review.id:
+					del s._assignedReviews[key][i]
+	
+
+	def numberOfReviewsGivenOnAssignment(self, assignment):
+		assignmentID=self.idOfAssignment(assignment)
 		relevantReviews=dict()
 		for key,review in self.reviewsGiven.items():
-			if review.assignment_id == assignment_id:
+			if review.assignment_id == assignmentID:
 				relevantReviews[review.submission_id]=True
 		return len(relevantReviews)
 
-	def numberOfReviewsReceivedOnAssignment(self, assignment_id):
+	def numberOfReviewsReceivedOnAssignment(self, assignment):
+		assignmentID=self.idOfAssignment(assignment)
 		count=0
 		for review in self.reviewsReceived:
-			if review.assignment_id == assignment_id:
+			if review.assignment_id == assignmentID:
 				count+=1
 		return count
 	
-	def graderIDsForAssignment(self, assignmentID):
+	def graderIDsForAssignment(self, assignment):
+		assignmentID=self.idOfAssignment(assignment)
 		try:
 			flat_list = [item['reviewerID'] for sublist in (list(self.reviewData[assignmentID].values())) for item in sublist]
 			return flat_list
@@ -133,17 +180,21 @@ class Student:
 			return []
 	
 	def pointsOnAssignment(self, assignment):
-		if not assignment.id in self.reviewData:
-			print("No reviews of work on " + assignment.name)
+		assignmentID=self.idOfAssignment(assignment)
+		if not assignmentID in self.reviewData:
+			try:
+				print("No reviews of work on " + assignment.name)
+			except:
+				print("No reviews of work on assignment with id=" + str(assignmentID))
 			return
-		for key in self.reviewData[assignment.id]:
+		for key in self.reviewData[assignmentID]:
 			points=0
 			adjpoints=0
 			weights=0
 			pointsString="("
 			weightsString="["
 			compString="{"
-			for a in self.reviewData[assignment.id][key]:
+			for a in self.reviewData[assignmentID][key]:
 				points+=a['points']
 				adjpoints+=a['weight']*(a['points']-a['compensation'])
 				weights+=a['weight']
@@ -154,11 +205,11 @@ class Student:
 			pointsString=pointsString[:-2]+ ") points"
 			weightsString=weightsString[:-2]+ "] weights"
 			compString=compString[:-2]+ "} compensations"
-			#print(self.reviewData[assignment.id][key][0]['description'], round(adjpoints/weights,2), pointsString)
+			#print(self.reviewData[assignmentID][key][0]['description'], round(adjpoints/weights,2), pointsString)
 			if weights!=0:
 				avgStr=str(round(adjpoints/weights,2))
 			else:
 				avgStr='err'
-			print('{0: <30}'.format(self.reviewData[assignment.id][key][0]['description'])+'{0: <7}'.format(avgStr)+pointsString)
+			print('{0: <30}'.format(self.reviewData[assignmentID][key][0]['description'])+'{0: <7}'.format(avgStr)+pointsString)
 			print('{0: <30}'.format("")+'{0: <7}'.format("")+ weightsString)
 			print('{0: <30}'.format("")+'{0: <7}'.format("")+ compString)

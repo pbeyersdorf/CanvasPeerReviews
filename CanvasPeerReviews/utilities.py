@@ -41,8 +41,6 @@ try:
 except:
 	writeCredentials=True
 
-
-
 ######################################
 # Define some global variables to be used in this module
 studentsById=dict()
@@ -77,6 +75,9 @@ status={'message': '',
 	'posted': False,
 	'dataDir': './'}
 additionalGradingComment=""
+keywordReview="recalculate" # if this keyword is in a student comments flag the submission for a regrade
+keywordCreation="regrade" # if this keyword is in a student comments flag the submission for a regrade
+
 
 
 ######################################
@@ -143,6 +144,16 @@ def reset():
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/"):
 	global course, canvas, students, graded_assignments, status
 	status['dataDir']=dataDirectory
+	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
+		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
+		print(Fore.RED +  Style.BRIGHT +  "Using test environment - set TEST_ENVIRONMENT=False to change" + Style.RESET_ALL)
+		testDir=status['dataDir'][:-1]+"-test/"
+		cmd="cp -r '" + status['dataDir'] + "' '" + testDir + "'"
+		os.system(cmd)
+		status['dataDir'] = testDir
+		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
+	else:
+		print("Using production environment - set TEST_ENVIRONMENT=True to change")
 	if not os.path.exists(dataDirectory):
 		os.makedirs(dataDirectory)
 	printCommand=False
@@ -291,8 +302,10 @@ def getMostRecentAssignment():
 
 ######################################
 # Choose an assignment to work on
-def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
+def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment"):
 	global graded_assignments, lastAssignment, activeAssignment
+	if defaultAssignment==None:
+		defaultAssignment=graded_assignments['last']
 	confirmed=False
 	defaultChoice=0
 	while not confirmed:
@@ -303,9 +316,9 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
 				print(f"\t{str(0)+')':<5}All")
 			for key in assignmentByNumber:
 				keyStr=str(key)+")"
-				if assignmentByNumber[key] == graded_assignments['last']:
+				if assignmentByNumber[key] == defaultAssignment:
 					#print("\t"+Fore.BLUE + str(key) +") " + assignmentByNumber[key].name + Style.RESET_ALL + "  <---- last assignment")
-					print(f"\t{Fore.BLUE}{keyStr:<5}{assignmentByNumber[key].name}{Style.RESET_ALL}  <---- last assignment")
+					print(f"\t{Fore.BLUE}{keyStr:<5}{assignmentByNumber[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
 					defaultChoice=key
 				else:
 					print(f"\t{keyStr:<5}{assignmentByNumber[key].name}")
@@ -337,19 +350,19 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None):
 					activeAssignment=assignmentByNumber[val]
 		else:
 			i=1
-			iStr=str(i)+")"
 			assignmentKeyByNumber=dict()
 			print("\nAssignments with peer reviews enabled: ")
 			if allowAll:
 				print("\t0) All" )
 			for key in graded_assignments:
+				iStr=str(i)+")"
 				if (key != 'last'):
-					if graded_assignments[key] == graded_assignments['last']:
+					if graded_assignments[key] == defaultAssignment:
 						#print("\t" + Fore.BLUE + str(i) +") " + graded_assignments[key].name + Style.RESET_ALL+ "  <---- last assignment")
-						print(f"\t{Fore.BLUE}{iStr:<3}){assignmentByNumber[key].name}{Style.RESET_ALL}  <---- last assignment")
+						print(f"\t{Fore.BLUE}{iStr:<3}{graded_assignments[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
 						defaultChoice=i
 					else:
-						print(f"\t{iStr:<3}){assignmentByNumber[key].name}")
+						print(f"\t{iStr:<3}{graded_assignments[key].name}")
 						#print("\t" + str(i) +") " + graded_assignments[key].name)
 					assignmentKeyByNumber[i]=key
 					i+=1
@@ -420,14 +433,16 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		i+=1
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
-			review=calibration.create_submission_peer_review(reviewer.id)
+			peer_review=calibration.create_submission_peer_review(reviewer.id)
 			reviewer=studentsById[review.assessor_id]
-			reviewer.assignedReviews[assignment.id]=review
+			#reviewer.assignedReviews[assignment.id]=review
+			reviewer.recordAssignedReview(assignment, peer_review)
 		else:
 			printLine("skipping self review", newLine=False)
-		if not calibration.assignment_id in reviewer.reviewCount:
-			reviewer.reviewCount[calibration.assignment_id]=0
-		reviewer.reviewCount[calibration.assignment_id]+=1
+		#if not calibration.assignment_id in reviewer.reviewCount:
+		#if not calibration.assignment_id in reviewer.numberOfReviewsAssignedOnAssignment(assignment.id):
+		#	reviewer.reviewCount[calibration.assignment_id]=0
+		#reviewer.reviewCount[calibration.assignment_id]+=1
 		calibration.reviewCount+=1
 	#printLine(str(i)+" Assigned " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed", newLine=False )
 
@@ -450,13 +465,11 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	elif not status['gotStudentsWork']:
 		getStudentWork()
 		
-	countAssignedReviews(creationsToConsider)
 	if AssignPeerReviewsToGraderSubmissions:
 		creationsToConsider=makeList(creationsToConsider)
 	else:
 		creationsToConsider=[c for c in makeList(creationsToConsider) if studentsById[c.author_id].role=='student']
 	creationList=creationsToConsider
-	#countAssignedReviews(creationList) #is this necessary?
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	peersWithSubmissions=[x for x in studentsWithSubmissions if x.role=='student']
 	graders=[x for x in students if x.role=='grader']
@@ -467,20 +480,23 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	#assign params.numberOfReviews reviews per creation
 	for i, creation in enumerate(creationList):
 		for j,reviewer in enumerate(reviewers):
-			if not creation.assignment_id in reviewer.reviewCount:
-				reviewer.reviewCount[creation.assignment_id]=0
-			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-				review=creation.create_submission_peer_review(reviewer.id)
-				reviewer.assignedReviews[creation.assignment_id]=review
-				reviewer.reviewCount[creation.assignment_id]+=1
+			#if not creation.assignment_id in reviewer.reviewCount:
+			#	reviewer.reviewCount[creation.assignment_id]=0
+			#if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+				peer_reviewcreation.create_submission_peer_review(reviewer.id)
+				#reviewer.assignedReviews[creation.assignment_id]=review
+				reviewer.recordAssignedReview(creation.assignment_id, peer_review)
+				#reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				counter=str(i+1) + "/" + str(len(creationList))
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
 			reviewer=random.choice(reviewers)
-			if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+			#if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 				creation.create_submission_peer_review(reviewer.id)
-				reviewer.reviewCount[creation.assignment_id]+=1
+				#reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				counter=str(i+1) + "/" + str(len(creationList))
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation (as an additional assignment)", counter)	
@@ -489,11 +505,12 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
-		while (reviewer.reviewCount[creationList[0].assignment_id] < params.numberOfReviews and time.time()-tic < 1):
+		#while (reviewer.reviewCount[creationList[0].assignment_id] < params.numberOfReviews and time.time()-tic < 1):
+		while (reviewer.numberOfReviewsAssignedOnAssignment(creationList[0].assignment_id)  < params.numberOfReviews and time.time()-tic < 1):
 			creation=random.choice(creationList)
 			if (reviewer.section == studentsById[creation.user_id].section):
 				creation.create_submission_peer_review(reviewer.id)
-				reviewer.reviewCount[creation.assignment_id]+=1
+				#reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", "---",  end="")
 				#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
@@ -517,11 +534,12 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		print("Assigning reviews to graders of ", sections[key])
 		for i,reviewer in enumerate(thisSectionsGraders):
 			for j,creation in enumerate(creationsListofList[i]):
-				if not creation.assignment_id in reviewer.reviewCount:
-					reviewer.reviewCount[creation.assignment_id]=0
+				#if not creation.assignment_id in reviewer.reviewCount:
+				#	reviewer.reviewCount[creation.assignment_id]=0
 				if (reviewer.id != creation.user_id ):
-					creation.create_submission_peer_review(reviewer.id)
-					reviewer.reviewCount[creation.assignment_id]+=1
+					peer_reviewcreation.create_submission_peer_review(reviewer.id)
+					#reviewer.reviewCount[creation.assignment_id]+=1
+					reviewer.recordAssignedReview(creation.assignment_id, peer_review)
 					creation.graderReviewCount+=1
 					counter=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
 					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter, end="")
@@ -602,21 +620,26 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 
 # ######################################
 # Count how many reviews have been assigned to each student using data from Canvas
-def countAssignedReviews(creations):
-	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
+def resyncReviews(assignment,creations=[]):
 	global students
+	if len(creations)==0:
+		getStudentWork(assignment)	
+# 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
 	creations=makeList(creations)
-	for student in students:
-		student.reviewCount[creations[0].assignment_id]=0	
+	for s in students:
+		s._assignedReviews[assignment.id]=[]
+# 	#for student in students:
+# 	#	student.reviewCount[creations[0].assignment_id]=0	
 	print("Checking how many peer reviews each students has already been assigned...")
 	for i,creation in enumerate(creations):
 		printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + studentsById[creation.author_id].name, False)
-		for thesePeerReviews in creation.get_submission_peer_reviews():
-			if thesePeerReviews.assessor_id in studentsById:
-				reviewer=studentsById[thesePeerReviews.assessor_id]
-				if not creation.assignment_id in reviewer.reviewCount:
-					reviewer.reviewCount[creation.assignment_id]=0				
-				reviewer.reviewCount[creation.assignment_id]+=1	
+		for peer_review in creation.get_submission_peer_reviews():
+			if peer_review.assessor_id in studentsById:
+				reviewer=studentsById[peer_review.assessor_id]
+				reviewer.recordAssignedReview(creation.assignment_id, peer_review)
+# 				#if not creation.assignment_id in reviewer.reviewCount:
+# 				#	reviewer.reviewCount[creation.assignment_id]=0				
+# 				#reviewer.reviewCount[creation.assignment_id]+=1	
 	printLine("",False)
 	
 ######################################
@@ -834,77 +857,78 @@ def checkForUnreviewed(assignment, openPage=False):
 	for n in range(mostNumberOfReviewsReceived+1):
 		creationsByNumberOfReviews[n]=[c for c in creations if studentsById[c.author_id].numberOfReviewsReceivedOnAssignment(assignment.id)==n and studentsById[c.author_id].role=='student']
 				
-	if len(creationsByNumberOfReviews[0])==0 and len(creationsByNumberOfReviews[1])==0:
+	if len(creationsByNumberOfReviews[0])==0 and len(creationsByNumberOfReviews[1])==0 and len(creationsByNumberOfReviews[2])==0:
+		print("All creations have been reviewed at least three times")
+	elif len(creationsByNumberOfReviews[0])==0 and len(creationsByNumberOfReviews[1])==0:
 		print("All creations have been reviewed at least twice")
-	else:
-		if len(creationsByNumberOfReviews[0])==0 :
+	elif len(creationsByNumberOfReviews[0])==0 :
 			print("All creations have been reviewed at least once")
-		fileName=status['dataDir'] + assignment.name + "_todo.html"
-		f = open(fileName, "w")
-		f.write("<html><head><title>Submissions by number of completed reviews</title><style>\n")
-		f.write(".instructor {color: blue;}\n.grader {color: green;}\n.student {color: black;}\n.nobody {color: #660000;}")
-		f.write("a {text-decoration:none}\n")
-		f.write("a.instructor:link {color: #0000ff;}\n")
-		f.write("a.instructor:hover {color: #440044;}\n")
-		#f.write("a.instructor:visited {text-decoration:line-through;}\n")
-		f.write("a.grader:link {color: #008000;}\n")
-		f.write("a.grader:hover {color: #440044;}\n")
-		#f.write("a.grader:visited {text-decoration:line-through;}\n")
-		f.write("a.student:link {color: #000000;}\n")
-		f.write("a.student:hover {color: #440044;}\n")
-		#f.write("a.student:visited {text-decoration:line-through;}\n")
-		colors = ["#ffeeee", "#eeeeff"]		
-		ind=0
-		for key in sections:
-			ind=(ind+1)%len(colors)
-			#f.write(".sec"+sections[key][-2:] + "{background-color : " + colors[ind] +";}") 
-		f.write("</style></head><body>\n")
-		f.write("<h3>Submissions for "+assignment.name+" by number of completed reviews:</h3>\n<ul>\n")
-		f.write("<span class='instructor'>Graded by instructor</span> | ")
-		f.write("<span class='grader'>Graded by grader</span> | ")
-		f.write("<span class='student'>Only graded by peers</span> | ")
-		f.write("<span class='nobody'>ungraded</span>\n")
+	fileName=status['dataDir'] + assignment.name + "_todo.html"
+	f = open(fileName, "w")
+	f.write("<html><head><title>Submissions by number of completed reviews</title><style>\n")
+	f.write(".instructor {color: blue;}\n.grader {color: green;}\n.student {color: black;}\n.nobody {color: #660000;}")
+	f.write("a {text-decoration:none}\n")
+	f.write("a.instructor:link {color: #0000ff;}\n")
+	f.write("a.instructor:hover {color: #440044;}\n")
+	#f.write("a.instructor:visited {text-decoration:line-through;}\n")
+	f.write("a.grader:link {color: #008000;}\n")
+	f.write("a.grader:hover {color: #440044;}\n")
+	#f.write("a.grader:visited {text-decoration:line-through;}\n")
+	f.write("a.student:link {color: #000000;}\n")
+	f.write("a.student:hover {color: #440044;}\n")
+	#f.write("a.student:visited {text-decoration:line-through;}\n")
+	colors = ["#ffeeee", "#eeeeff"]		
+	ind=0
+	for key in sections:
+		ind=(ind+1)%len(colors)
+		#f.write(".sec"+sections[key][-2:] + "{background-color : " + colors[ind] +";}") 
+	f.write("</style></head><body>\n")
+	f.write("<h3>Submissions for "+assignment.name+" by number of completed reviews:</h3>\n<ul>\n")
+	f.write("<span class='instructor'>Graded by instructor</span> | ")
+	f.write("<span class='grader'>Graded by grader</span> | ")
+	f.write("<span class='student'>Only graded by peers</span> | ")
+	f.write("<span class='nobody'>ungraded</span>\n")
 
-		f.write("<table border='0'><tr>")
-		for n in range(mostNumberOfReviewsReceived+1):
-			if n==1:
-				f.write("<th>" +str(n)+" review (" + str(len(creationsByNumberOfReviews[n]))+  ")</th>")
-			else:
-				f.write("<th>" +str(n)+" reviews (" + str(len(creationsByNumberOfReviews[n]))+  ")</th>")
-		f.write("</tr>\n")
+	f.write("<table border='0'><tr>")
+	for n in range(mostNumberOfReviewsReceived+1):
+		if n==1:
+			f.write("<th>" +str(n)+" review (" + str(len(creationsByNumberOfReviews[n]))+  ")</th>")
+		else:
+			f.write("<th>" +str(n)+" reviews (" + str(len(creationsByNumberOfReviews[n]))+  ")</th>")
+	f.write("</tr>\n")
 
-		for n in range(mostNumberOfReviewsReceived+1):
-			f.write("<td style='vertical-align:top; white-space: nowrap;'>")
-			for section in sorted(list(sections.values())):
-				if (len(sections)>1):
-					f.write("<hr>")
-					f.write("<div class='sec"+section[-2:]+"'>")
-					#f.write("Sec "+str(int(section[-2:]))  +"<br>"")
-				for creation in creationsByNumberOfReviews[n]:
-					gradedByInstructor=len([r for r in studentsById[creation.author_id].reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
-					gradedByGrader=len([r for r in studentsById[creation.author_id].reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
-					if studentsById[creation.author_id].sectionName == section:
-						url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
-						f.write("<a href='"+ url +"' target='_blank' class='")
-						if (gradedByInstructor):
-							f.write("instructor")
-						elif gradedByGrader:
-							f.write("grader")
+	for n in range(mostNumberOfReviewsReceived+1):
+		f.write("<td style='vertical-align:top; white-space: nowrap;'>")
+		for section in sorted(list(sections.values())):
+			if (len(sections)>1):
+				f.write("<hr>")
+				f.write("<div class='sec"+section[-2:]+"'>")
+				#f.write("Sec "+str(int(section[-2:]))  +"<br>"")
+			for creation in creationsByNumberOfReviews[n]:
+				gradedByInstructor=len([r for r in studentsById[creation.author_id].reviewsReceived if r.review_type=='grading' and r.assignment_id ==assignment.id])>0
+				gradedByGrader=len([r for r in studentsById[creation.author_id].reviewsReceived if r.reviewer_id in graderIDs and r.assignment_id ==assignment.id])>0
+				if studentsById[creation.author_id].sectionName == section:
+					url=creation.preview_url.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/","&student_id=").replace("?preview=1&version=1","")
+					f.write("<a href='"+ url +"' target='_blank' class='")
+					if (gradedByInstructor):
+						f.write("instructor")
+					elif gradedByGrader:
+						f.write("grader")
+					else:
+						if n==0:
+							f.write("nobody")			
 						else:
-							if n==0:
-								f.write("nobody")			
-							else:
-								f.write("student")			
-						f.write( "'> "+studentsById[creation.author_id].name + "</a><br>\n")
-				if (len(sections)>1):
-					f.write("</div>")
+							f.write("student")			
+					f.write( "'> "+studentsById[creation.author_id].name + "</a><br>\n")
+			if (len(sections)>1):
+				f.write("</div>")
 
-			f.write("</td>\n")
-		f.write("</tr></table>\n")
-		f.write("</ul></body></html>\n")
-		f.close()
-		if openPage:
-			subprocess.call(('open', fileName))
+		f.write("</td>\n")
+	f.write("</tr></table>\n")
+	f.write("</ul></body></html>\n")
+	f.close()
+	if openPage:
+		subprocess.call(('open', fileName))
 	return creationsByNumberOfReviews[0]
 
 
@@ -918,7 +942,9 @@ def checkForUnreviewed(assignment, openPage=False):
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student):
+def gradeStudent(assignment, student, reviewScoreGrading="default"):
+	if reviewScoreGrading=="default":
+		reviewScoreGrading=assignment.reviewScoreMethod
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
 	curveFunc=eval('lambda x:' + assignment.curve)
@@ -965,7 +991,7 @@ def gradeStudent(assignment, student):
 					if not cid in student.reviewData[assignment.id]:
 						student.reviewData[assignment.id][cid]=[]
 					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid]}
-					#xxx the block below is meant to avoid having the same review recorded multiple times.  It isn't yet tested.
+					#xxx the block below is meant to avoid having the same review recorded multiple times. 
 					if len([itm for itm in student.reviewData[assignment.id][cid] if itm['reviewerID']==review.reviewer_id])==0:
 						student.reviewData[assignment.id][cid].append(newData)
 					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
@@ -994,90 +1020,105 @@ def gradeStudent(assignment, student):
 				creationGrade=100 # Change this
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)
-
-	#calculate review grades
-	delta2=0
-	tempDelta=dict()
-	tempDelta2=dict()
-	tempTotalWeight=dict()
-	numberOfComparisons=0
-	student.reviewGradeExplanation="On peer reviews the scores you gave out on average were:\n"
-	for key, thisGivenReview in student.reviewsGiven.items():
-		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
-		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
-			for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
-				if not assignment.id in student.givenReviewData:
-					student.givenReviewData[assignment.id]=dict()
-				if not otherReview.submission_id in student.givenReviewData[assignment.id]:
-					student.givenReviewData[assignment.id][otherReview.submission_id]=[]
-				try:
-					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
-				except:
-					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
-				if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
-					student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
-				for cid in thisGivenReview.scores:
-					if otherReview.review_type == "peer_review":
-						try:
-							weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
-							if (studentsById[otherReview.reviewer_id]).role == 'grader':
-								weight=params.gradingPowerForGraders
-						except:
-							weight=1
-						
-					elif otherReview.review_type == "grading":
-						weight=params.gradingPowerForInstructors
-
-					try:
-						if cid in tempDelta:
-							tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
-							tempDelta2[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )**2
-							tempTotalWeight[cid]+=weight
-						else:
-							tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
-							tempDelta2[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )	**2	
-							tempTotalWeight[cid]=weight						
-						delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
-						numberOfComparisons+=weight 
-					except:
-						status['err']="Key error" 
-	for cid in tempDelta:
-		if (tempDelta[cid]>0):
-			#student.reviewGradeExplanation+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
-			student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
-		elif (tempDelta[cid]<0):
-			#student.reviewGradeExplanation+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
-			student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
-		else:
-			#student.reviewGradeExplanation+="    " + " about the same as other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
-			student.reviewGradeExplanation+="    %.2f points off from other graders " % ( math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))
-		student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
-
-	rms=2
 	
-	if numberOfComparisons!=0:
-		rms=(delta2/numberOfComparisons)**0.5
-	try:
-		reviewCount=student.reviewCount[creation.assignment_id]
-	except:
-		reviewCount=params.numberOfReviews
-	student.rms_deviation_by_assignment[assignment.id]=rms
+	
 
-	reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
-	reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/reviewCount) * reviewGradeFunc(rms)
+	if reviewScoreGrading.lower()=="calibrated grading":
+		#calculate review grades
+		delta2=0
+		tempDelta=dict()
+		tempDelta2=dict()
+		tempTotalWeight=dict()
+		numberOfComparisons=0
+		student.reviewGradeExplanation="On peer reviews the scores you gave out on average were:\n"
+		for key, thisGivenReview in student.reviewsGiven.items():
+			blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
+			if thisGivenReview.assignment_id == assignment.id and not blankCreation:
+				for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
+					if not assignment.id in student.givenReviewData:
+						student.givenReviewData[assignment.id]=dict()
+					if not otherReview.submission_id in student.givenReviewData[assignment.id]:
+						student.givenReviewData[assignment.id][otherReview.submission_id]=[]
+					try:
+						student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
+					except:
+						student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
+					if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
+						student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
+					for cid in thisGivenReview.scores:
+						if otherReview.review_type == "peer_review":
+							try:
+								weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
+								if (studentsById[otherReview.reviewer_id]).role == 'grader':
+									weight=params.gradingPowerForGraders
+							except:
+								weight=1
+						
+						elif otherReview.review_type == "grading":
+							weight=params.gradingPowerForInstructors
 
-	if (reviewGrade<100):
-		pass
-		#student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
-	else:
-		student.reviewGradeExplanation+="Keep up the good work on your reviews"
+						try:
+							if cid in tempDelta:
+								tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
+								tempDelta2[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )**2
+								tempTotalWeight[cid]+=weight
+							else:
+								tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
+								tempDelta2[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )	**2	
+								tempTotalWeight[cid]=weight						
+							delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
+							numberOfComparisons+=weight 
+						except:
+							status['err']="Key error" 
+		for cid in tempDelta:
+			if (tempDelta[cid]>0):
+				#student.reviewGradeExplanation+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
+				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
+			elif (tempDelta[cid]<0):
+				#student.reviewGradeExplanation+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
+				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
+			else:
+				#student.reviewGradeExplanation+="    " + " about the same as other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
+				student.reviewGradeExplanation+="    %.2f points off from other graders " % ( math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))
+			student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
+
+		rms=2
+	
+		if numberOfComparisons!=0:
+			rms=(delta2/numberOfComparisons)**0.5
+		#try:
+		#	reviewCount=student.reviewCount[creation.assignment_id]
+		#except:
+		#	reviewCount=params.numberOfReviews
+		student.rms_deviation_by_assignment[assignment.id]=rms
+
+		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
+		#reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/student.numberOfReviewsAssignedOnAssignment(assignment.id)) * reviewGradeFunc(rms)
+		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
+		if (reviewGrade<100):
+			pass
+			#student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
+		else:
+			student.reviewGradeExplanation+="Keep up the good work on your reviews"
 		
 
-	totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
+		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
+	elif reviewScoreGrading.lower()=="percent completed":
+		reviewGrade=student.amountReviewed(assignment) *100
+		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
+	elif reviewScoreGrading.lower()=="ignore":
+		reviewGrade=creationGrade
+		totalGrade=creationGrade
+	else:
+		print("Unknown scorign method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
+		exit()
 	
 	#adjust the points from a scale of 100 down to the number of points for the assingmnet
 	digits=int(2-math.log10(assignment.points_possible))
-	creationPoints=round(creationGrade*assignment.points_possible/100.0*  params.weightingOfCreation ,digits)
+	if reviewScoreGrading.lower()=="ignore":
+		creationPoints=round(creationGrade*assignment.points_possible/100.0 ,digits)
+	else:
+		creationPoints=round(creationGrade*assignment.points_possible/100.0*  params.weightingOfCreation ,digits)
 	reviewPoints=round(reviewGrade*assignment.points_possible/100.0 * params.weightingOfReviews ,digits)
 	if (digits ==0):
 		creationPoints=int(creationPoints)
@@ -1087,11 +1128,15 @@ def gradeStudent(assignment, student):
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
 
-	student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
-	student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
+	if reviewScoreGrading=="ignore":
+		student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+		student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}	
+	else:
+		student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+		student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
 	percentileRanking=gradingPowerRanking(student, percentile=True)
 	
-	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
+	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0 and reviewScoreGrading!="ignore":
 		student.reviewGradeExplanation="You did not complete any of your peer reviews, so your review grade was 0.  "
 
 	#make a summary of their points
@@ -1102,34 +1147,37 @@ def gradeStudent(assignment, student):
 		else:
 			points=0
 		scoringSummaryString+="    " + str(points) + " for '" +criteriaDescription[cid] + "'\n"
-	scoringSummaryString+="\n" 
-	#scoringSummaryString+="Note this week I doubled the weighting of the 'Physics Concepts' category and halved the weighting of the 'mathematical implementation' and 'solution accuracy' categories.\n\n"
-
-	
-	student.comments[assignment.id]=additionalGradingComment
+	scoringSummaryString+="\n" 	
+	student.comments[assignment.id]=additionalGradingComment # define this variable in the script to have the text inserted here
 	student.comments[assignment.id]+="A weighted average of the reviews of your work give the following scores:\n"+scoringSummaryString
-	student.comments[assignment.id]+=student.reviewGradeExplanation
 	commentAboutRanking=""
-	if (percentileRanking >66):
-		commentAboutRanking="Over the course of the semester the quality of your reviews puts you in the top third of all of the student graders.  Good job - as one of the better graders in the class your peer reviews will carry additional weight."
-		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
-	elif (percentileRanking <33):
-		commentAboutRanking="Over the course of the semester the quality of your reviews is well below average compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.  Until you improve your ranking your reviews will be weighted less than those by other students."
-		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.") % (percentileRanking ) )	
-	else:
-		commentAboutRanking="Over the course of the semester the quality of your reviews is middle-of-the-pack compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions."
-		#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
+	if student.numberOfReviewsGivenOnAssignment(assignment.id)>0 and reviewScoreGrading.lower()=="calibrated grading":
+		student.comments[assignment.id]+=student.reviewGradeExplanation
+		if (percentileRanking >66):
+			commentAboutRanking="Over the course of the semester the quality of your reviews puts you in the top third of all of the student graders.  Good job - as one of the better graders in the class your peer reviews will carry additional weight."
+			#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  Good job - as one of the better graders in the class your peer reviews will carry additional weight.") % (percentileRanking ) )	
+		elif (percentileRanking <33):
+			commentAboutRanking="Over the course of the semester the quality of your reviews is well below average compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.  Until you improve your ranking your reviews will be weighted less than those by other students."
+			#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.  You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions.") % (percentileRanking ) )	
+		else:
+			commentAboutRanking="Over the course of the semester the quality of your reviews is middle-of-the-pack compared to all other student graders. You can improve your ranking (and your review scores) by carefully implementing the grading rubric according to the instructions."
+			#commentAboutRanking=(("\nBased on comparisons of your reviews to those of other students, the graders and the instructor, your reviewing quality is in the %dth percentile.") % (percentileRanking ) )	
 
 	if (curvedTotalPoints==totalPoints):
 		curvedScoreString=""
 	else:
 		curvedScoreString=(("  This was curved to give an adjusted score of %." + str(digits) +"f.") % (curvedTotalPoints) )
-	totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
+	if reviewScoreGrading.lower()=="ignore":
+		totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission ") % (creationGrade ) 
+	else:
+		totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 		
 	regradedScoringSummaryString=("Based on the regrading you earned %." + str(digits) +"f%% for your submission") % (creationGrade ) 
 	totalScoringSummaryString+=curvedScoreString
 	student.comments[assignment.id]+="\n" + totalScoringSummaryString
 	student.comments[assignment.id]+="\n\n" + commentAboutRanking
-	student.comments[assignment.id]+="\n\nIf you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word 'regrade' to have it double checked.  If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word 'recalculate' in it."
+	student.comments[assignment.id]+="\n\nIf you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '"+keywordCreation+"' to have it regrdaed."
+	if student.numberOfReviewsGivenOnAssignment(assignment.id)>0:
+		student.comments[assignment.id]+="  If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '"+keywordReview+"' in it."
 		
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
@@ -1224,15 +1272,17 @@ def reviewGradeOnCalibrations(assignment, student):
 
 ######################################
 # find submissions that need to be regraded as based on the word regrade in the comments
-def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
+def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 	global status, activeAssignment
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
 		return
-	if assignmentList==None or assignmentList.lower()=="all":
+	if assignmentList==None or (isinstance(assignmentList, str) and assignmentList.lower()=="all"):
 		assignmentList=list(set([g for g in graded_assignments.values() if g.graded and not g.regradesCompleted]))
+	assignmentList=makeList(assignmentList)
 	if len(assignmentList)==0:
-		assignmentList.append(activeAssignment)
+		print("No assignments  to regrade")
+		return
 	assignmentList=makeList(assignmentList)
 	assignmentList.sort(key = lambda x : x.name)
 	for assignment in assignmentList:
@@ -1240,9 +1290,6 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 		unresolvedRegrades=False
 		print("\nRegrading " + assignment.name + "...")				
 		studentsNeedingRegrade=dict()
-		#keyword="regrade" # if this keyword is in a student comments flag the submission for a regrade
-		keywordReview="recalculate" # if this keyword is in a student comments flag the submission for a regrade
-		keywordCreation="regrade" # if this keyword is in a student comments flag the submission for a regrade
 		#make list of students needing a regrade
 		if str(studentsToGrade)==studentsToGrade and studentsToGrade.lower()=="all":
 			for i,student in enumerate(makeList(students)):
@@ -1293,11 +1340,10 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 					previewUrl=c.edit().preview_url.replace("preview=1&","")
 					previewBaseUrl=previewUrl.split("?")[0]
 					speedGraderURL=previewBaseUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=")
-					#webbrowser.open(previewUrl)
-					#print(previewUrl)
+
 					
-					print("\n---------- " + student.name + " (Sec "+ str(int(student.sectionName[-2:])) +") says: ---------- " +str(i+1)+"/" +str(len(studentsNeedingRegrade))+ " \n")
-					print(Fore.GREEN +  Style.BRIGHT +"\n\n".join(comments)+Style.RESET_ALL + "\n")
+					printLeftRight("\n---------- " + student.name + " (Sec "+ str(int(student.sectionName[-2:])) +") says: ---------- " ,str(i+1)+"/" +str(len(studentsNeedingRegrade)))
+					print("\n" + Fore.GREEN +  Style.BRIGHT +"\n\n".join(comments)+Style.RESET_ALL + "\n")
 					
 					alreadyGradedByProfessor=student.id in [pr.author_id for pr in professorsReviews[assignment.id]]
 					if alreadyGradedByProfessor:
@@ -1316,10 +1362,13 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 						else:
 							print("Student wants both reviews and creations reviewed (e) or (cp) to evaluate both")
 							default="cp"
-						if not alreadyGradedByProfessor:
-							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to rescore creation and review\n")
+						if val!="v":
+							if not alreadyGradedByProfessor:
+								val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to rescore creation and review\n")
+							else:
+								val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(v) to view stueddnts work in a web browser\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to evaluate creation and review\n")						
 						else:
-							val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(v) to view stueddnts work in a web browser\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to evaluate creation and review\n")						
+							val=input("enter choice: ")
 						if val=='e':
 							val=default
 						if val=='i':
@@ -1366,6 +1415,7 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 				print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
 				calibrate()
 			print("OK, now lets go through each regraded student to post their scores and comments")
+			originalCurvedTotalPoints=student.grades[assignment.id]['curvedTotal']
 			grade(assignment, studentsToGrade=list(studentsNeedingCreationRegrade.values()))
 			for student_key in studentsNeedingRegrade:
 				student=studentsNeedingRegrade[student_key]
@@ -1385,14 +1435,25 @@ def regrade(assignmentList=None, studentsToGrade="All", recalibrate=True):
 				else:
 					student.regradeComments[assignment.id] = totalScoringSummaryString
 				if assignment.id in student.regrade and student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done":
-					printLine("\nPosting regrade comments for " + student.name, newLine=False)
+					scoreDelta=curvedTotalPoints-originalCurvedTotalPoints					
+					printLine("\nRegrade comments for " + student.name, newLine=False)
 					print(student.regradeComments[assignment.id])
-					print("Score to be posted is ", student.points[assignment.id]['curvedTotal'])
+					if scoreDelta<0:
+						print(f"{Fore.RED}{Style.BRIGHT}Score will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a loss of {-scoreDelta} points{Style.RESET_ALL}")
+					elif scoreDelta>0:
+						print(f"Score will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a gain of {scoreDelta} points")
+					else:
+						print(f"Score will not chnage")
 					if confirm("Ok to post?"):
 						student.comments[assignment.id]=student.regradeComments[assignment.id]
 						postGrades(assignment, listOfStudents=[student])
 						student.regrade[assignment.id]="Done"
 						print("Posted regrade for " + student.name)
+					else:
+						print("Not posting anything for " + student.name)
+						print("If you entered the score and comments manually, it should be marked as complete.")
+						if confirm("Mark " + student.name + "'s regrade as complete?"):
+							student.regrade[assignment.id]="Done"
 				else:
 					print("Not posting anything for " + student.name)
 		else:
@@ -2074,6 +2135,15 @@ def printLeftRight(left,right, end="\n"):
 	showCursor()
 
 ######################################
+# print a long line with auto word wrapping
+def printWithWrapping(msg):
+	import textwrap, os
+	size=os.get_terminal_size()
+	cols=size.columns
+	for line in msg.splitlines():
+		print('\n'.join(textwrap.wrap(line, width=cols, replace_whitespace=False)))
+
+######################################
 # hide the cursor
 def hideCursor():
 	print('\033[?25l', end="")
@@ -2102,10 +2172,3 @@ def interact():
 	return
 
 
-# def detectKeyPress(key=' ',duration=1):
-# 	import keyboard, time
-# 	start=time.time()
-# 	keypress=False
-# 	while time.time()-start < duration:
-# 		keypress = keypress or keyboard.is_pressed(key)
-# 	return keypress
