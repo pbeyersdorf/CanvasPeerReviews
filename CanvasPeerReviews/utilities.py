@@ -828,6 +828,10 @@ def grade(assignment, studentsToGrade="All"):
 	else:
 		for student in makeList(studentsToGrade):
 			gradeStudent(assignment, student)
+	val=inputWithTimeout(f"Using the '{assignment.reviewScoreMethod}' review scoreing method.  (c) to change", 3)		
+	if val=='c':
+		assignment.setReviewScoringMethod()
+			
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"

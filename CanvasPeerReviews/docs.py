@@ -62,7 +62,9 @@ Raw grades are computed based on the percentage earned for each rubric criteria 
 
 activeAssignment=chooseAssignment()activeAssignment.setPoints()
 
-The score for the reviews is based on a weighted RMS deviation of the students given review scores from all other reviewers of the same creations.  The reviewCurve() property of each assignment object defines the equation that converts this rms value into a score.  The default is 'max(0,min(100, 120*(1-1.1*rms)))' as defined in assignment.py.  To choose an assignment and overwrite this curve use
+There are three methods for dealing with peer reviews - ignore, percent complete, and calibrated grading.  The method is stored as a property of the assignment object and can be set by calling assignment.setReviewScoringMethod().  The default is 'calibrated grading'.  When the method is 'ignore' the creation grade is used to determine the final grade with no dependence on the review scoring.  When the method is 'percent complete' the review score is base only on having completed the peer reviews, not on their quality.  
+
+For the 'calibrated grading' method the score for the reviews is based on a weighted RMS deviation of the students given review scores from all other reviewers of the same creations.  The reviewCurve() property of each assignment object defines the equation that converts this rms value into a score.  The default is 'max(0,min(100, 120*(1-1.1*rms)))' as defined in assignment.py.  To choose an assignment and overwrite this curve use
 
 activeAssignment=chooseAssignment()
 activeAssignment.reviewCurve=new_review_curve

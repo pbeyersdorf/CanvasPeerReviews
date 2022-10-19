@@ -48,7 +48,7 @@ class GradedAssignment:
 			except:
 				val=0
 		self.reviewScoreMethod=methods[val-1]
-		print("Set reviewScoreMethod to " + self.reviewScoreMethod + " for " + self.name)
+		print("Set " + self.name + " to use '" + self.reviewScoreMethod + "' method for review grades ")
 			
 	
 	def secondsPastDue(self):
