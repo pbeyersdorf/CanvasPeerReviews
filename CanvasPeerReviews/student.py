@@ -150,9 +150,9 @@ class Student:
 
 	def removeAssignedReview(self, peer_review):
 		for key in self._assignedReviews:
-			for i,assignedReview in enumerate(self._assignedReviews[review.assignment_id]):
+			for i,assignedReview in enumerate(self._assignedReviews[key]):
 				if assignedReview.id==peer_review.id:
-					del s._assignedReviews[key][i]
+					del self._assignedReviews[key][i]
 	
 
 	def numberOfReviewsGivenOnAssignment(self, assignment):

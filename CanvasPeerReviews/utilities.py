@@ -434,17 +434,12 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
 			peer_review=calibration.create_submission_peer_review(reviewer.id)
-			reviewer=studentsById[review.assessor_id]
+			reviewer=studentsById[peer_review.assessor_id]
 			#reviewer.assignedReviews[assignment.id]=review
 			reviewer.recordAssignedReview(assignment, peer_review)
 		else:
 			printLine("skipping self review", newLine=False)
-		#if not calibration.assignment_id in reviewer.reviewCount:
-		#if not calibration.assignment_id in reviewer.numberOfReviewsAssignedOnAssignment(assignment.id):
-		#	reviewer.reviewCount[calibration.assignment_id]=0
-		#reviewer.reviewCount[calibration.assignment_id]+=1
 		calibration.reviewCount+=1
-	#printLine(str(i)+" Assigned " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed", newLine=False )
 
 	saveStudents()
 	
@@ -480,23 +475,16 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	#assign params.numberOfReviews reviews per creation
 	for i, creation in enumerate(creationList):
 		for j,reviewer in enumerate(reviewers):
-			#if not creation.assignment_id in reviewer.reviewCount:
-			#	reviewer.reviewCount[creation.assignment_id]=0
-			#if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-				peer_reviewcreation.create_submission_peer_review(reviewer.id)
-				#reviewer.assignedReviews[creation.assignment_id]=review
+				peer_review=creation.create_submission_peer_review(reviewer.id)
 				reviewer.recordAssignedReview(creation.assignment_id, peer_review)
-				#reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				counter=str(i+1) + "/" + str(len(creationList))
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
 			reviewer=random.choice(reviewers)
-			#if (reviewer.reviewCount[creation.assignment_id] < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 				creation.create_submission_peer_review(reviewer.id)
-				#reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				counter=str(i+1) + "/" + str(len(creationList))
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation (as an additional assignment)", counter)	
@@ -505,12 +493,10 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
-		#while (reviewer.reviewCount[creationList[0].assignment_id] < params.numberOfReviews and time.time()-tic < 1):
 		while (reviewer.numberOfReviewsAssignedOnAssignment(creationList[0].assignment_id)  < params.numberOfReviews and time.time()-tic < 1):
 			creation=random.choice(creationList)
 			if (reviewer.section == studentsById[creation.user_id].section):
 				creation.create_submission_peer_review(reviewer.id)
-				#reviewer.reviewCount[creation.assignment_id]+=1
 				creation.reviewCount+=1
 				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", "---",  end="")
 				#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
@@ -534,16 +520,12 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		print("Assigning reviews to graders of ", sections[key])
 		for i,reviewer in enumerate(thisSectionsGraders):
 			for j,creation in enumerate(creationsListofList[i]):
-				#if not creation.assignment_id in reviewer.reviewCount:
-				#	reviewer.reviewCount[creation.assignment_id]=0
 				if (reviewer.id != creation.user_id ):
-					peer_reviewcreation.create_submission_peer_review(reviewer.id)
-					#reviewer.reviewCount[creation.assignment_id]+=1
+					peer_review=creation.create_submission_peer_review(reviewer.id)
 					reviewer.recordAssignedReview(creation.assignment_id, peer_review)
 					creation.graderReviewCount+=1
 					counter=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
 					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter, end="")
-					#print("assigning grader " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
 	saveStudents()
 	
 			
@@ -629,7 +611,6 @@ def resyncReviews(assignment,creations=[]):
 	for s in students:
 		s._assignedReviews[assignment.id]=[]
 # 	#for student in students:
-# 	#	student.reviewCount[creations[0].assignment_id]=0	
 	print("Checking how many peer reviews each students has already been assigned...")
 	for i,creation in enumerate(creations):
 		printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + studentsById[creation.author_id].name, False)
@@ -637,9 +618,6 @@ def resyncReviews(assignment,creations=[]):
 			if peer_review.assessor_id in studentsById:
 				reviewer=studentsById[peer_review.assessor_id]
 				reviewer.recordAssignedReview(creation.assignment_id, peer_review)
-# 				#if not creation.assignment_id in reviewer.reviewCount:
-# 				#	reviewer.reviewCount[creation.assignment_id]=0				
-# 				#reviewer.reviewCount[creation.assignment_id]+=1	
 	printLine("",False)
 	
 ######################################
@@ -828,10 +806,10 @@ def grade(assignment, studentsToGrade="All"):
 	else:
 		for student in makeList(studentsToGrade):
 			gradeStudent(assignment, student)
-	val=inputWithTimeout(f"Using the '{assignment.reviewScoreMethod}' review scoreing method.  (c) to change", 3)		
+	val=inputWithTimeout(f"Review grades will use '{assignment.reviewScoreMethod}' method.  (c) to change", 3)		
 	if val=='c':
 		assignment.setReviewScoringMethod()
-			
+		
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
@@ -1090,14 +1068,10 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	
 		if numberOfComparisons!=0:
 			rms=(delta2/numberOfComparisons)**0.5
-		#try:
-		#	reviewCount=student.reviewCount[creation.assignment_id]
-		#except:
-		#	reviewCount=params.numberOfReviews
 		student.rms_deviation_by_assignment[assignment.id]=rms
 
 		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
-		#reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/student.numberOfReviewsAssignedOnAssignment(assignment.id)) * reviewGradeFunc(rms)
+		#reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/student.numberOfReviewsAssignedOnAssignment(assignment.id)) * reviewGradeFunc(rms)			
 		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
 		if (reviewGrade<100):
 			pass
