@@ -323,7 +323,8 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				iStr=str([num for num in assignmentByNumber if assignmentByNumber[num]==graded_assignments[key] ][0]) +")"
 			else:
 				iStr=codes[i]+")"
-				i+=1		
+				if (key != 'last'):
+					i+=1		
 			if (key != 'last'):
 				if graded_assignments[key] == defaultAssignment:
 					print(f"\t{Fore.BLUE}{iStr:<4}{graded_assignments[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
@@ -331,23 +332,20 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				else:
 					print(f"\t{iStr:<4}{graded_assignments[key].name}")
 				assignmentKeyByNumber[iStr[:-1]]=key
-		lowerLimit=1
-		if allowAll:
-			lowerLimit=0
 		val=None
-		while val not in assignmentKeyByNumber:
+		while not (val in assignmentKeyByNumber or (val=='0' and allowAll)):
 			val=input("Enter a choice for the assignment to work on [" + defaultChoice+"]: ").upper()
 			if val=="":
 				val=defaultChoice
 		if requireConfirmation:
-			if allowAll and val==0:
+			if allowAll and val=='0':
 				confirmed=confirm("You have chosen all assignments")
 			else:
 				confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
 		else:
 			confirmed=True
 		if confirmed:
-			if val==0:
+			if val=='0':
 				activeAssignment="all"
 			else:
 				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
