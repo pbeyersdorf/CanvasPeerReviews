@@ -309,79 +309,48 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 	confirmed=False
 	defaultChoice=0
 	while not confirmed:
-		if len([key for key in graded_assignments if isinstance(key, int)]) == len(assignmentByNumber):
-			print("\nAssignments with peer reviews enabled: ")
-			if allowAll:
-				#print("\t0) All" )
-				print(f"\t{str(0)+')':<5}All")
-			for key in assignmentByNumber:
-				keyStr=str(key)+")"
-				if assignmentByNumber[key] == defaultAssignment:
-					#print("\t"+Fore.BLUE + str(key) +") " + assignmentByNumber[key].name + Style.RESET_ALL + "  <---- last assignment")
-					print(f"\t{Fore.BLUE}{keyStr:<5}{assignmentByNumber[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
-					defaultChoice=key
-				else:
-					print(f"\t{keyStr:<5}{assignmentByNumber[key].name}")
-					#print("\t" + str(key) +") " + assignmentByNumber[key].name )
-			if timeout==None:
-				val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice)
+		codes=[chr(i+65) for i in range(26)]
+		for j in range(26):
+			codes+=[chr(j+65)+chr(i+65) for i in range(26)]
+		i=0
+		assignmentKeyByNumber=dict()
+		print("\nAssignments with peer reviews enabled: ")
+		assignmentIDswithNumbers=[assignmentByNumber[i].id for i in assignmentByNumber]
+		if allowAll:
+			print("\t0) All" )
+		for key in graded_assignments:
+			if  key in assignmentIDswithNumbers:
+				iStr=str([num for num in assignmentByNumber if assignmentByNumber[num]==graded_assignments[key] ][0]) +")"
 			else:
-				val=int(inputWithTimeout("Enter a number for the assignment to work on",timeout=5, default=defaultChoice))
-			if requireConfirmation:
-				if val in assignmentByNumber:
-					confirmed=confirm("You have chosen " + assignmentByNumber[val].name)
-				elif val==0 and allowAll:
-					confirmed=confirm("You've chose all assignments")
-					if confirmed:
-						return "all"
+				iStr=codes[i]+")"
+				i+=1		
+			if (key != 'last'):
+				if graded_assignments[key] == defaultAssignment:
+					print(f"\t{Fore.BLUE}{iStr:<4}{graded_assignments[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
+					defaultChoice=iStr[:-1]
 				else:
-					confirmed=False
-					print("Invalid choice")
+					print(f"\t{iStr:<4}{graded_assignments[key].name}")
+				assignmentKeyByNumber[iStr[:-1]]=key
+		lowerLimit=1
+		if allowAll:
+			lowerLimit=0
+		val=None
+		while val not in assignmentKeyByNumber:
+			val=input("Enter a choice for the assignment to work on [" + defaultChoice+"]: ").upper()
+			if val=="":
+				val=defaultChoice
+		if requireConfirmation:
+			if allowAll and val==0:
+				confirmed=confirm("You have chosen all assignments")
 			else:
-				if val==0 and not allowAll:
-					confirmed=False
-					print("Invalid choice")
-				else:
-					confirmed=True
-			if confirmed:
-				if val==0:
-					activeAssignment="all"
-				else:
-					activeAssignment=assignmentByNumber[val]
+				confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
 		else:
-			i=1
-			assignmentKeyByNumber=dict()
-			print("\nAssignments with peer reviews enabled: ")
-			if allowAll:
-				print("\t0) All" )
-			for key in graded_assignments:
-				iStr=str(i)+")"
-				if (key != 'last'):
-					if graded_assignments[key] == defaultAssignment:
-						#print("\t" + Fore.BLUE + str(i) +") " + graded_assignments[key].name + Style.RESET_ALL+ "  <---- last assignment")
-						print(f"\t{Fore.BLUE}{iStr:<3}{graded_assignments[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
-						defaultChoice=i
-					else:
-						print(f"\t{iStr:<3}{graded_assignments[key].name}")
-						#print("\t" + str(i) +") " + graded_assignments[key].name)
-					assignmentKeyByNumber[i]=key
-					i+=1
-			lowerLimit=1
-			if allowAll:
-				lowerLimit=0
-			val=getNum("Enter a number for the assignment to work on", defaultVal=defaultChoice, limits=[lowerLimit,i])
-			if requireConfirmation:
-				if allowAll and val==0:
-					confirmed=confirm("You have chosen all assignments")
-				else:
-					confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+			confirmed=True
+		if confirmed:
+			if val==0:
+				activeAssignment="all"
 			else:
-				confirmed=True
-			if confirmed:
-				if val==0:
-					activeAssignment="all"
-				else:
-					activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
+				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 	#print("using key " + str(assignmentKeyByNumber[val]))
 	return activeAssignment
 
