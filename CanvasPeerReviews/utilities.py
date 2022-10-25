@@ -29,6 +29,8 @@ import subprocess
 import csv
 import math
 import time
+import inspect
+
 from colorama import Fore, Back, Style
 if errormsg!="":
 	raise Exception(errormsg)
@@ -334,7 +336,10 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				assignmentKeyByNumber[iStr[:-1]]=key
 		val=None
 		while not (val in assignmentKeyByNumber or (val=='0' and allowAll)):
-			val=input("Enter a choice for the assignment to work on [" + defaultChoice+"]: ").upper()
+			if timeout==None:
+				val=input("Enter a choice for the assignment to work on [" + defaultChoice+"]: ").upper()
+			else:
+				val=inputWithTimeout("Enter a choice for the assignment to work on", default=defaultChoice, timeout=timeout).upper()
 			if val=="":
 				val=defaultChoice
 		if requireConfirmation:
@@ -762,20 +767,21 @@ def overrideDefaultPoints(assignment):
 ######################################
 # Process a list of students (or all of the students, calling the
 # gradeStudent function for each
-def grade(assignment, studentsToGrade="All"):
+def grade(assignment, studentsToGrade="All", reviewScoreGrading="default"):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		for student in makeList(students):
-			gradeStudent(assignment, student)
+			gradeStudent(assignment, student, reviewScoreGrading)
 	else:
 		for student in makeList(studentsToGrade):
-			gradeStudent(assignment, student)
-	val=inputWithTimeout(f"Review grades will use '{assignment.reviewScoreMethod}' method.  (c) to change", 3)		
-	if val=='c':
-		assignment.setReviewScoringMethod()
+			gradeStudent(assignment, student, reviewScoreGrading)
+	if reviewScoreGrading=="default":
+		val=inputWithTimeout(f"Review grades will use '{assignment.reviewScoreMethod}' method.  (c) to change", 3)		
+		if val=='c':
+			assignment.setReviewScoringMethod()
 		
 	assignment.graded=True
 	status["graded"]=True
@@ -988,10 +994,12 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 						student.givenReviewData[assignment.id]=dict()
 					if not otherReview.submission_id in student.givenReviewData[assignment.id]:
 						student.givenReviewData[assignment.id][otherReview.submission_id]=[]
-					try:
-						student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
-					except:
-						student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
+					revieweids=[r['reviewerID'] for r in student.givenReviewData[assignment.id][otherReview.submission_id]]
+					if otherReview.reviewer_id not in revieweids:
+						try:
+							student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
+						except:
+							student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
 					if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
 						student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
 					for cid in thisGivenReview.scores:
@@ -1054,6 +1062,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	elif reviewScoreGrading.lower()=="ignore":
 		reviewGrade=creationGrade
 		totalGrade=creationGrade
+	elif reviewScoreGrading.lower()=="keep":
+		reviewGrade=student.grades[assignment.id]['review']
+		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
 	else:
 		print("Unknown scorign method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
 		exit()
@@ -1208,9 +1219,9 @@ def reviewGradeOnCalibrations(assignment, student):
 		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
 		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total']))
 		if (totalPointsDelta) > 0:
-			student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
+			student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'] + ".  ")
 		else:
-			student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])
+			student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal']+ ".  ")
 	elif totalPointsDelta==0:
 		student.regradeComments[assignment.id]+="This did not change your review grade."
 	return student.points[assignment.id]['curvedTotal']
@@ -1360,16 +1371,20 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 				print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
 				calibrate()
 			print("OK, now lets go through each regraded student to post their scores and comments")
-			originalCurvedTotalPoints=student.grades[assignment.id]['curvedTotal']
-			grade(assignment, studentsToGrade=list(studentsNeedingCreationRegrade.values()))
+			originalGrades=dict()
+			for student_key in studentsNeedingRegrade:
+				originalGrades[student_key]=student.grades[assignment.id]
+				
+			grade(assignment, studentsToGrade=list(studentsNeedingCreationRegrade.values()), reviewScoreGrading='keep')
+			
 			for student_key in studentsNeedingRegrade:
 				student=studentsNeedingRegrade[student_key]
+				originalCurvedTotalPoints=originalGrades[student_key]['curvedTotal']
 				if student in studentsNeedingReviewRegradeList:
 					reviewGradeOnCalibrations(assignment,student)
 				digits=int(2-math.log10(assignment.points_possible))
 				creationGrade=student.grades[assignment.id]['creation']
 				reviewGrade=student.grades[assignment.id]['review']
-				totalPoints=student.grades[assignment.id]['total']
 				totalPoints=student.grades[assignment.id]['total']
 				curvedTotalPoints=student.grades[assignment.id]['curvedTotal']
 				totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
@@ -1388,7 +1403,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 					elif scoreDelta>0:
 						print(f"Score will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a gain of {scoreDelta} points")
 					else:
-						print(f"Score will not chnage")
+						print(f"Score will not change")
 					if confirm("Ok to post?"):
 						student.comments[assignment.id]=student.regradeComments[assignment.id]
 						postGrades(assignment, listOfStudents=[student])
@@ -1942,7 +1957,7 @@ def printGroups():
 			print( member.name)
 
 ######################################
-# saves the review objects to file
+# saves variable objects to file
 def saveReviews():
 	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviews.pkl', 'wb') as handle:
 		pickle.dump([reviewsById,reviewsByCreationId], handle, protocol=pickle.HIGHEST_PROTOCOL)
