@@ -1546,10 +1546,13 @@ def getParameters(ignoreFile=False):
 	for key, assignment in graded_assignments.items():
 		if assignment != []:
 			needInput=False
-			for criteria in assignment.rubric:
-				criteriaDescription[criteria['id']]=criteria['description']
-				if not criteria['id'] in params.multiplier:
-					needInput=True
+			try:
+				for criteria in assignment.rubric:
+					criteriaDescription[criteria['id']]=criteria['description']
+					if not criteria['id'] in params.multiplier:
+						needInput=True
+			except AttributeError:
+				print("No graded assignments with rubrics attached")
 			if needInput:
 				if not headerWritten:
 					logFile.write("----" + str(datetime.now()) + "----\n")

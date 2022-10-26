@@ -60,8 +60,9 @@ class GradedAssignment:
 			return -99999999
 	
 	def getDate(self, assignment):
-		d=assignment.due_at_date
+		d=None
 		try:
+			d=assignment.due_at_date
 			for o in self.get_overrides():
 				do=o.due_at_date
 				if (do>d):
