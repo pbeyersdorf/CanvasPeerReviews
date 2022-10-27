@@ -389,7 +389,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	else:
 		creations=calibrations
 
-	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
+	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if c.author_id in studentsById and studentsById[c.author_id].role=='student']
 	reviewers=randmoize(studentsWithSubmissions) 
 	
 	calibrations=makeList(calibrations)
@@ -409,7 +409,8 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 			return
 		calibration = calibrations[i%len(calibrations)]
 		#printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name, newLine=False )
-		printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name, newLine=False )
+		#printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name, newLine=False )
+		printLeftRight("Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name,str(i), end="")
 		i+=1
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
@@ -582,18 +583,19 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 
 # ######################################
 # Count how many reviews have been assigned to each student using data from Canvas
-def resyncReviews(assignment,creations=[]):
+def resyncReviews(assignment,theCreations=[]):
 	global students
 	if len(creations)==0:
-		getStudentWork(assignment)	
+		getStudentWork(assignment)
+		theCreations=creations	
 # 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
-	creations=makeList(creations)
+	theCreations=makeList(theCreations)
 	for s in students:
 		s._assignedReviews[assignment.id]=[]
 # 	#for student in students:
 	print("Checking how many peer reviews each students has already been assigned...")
-	for i,creation in enumerate(creations):
-		printLine("    " +str(i) + "/" + str(len(creations)) +" Checking reviews of " + studentsById[creation.author_id].name, False)
+	for i,creation in enumerate(theCreations):
+		printLine("    " +str(i) + "/" + str(len(theCreations)) +" Checking reviews of " + studentsById[creation.author_id].name, False)
 		for peer_review in creation.get_submission_peer_reviews():
 			if peer_review.assessor_id in studentsById:
 				reviewer=studentsById[peer_review.assessor_id]
