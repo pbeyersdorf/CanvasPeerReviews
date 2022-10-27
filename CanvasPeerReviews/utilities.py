@@ -1362,7 +1362,11 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 			print("OK, now lets go through each regraded student to post their scores and comments")
 			originalGrades=dict()
 			for student_key in studentsNeedingRegrade:
-				originalGrades[student_key]=student.grades[assignment.id]
+				try:
+					originalGrades[student_key]=studentsNeedingRegrade[student_key].grades[assignment.id]
+				except KeyError:
+					print("unable to get original grade for " + studentsNeedingRegrade[student_key].name)
+					originalGrades[student_key]=0
 				
 			grade(assignment, studentsToGrade=list(studentsNeedingCreationRegrade.values()), reviewScoreGrading='keep')
 			
@@ -1947,6 +1951,39 @@ def printGroups():
 		for membership in group.get_memberships():
 			member=studentsById[membership.user_id]
 			print( member.name)
+
+######################################
+# make a backup of the file if there is no backup within n days
+def backup(ndays=0):
+	print("work in progress - not yet working")
+	sourcePath=status['dataDir'] +"PickleJar/"
+	backupDir=status['dataDir'][:-1]+"-backups/"
+	os.system("mkdir -p '" + backupDir + "'")
+	dateString=datetime.now().strftime('%m-%d-%y')
+	sourceData = []
+	for root, dirs, files in os.walk(sourcePath):
+		for file in files:
+			sourceData.append({'fullpath': os.path.join(root,file), 'filename': file, 'inpsectionTime': int(time.time())})
+	existingBackupData = []
+	for root, dirs, files in os.walk(backupDir):
+		for file in files:
+			cretionTime = os.path.getctime(os.path.join(root,file)) # elapsed since EPOCH in float
+			existingBackupData.append({'fullpath': os.path.join(root,file), 'filename': file, 'originalfilename': " ".join(file.split(" ")[:-1]), 'creationTime':cretionTime })
+	for source in sourceData:
+		newestBackup=int(time.time())+1
+		for target in existingBackupData:
+			if source['filename'] in target['filename'] and (source['inpsectionTime']  - target['creationTime'] ) < newestBackup:
+				newestBackup=(source['inpsectionTime']  - target['creationTime'])
+	daysSinceLastBackup=newestBackup/(60*60*24)
+	print("newest backup is " + str(daysSinceLastBackup) + " days old")
+	if daysSinceLastBackup > ndays:
+		print("Creating backup of data...")
+		for source in sourceData:
+			cmd="cp -r '" + source['fullpath'] + "' '" + backupDir + source['filename'] + " " + dateString+""+"'"
+			# go file-by-file copying with an added suffix for the date of backup
+			#cmd="cp -r '" + sourcePath + "*' '" + backupDir + "'"
+			os.system(cmd)
+	
 
 ######################################
 # saves variable objects to file
