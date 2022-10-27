@@ -53,6 +53,7 @@ class Student:
 		return self.deviation_by_category[cid]
 
 	def getGradingPowerNormalizatoinFactor(self, cid):
+		return 1
 		try:
 			return self.gradingPowerNormalizatoinFactor[cid]
 		except:
@@ -78,11 +79,16 @@ class Student:
 			return min(1.0,completed*1.0/assigned)
 		return 0
 
-	def updateGradingPower(self):
+	def updateGradingPower(self, normalize=True):
 		total=0
 		totalDeviation=0
 		cnt=0
 		for cid in self.delta2:
+			if normalize:
+				normalizationFactor=self.getGradingPowerNormalizatoinFactor(cid)
+			else:
+				normalizationFactor=1
+		
 			if not cid in self.deviation_by_category:
 				self.deviation_by_category[cid]=0
 			try:
@@ -92,7 +98,7 @@ class Student:
 						self.deviation_by_category[cid] =0
 					else:	
 						self.deviation_by_category[cid] = (self.delta[cid] / self.numberOfComparisons[cid])
-					self.gradingPower[cid]=min(self._maxGradingPower,(1.0/self.rms_deviation_by_category[cid]**2)/self.getGradingPowerNormalizatoinFactor(cid))
+					self.gradingPower[cid]=min(self._maxGradingPower,(1.0/self.rms_deviation_by_category[cid]**2)/normalizationFactor)
 					total+=self.gradingPower[cid]
 					totalDeviation+=self.deviation_by_category[cid]
 					cnt+=1
@@ -106,8 +112,12 @@ class Student:
 				total+=self.gradingPower[cid]
 				totalDeviation+=self.deviation_by_category[cid]
 				cnt+=1
+		if normalize:
+			normalizationFactor=self.getGradingPowerNormalizatoinFactor(0)
+		else:
+			normalizationFactor=1
 		if cnt!=0:
-			self.gradingPower[0]=total/cnt	
+			self.gradingPower[0]=min(self._maxGradingPower,(total/cnt)/normalizationFactor)
 			self.deviation_by_category[0]=totalDeviation/cnt
 		else:
 			self.gradingPower[0]=1

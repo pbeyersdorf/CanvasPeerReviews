@@ -689,6 +689,8 @@ def calibrate(studentsToCalibrate="all"):
 		print("Error: You must first run 'initialize()' before calling 'calibrate'")
 		return
 	cids=dict()
+	for cid in criteriaDescription:
+		cids[cid]=True
 	for student in studentsToCalibrate:
 		uncalibratedReviews=False
 		for key,thisGivenReview in student.reviewsGiven.items():
@@ -711,7 +713,6 @@ def calibrate(studentsToCalibrate="all"):
 				for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
 					if (otherReview.reviewer_id != student.id): #don't compare this review to itself
 						for cid in thisGivenReview.scores:
-							cids[cid]=True
 							temp=criteriaDescription[cid]
 							student.criteriaDescription[cid]=temp
 							if not cid in student.delta2:
@@ -728,39 +729,19 @@ def calibrate(studentsToCalibrate="all"):
 							if (cid in student.delta2) and (cid in thisGivenReview.scores) and (cid in otherReview.scores):
 								student.delta2[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )**2 
 								student.delta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] ) 
-								student.numberOfComparisons[cid]+=weight		
-	#		Use the previously calculated rms-like deviation from other reviewers to calculate a grading power
-	#		for this student
-	for student in students:
-		student.updateGradingPower()
+								student.numberOfComparisons[cid]+=weight
 
+							if 	cid  not in student.rms_deviation_by_category:
+								student.gradingPower[cid]=1
+
+		student.updateGradingPower(normalize=False)		
 	#		Now that all of the students grading powers have been updated, normalize everything so that the average
 	#		grading power for all of the students is 1
-	total0, numberCounted0 = 0 , 0
-	for cid in cids:
-		total, numberCounted = 0 , 0
+	for cid in list(cids)+[0]:
+		avg=np.average([s.gradingPower[cid] for s in students])
 		for student in students:
-			if cid in student.rms_deviation_by_category: 
-				total+=student.getGradingPower(cid)
-				numberCounted+=1
-				total0+=student.getGradingPower(cid)
-				numberCounted0+=1
-		else:
-			student.gradingPower[cid]=1
-		for student in students:
-			if cid in student.rms_deviation_by_category:
-				student.gradingPowerNormalizatoinFactor[cid]*=total/numberCounted
-			else:
-				student.gradingPowerNormalizatoinFactor[cid]=1
-	for student in students:
-		if numberCounted0!=0:
-			if 0 in student.gradingPowerNormalizatoinFactor:
-				student.gradingPowerNormalizatoinFactor[0]*=total0/numberCounted0
-			else:
-				student.gradingPowerNormalizatoinFactor[0]=total0/numberCounted0
-		else:
-			student.gradingPowerNormalizatoinFactor[0]=1
-
+			student.gradingPowerNormalizatoinFactor[cid]=avg
+	student.updateGradingPower(normalize=True)	
 	saveStudents()
 	status["calibrated"]=True
 
