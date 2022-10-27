@@ -1955,7 +1955,6 @@ def printGroups():
 ######################################
 # make a backup of the file if there is no backup within n days
 def backup(ndays=0):
-	print("work in progress - not yet working")
 	sourcePath=status['dataDir'] +"PickleJar/"
 	backupDir=status['dataDir'][:-1]+"-backups/"
 	os.system("mkdir -p '" + backupDir + "'")
@@ -1975,7 +1974,7 @@ def backup(ndays=0):
 			if source['filename'] in target['filename'] and (source['inpsectionTime']  - target['creationTime'] ) < newestBackup:
 				newestBackup=(source['inpsectionTime']  - target['creationTime'])
 	daysSinceLastBackup=newestBackup/(60*60*24)
-	print("newest backup is " + str(daysSinceLastBackup) + " days old")
+	#print("newest backup is " + str(int(100*daysSinceLastBackup)/100) + " days old")
 	if daysSinceLastBackup > ndays:
 		print("Creating backup of data...")
 		for source in sourceData:
@@ -1983,11 +1982,12 @@ def backup(ndays=0):
 			# go file-by-file copying with an added suffix for the date of backup
 			#cmd="cp -r '" + sourcePath + "*' '" + backupDir + "'"
 			os.system(cmd)
-	
+		
 
 ######################################
 # saves variable objects to file
 def saveReviews():
+	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviews.pkl', 'wb') as handle:
 		pickle.dump([reviewsById,reviewsByCreationId], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -1995,18 +1995,21 @@ def saveReviews():
 ######################################
 # saves the student objects to file
 def saveStudents():
+	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 ######################################
 # saves the graded_Assignments objects to file
 def saveAssignments():
+	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'assignments.pkl', 'wb') as handle:
 		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 ######################################
 # saves the graded_Assignments objects to file
 def saveParameters():
+	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'parameters.pkl', 'wb') as handle:
 		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)	
 
