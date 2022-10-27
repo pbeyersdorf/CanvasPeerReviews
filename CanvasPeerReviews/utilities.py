@@ -12,7 +12,6 @@ from CanvasPeerReviews.assignment import GradedAssignment
 from CanvasPeerReviews.parameters import Parameters
 from CanvasPeerReviews.review import Review
 
-import numpy as np
 try:
 	from dill.source import getsource	
 except:
@@ -21,6 +20,16 @@ try:
 	import pickle
 except:
 	errormsg+="Missing pickle module.  Run 'pip install pickle5' to intall\n"
+try:
+	import numpy as np
+except:
+	errormsg+="Missing numpy module.  Run 'pip install numpy' to intall\n"
+try:
+	from colorama import Fore, Back, Style
+except:
+	errormsg+="Missing colorama module.  Run 'pip install colorama' to intall\n"
+
+
 import webbrowser
 import copy
 import random
@@ -31,7 +40,6 @@ import math
 import time
 import inspect
 
-from colorama import Fore, Back, Style
 if errormsg!="":
 	raise Exception(errormsg)
 
