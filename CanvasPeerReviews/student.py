@@ -1,25 +1,66 @@
-class Student:
+from datetime import datetime
 
+class Student:
+	
+	class Adjustments:
+		def __init__(self, dd=None, maxGradingPower=10):
+			if dd==None or dd.weight==0:
+				self.compensation = 0
+				self.gradingPower = 1
+				self.rms=0
+				self.weight = 0
+			else:
+				self.compensation = dd.delta/dd.weight
+				self.rms= (dd.delta2/ dd.weight)**0.5
+				self.weight = dd.weight
+				if self.rms ==0:
+					self.gradingPower=maxGradingPower
+				else:
+					self.gradingPower = min(maxGradingPower,(1.0/(self.rms)**2))
+		
+		def __repr__(self):
+				return f"compensation = {round(self.compensation,2)}, gradingPower = {round(self.gradingPower,2)}" 
+			
+	class DeviationData:
+		def __init__(self):
+			self.delta=0
+			self.delta2=0
+			self.weight=0
+		
+		def addData(self, delta, weight):
+			self.delta+=delta
+			self.delta2+=delta**2
+			self.weight+=weight
+
+		def deviation(self):
+			if self.weight ==0:
+				return None
+			return self.delta / self.weight
+
+		
+		def rms(self):
+			if self.weight ==0:
+				return None
+			return (self.delta2/ self.weight)**0.5
+			
 	def __init__(self, user):
 		self.__dict__ = user.__dict__.copy() 
+		self.adjustmentsByAssignment=dict()
 		self.get_assignments=user.get_assignments
 		self.get_missing_submissions=user.get_missing_submissions
 		self.sjsuid=user.sis_user_id
 		self.creations=dict()
 		self.rms_deviation_by_category=dict()
-		self.rms_deviation_by_assignment=dict()
 		self.deviation_by_category=dict()
+		self.deviation_by_category_and_assignment=dict()
 		self.reviewsReceivedBy=dict()
 		self.reviewsGiven=dict()
 		self._assignedReviews=dict()
 		self.reviewsReceived=[]
-		self.gradingPower = dict()
-		self.delta2=dict()
-		self.delta=dict()
+		self._gradingPower = dict()
 		self.criteriaDescription=dict()
-		self.numberOfComparisons=dict()
 		self.submissionsCalibratedAgainst=dict()
-		self.gradingPowerNormalizatoinFactor=dict()
+		self.gradingPowerNormalizationFactor=dict()
 		self.points=dict()
 		self.grades=dict()
 		self.regrade=dict()
@@ -32,31 +73,23 @@ class Student:
 		self.pointsByCriteria=dict()
 		#self.assignmentsCalibrated=dict()
 		self.role="student"
+		self.baseGradingPower=1
 		self.section=0
 		self.sectionName="unknown"
 		self._maxGradingPower=10
-
+		self._dataByAssignment=dict()
+		self._dueDateByAssignment=dict()
 					
-	def getGradingPower(self,cid):
-		if not cid in self.gradingPowerNormalizatoinFactor:
-			self.gradingPowerNormalizatoinFactor[cid] = 1
-		if not cid in self.gradingPower:
-			self.gradingPower[cid] = 1
-			return 1
-		if (self.gradingPower[cid]==1):
-			return 1
-		return min(self._maxGradingPower,self.gradingPower[cid]/self.gradingPowerNormalizatoinFactor[cid])
-
-	def getDeviation(self,cid):
-		if not cid in self.deviation_by_category:
-			return 0
-		return self.deviation_by_category[cid]
-
-	def getGradingPowerNormalizatoinFactor(self, cid):
-		return 1
+	def getGradingPower(self,cid=0, normalize=True):
+		normalizationFactor=1
+		if normalize:
+			try:
+				normalizationFactor=self.gradingPowerNormalizationFactor[cid]
+			except:
+				normalizationFactor=1
 		try:
-			return self.gradingPowerNormalizatoinFactor[cid]
-		except:
+			return self.adjustmentsByAssignment['current'][cid].gradingPower/normalizationFactor
+		except KeyError:
 			return 1
 
 	def recordAssignedReview(self, assignment, peer_review):
@@ -66,8 +99,6 @@ class Student:
 		#fingerprint="assignment_id=" + str(assignmentID) + "&author_id=" + str(peer_review.user_id) + "&reviewer_id="+str(peer_review.assessor_id)
 		if not peer_review.id in [pr.id for pr in self._assignedReviews[assignmentID]]:
 			self._assignedReviews[assignmentID].append(peer_review)
-			#print("adding review #" + str(peer_review.id) + " to " + self.name +"'s list of assigned reviews" )
-			
 
 	def amountReviewed(self,assignment):
 		assignmentID=self.idOfAssignment(assignment)
@@ -79,72 +110,115 @@ class Student:
 			return min(1.0,completed*1.0/assigned)
 		return 0
 
-	def updateGradingPower(self, normalize=True):
-		total=0
-		totalDeviation=0
-		cnt=0
-		for cid in self.delta2:
-			if normalize:
-				normalizationFactor=self.getGradingPowerNormalizatoinFactor(cid)
-			else:
-				normalizationFactor=1
+	def recordAdjustments(self, assignment):
+		assignmentID=self.idOfAssignment(assignment)
+		if not assignmentID in self.adjustmentsByAssignment:
+			self.adjustmentsByAssignment[assignmentID]=dict()
+		for cid in list(self.criteriaDescription) + [0]:
+			if cid not in self.adjustmentsByAssignment[assignmentID]:
+				self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments()
+			self.adjustmentsByAssignment[assignmentID][cid].compensation=self.adjustmentsByAssignment['current'][cid].compensation
+			self.adjustmentsByAssignment[assignmentID][cid].gradingPower=self.adjustmentsByAssignment['current'][cid].gradingPower
+			self.adjustmentsByAssignment[assignmentID][cid].rms=self.adjustmentsByAssignment['current'][cid].rms
+			self.adjustmentsByAssignment[assignmentID][cid].weight=self.adjustmentsByAssignment['current'][cid].weight
 		
-			if not cid in self.deviation_by_category:
-				self.deviation_by_category[cid]=0
-			try:
-				if (self.numberOfComparisons[cid]>2):
-					self.rms_deviation_by_category[cid] = (self.delta2[cid] / max(0.1,self.numberOfComparisons[cid]-1))**0.5
-					if self.numberOfComparisons[cid]==0:
-						self.deviation_by_category[cid] =0
+	def updateAdjustments(self, normalize=True, weeklyDegradationFactor=1):
+		compensationTotal=dict()
+		rmsTotal=dict()
+		delta2Total=dict()
+		total=dict()
+		normalizationFactor=1
+		assignmentIDsInOrder=sorted(list(self._dataByAssignment),key=lambda x: -self.getDaysSinceDueDate(x))
+		for cid in list(self.criteriaDescription) + [0]:
+			if normalize:
+				try:
+					normalizationFactor=self.gradingPowerNormalizationFactor[cid]
+				except:
+					normalizationFactor=1
+			compensationTotal[cid]=0
+			rmsTotal[cid]=0
+			delta2Total[cid]=0
+			total[cid]=0
+			for assignmentID in assignmentIDsInOrder:
+				if not assignmentID in self.adjustmentsByAssignment:
+					self.adjustmentsByAssignment[assignmentID]=dict()
+				if cid not in self.adjustmentsByAssignment[assignmentID]:
+					if cid==0:
+						for cid2 in list(self.criteriaDescription):
+							compensationTotal[cid]+=compensationTotal[cid2]
+							delta2Total[cid]+=delta2Total[cid2]
+							total[cid]+=total[cid2]
+						dd=self.DeviationData()
+						dd.delta=compensationTotal[cid]
+						dd.delta2=delta2Total[cid]
+						dd.weight=total[cid]
+						self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments(dd,self._maxGradingPower)
 					else:	
-						self.deviation_by_category[cid] = (self.delta[cid] / self.numberOfComparisons[cid])
-					self.gradingPower[cid]=min(self._maxGradingPower,(1.0/self.rms_deviation_by_category[cid]**2)/normalizationFactor)
-					total+=self.gradingPower[cid]
-					totalDeviation+=self.deviation_by_category[cid]
-					cnt+=1
-				else:
-					self.gradingPower[cid]=1
-					total+=self.gradingPower[cid]
-					totalDeviation+=self.deviation_by_category[cid]
-					cnt+=1
-			except:
-				self.gradingPower[cid]=1
-				total+=self.gradingPower[cid]
-				totalDeviation+=self.deviation_by_category[cid]
-				cnt+=1
-		if normalize:
-			normalizationFactor=self.getGradingPowerNormalizatoinFactor(0)
-		else:
-			normalizationFactor=1
-		if cnt!=0:
-			self.gradingPower[0]=min(self._maxGradingPower,(total/cnt)/normalizationFactor)
-			self.deviation_by_category[0]=totalDeviation/cnt
-		else:
-			self.gradingPower[0]=1
-			self.deviation_by_category[0]=0
+						try:
+							self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments(self._dataByAssignment[assignmentID][cid])
+						except KeyError:
+							self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments()
+							
+				compensation=self.adjustmentsByAssignment[assignmentID][cid].compensation
+				rms=self.adjustmentsByAssignment[assignmentID][cid].rms
+				weight=self.adjustmentsByAssignment[assignmentID][cid].weight
+			
+				total[cid]=total[cid]*weeklyDegradationFactor+weight
+				compensationTotal[cid]=compensationTotal[cid]*weeklyDegradationFactor + compensation * weight
+				rmsTotal[cid]=rmsTotal[cid]*weeklyDegradationFactor + rms * weight		
+				delta2Total[cid]=delta2Total[cid]*weeklyDegradationFactor + rms**2 * weight
+				
+				#record the updated values
+				dd=self.DeviationData()
+				dd.delta=compensationTotal[cid]
+				dd.delta2=delta2Total[cid]
+				dd.weight=total[cid]
+				self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments(dd,self._maxGradingPower)
+				
+			if not 'current' in self.adjustmentsByAssignment:
+				self.adjustmentsByAssignment['current']=dict()
+			if not cid in self.adjustmentsByAssignment['current']:
+				self.adjustmentsByAssignment['current'][cid]=self.Adjustments()
+			if total[cid]>0:
+				self.adjustmentsByAssignment['current'][cid].compensation = compensationTotal[cid]/total[cid]
+				self.adjustmentsByAssignment['current'][cid].rms = rmsTotal[cid]/total[cid]
+				self.adjustmentsByAssignment['current'][cid].gradingPower=min(self._maxGradingPower,(1.0/(self.adjustmentsByAssignment['current'][cid].rms)**2)/normalizationFactor)
+				self.adjustmentsByAssignment['current'][cid].weight=total[cid]
 			
 	def gradingReport(self, returnInsteadOfPrint=False):
-		self.updateGradingPower()
+		self.updateAdjustments(normalize=True)
 		msg="Grading report for " + self.name +"\n"
-		for cid in self.delta2:
+		for cid in self.criteriaDescription:
 			msg+="\t " + self.criteriaDescription[cid] +"\n"
-#			msg+="\t '" + str(cid) +"'\n"
-			if cid in self.rms_deviation_by_category and cid in self.deviation_by_category:
-				msg+="\t\tRMS deviation of %.2f" % self.rms_deviation_by_category[cid] +"\n"
-				msg+="\t\tAverage deviation of %+.2f" % self.deviation_by_category[cid] +"\n"
-			msg+="\t\tGrading power for this category is %.2f" % self.gradingPower[cid] +"\n"
+			if cid in self.adjustmentsByAssignment['current']:
+				msg+="\t\tRMS deviation of %.2f" % self.adjustmentsByAssignment['current'][cid].rms +"\n"
+				msg+="\t\tAverage deviation of %+.2f" % self.adjustmentsByAssignment['current'][cid].compensation +"\n"
+			msg+="\t\tGrading power for this category is %.2f" % self.adjustmentsByAssignment['current'][cid].gradingPower +"\n"
 			msg+=""
 		msg+="\t Overall\n"
-		msg+="\t\tAverage deviation of %+.2f" % self.deviation_by_category[0] +"\n"
-		msg+="\t\tOverall Grading power is %.2f" % self.gradingPower[0] +"\n"
+		msg+="\t\tAverage deviation of %+.2f" % self.adjustmentsByAssignment['current'][0].compensation +"\n"
+		msg+="\t\tOverall Grading power is %.2f" % self.adjustmentsByAssignment['current'][0].gradingPower +"\n"
 		if returnInsteadOfPrint:
 			return(msg)
 		print(msg)
+
+	def setAssignmentDueDate(self, assignment):
+		self._dueDateByAssignment[assignment.id]=assignment.due_at_date
+
+	def getDaysSinceDueDate(self, assignment):
+		assignmentID=self.idOfAssignment(assignment)
+		if assignmentID in self._dueDateByAssignment:
+			dueDate=self._dueDateByAssignment[assignmentID]
+		else:
+			dueDate=datetime(2000, 1, 1, 12, 00, 00, 0)
+		daysSinceDue=(int(datetime.now().strftime('%s'))-int(dueDate.strftime('%s')))/(24*60*60)
+		return daysSinceDue
 
 	def idOfAssignment(self, assignment):
 		if isinstance(assignment,int):
 			returnVal=assignment
 		else:
+			setAssignmentDueDate(self, assignment)
 			returnVal=assignment.id
 		return returnVal
 
@@ -164,7 +238,6 @@ class Student:
 				if assignedReview.id==peer_review.id:
 					del self._assignedReviews[key][i]
 	
-
 	def numberOfReviewsGivenOnAssignment(self, assignment):
 		assignmentID=self.idOfAssignment(assignment)
 		relevantReviews=dict()
@@ -223,3 +296,30 @@ class Student:
 			print('{0: <30}'.format(self.reviewData[assignmentID][key][0]['description'])+'{0: <7}'.format(avgStr)+pointsString)
 			print('{0: <30}'.format("")+'{0: <7}'.format("")+ weightsString)
 			print('{0: <30}'.format("")+'{0: <7}'.format("")+ compString)
+	
+	def getDeviationByAssignment(self, assignment, cid=0):
+		assignmentID=self.idOfAssignment(assignment)
+		try:
+			return self.adjustmentsByAssignment[assignmentID][cid].compensation
+		except KeyError: 
+			return None
+			
+	def getRmsByAssignment(self, assignment, cid=0):
+		assignmentID=self.idOfAssignment(assignment)
+		try:
+			return self.adjustmentsByAssignment[assignmentID][cid].rms
+		except KeyError: 
+			return None
+
+			
+	def addDeviationData(self, cid, weight, thisGivenReview, otherReview):
+		assignmentID=thisGivenReview.assignment_id
+		if not ( (cid in thisGivenReview.scores) and (cid in otherReview.scores)):
+			return
+		delta=thisGivenReview.scores[cid] - otherReview.scores[cid]
+		if not assignmentID in self._dataByAssignment:
+			self._dataByAssignment[assignmentID]=dict()
+		if cid not in self._dataByAssignment[assignmentID]:
+			self._dataByAssignment[assignmentID][cid]=self.DeviationData()
+		self.submissionsCalibratedAgainst[thisGivenReview.submission_id]=True
+		self._dataByAssignment[assignmentID][cid].addData(delta, weight)
