@@ -1,4 +1,5 @@
 from datetime import datetime
+import numpy as np
 
 class Student:
 	
@@ -28,8 +29,8 @@ class Student:
 			self.weight=0
 		
 		def addData(self, delta, weight):
-			self.delta+=delta
-			self.delta2+=delta**2
+			self.delta+=delta * weight
+			self.delta2+=delta**2 * weight
 			self.weight+=weight
 
 		def deviation(self):
@@ -124,7 +125,6 @@ class Student:
 		
 	def updateAdjustments(self, normalize=True, weeklyDegradationFactor=1):
 		compensationTotal=dict()
-		rmsTotal=dict()
 		delta2Total=dict()
 		total=dict()
 		normalizationFactor=1
@@ -136,36 +136,31 @@ class Student:
 				except:
 					normalizationFactor=1
 			compensationTotal[cid]=0
-			rmsTotal[cid]=0
 			delta2Total[cid]=0
 			total[cid]=0
 			for assignmentID in assignmentIDsInOrder:
 				if not assignmentID in self.adjustmentsByAssignment:
 					self.adjustmentsByAssignment[assignmentID]=dict()
 				if cid not in self.adjustmentsByAssignment[assignmentID]:
-					if cid==0:
-						for cid2 in list(self.criteriaDescription):
-							compensationTotal[cid]+=compensationTotal[cid2]
-							delta2Total[cid]+=delta2Total[cid2]
-							total[cid]+=total[cid2]
-						dd=self.DeviationData()
-						dd.delta=compensationTotal[cid]
-						dd.delta2=delta2Total[cid]
-						dd.weight=total[cid]
-						self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments(dd,self._maxGradingPower)
-					else:	
-						try:
-							self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments(self._dataByAssignment[assignmentID][cid])
-						except KeyError:
-							self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments()
-							
-				compensation=self.adjustmentsByAssignment[assignmentID][cid].compensation
-				rms=self.adjustmentsByAssignment[assignmentID][cid].rms
-				weight=self.adjustmentsByAssignment[assignmentID][cid].weight
+					try:
+						self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments(self._dataByAssignment[assignmentID][cid])
+					except KeyError:
+						self.adjustmentsByAssignment[assignmentID][cid]=self.Adjustments()
+				if cid==0:
+					compensation=0
+					delta2=0
+					for cid2 in list(self.criteriaDescription):
+						compensation+=self.adjustmentsByAssignment[assignmentID][cid].compensation
+						delta2+=(self.adjustmentsByAssignment[assignmentID][cid].rms)**2
+					rms=(delta2/len(self.criteriaDescription))**0.5
+					compensation/=len(self.criteriaDescription)
+				else:					
+					compensation=self.adjustmentsByAssignment[assignmentID][cid].compensation
+					rms=self.adjustmentsByAssignment[assignmentID][cid].rms
+					weight=self.adjustmentsByAssignment[assignmentID][cid].weight
 			
 				total[cid]=total[cid]*weeklyDegradationFactor+weight
 				compensationTotal[cid]=compensationTotal[cid]*weeklyDegradationFactor + compensation * weight
-				rmsTotal[cid]=rmsTotal[cid]*weeklyDegradationFactor + rms * weight		
 				delta2Total[cid]=delta2Total[cid]*weeklyDegradationFactor + rms**2 * weight
 				
 				#record the updated values
@@ -181,7 +176,7 @@ class Student:
 				self.adjustmentsByAssignment['current'][cid]=self.Adjustments()
 			if total[cid]>0:
 				self.adjustmentsByAssignment['current'][cid].compensation = compensationTotal[cid]/total[cid]
-				self.adjustmentsByAssignment['current'][cid].rms = rmsTotal[cid]/total[cid]
+				self.adjustmentsByAssignment['current'][cid].rms = (delta2Total[cid]/total[cid])**0.5
 				self.adjustmentsByAssignment['current'][cid].gradingPower=min(self._maxGradingPower,(1.0/(self.adjustmentsByAssignment['current'][cid].rms)**2)/normalizationFactor)
 				self.adjustmentsByAssignment['current'][cid].weight=total[cid]
 			
@@ -323,3 +318,13 @@ class Student:
 			self._dataByAssignment[assignmentID][cid]=self.DeviationData()
 		self.submissionsCalibratedAgainst[thisGivenReview.submission_id]=True
 		self._dataByAssignment[assignmentID][cid].addData(delta, weight)
+			
+		#make an average of the data in cid=0	
+		self._dataByAssignment[assignmentID][0]=self.DeviationData()
+		deltaList=[self._dataByAssignment[assignmentID][cid].delta for cid in self._dataByAssignment[assignmentID] if cid!=0]
+		delta2List=[self._dataByAssignment[assignmentID][cid].delta2 for cid in self._dataByAssignment[assignmentID] if cid!=0]
+		weightList=[self._dataByAssignment[assignmentID][cid].weight for cid in self._dataByAssignment[assignmentID] if cid!=0]
+		self._dataByAssignment[assignmentID][0].delta=np.average(deltaList)
+		self._dataByAssignment[assignmentID][0].delta2=np.average(delta2List)
+		self._dataByAssignment[assignmentID][0].weight=np.average(weightList)
+		
