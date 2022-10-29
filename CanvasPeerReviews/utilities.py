@@ -719,7 +719,7 @@ def calibrate(studentsToCalibrate="all"):
 	#		Now that all of the students grading powers have been updated, normalize everything so that the average
 	#		grading power for all of the students is 1
 	for cid in list(cids)+[0]:
-		avg=np.average([s.getGradingPower(cid) for s in students])
+		avg=np.average([s.getGradingPower(cid,  normalize=False) for s in students])
 		for student in students:
 			student.gradingPowerNormalizationFactor[cid]=avg
 	student.updateAdjustments(normalize=True,  weeklyDegradationFactor=params.weeklyDegradationFactor())	
