@@ -63,6 +63,7 @@ creations=[]
 solutionURLs=dict()
 graded_assignments=dict()
 lastAssignment=None
+nearestAssignment=None
 assignmentByNumber=dict()
 professorsReviews=dict()
 course=None
@@ -152,7 +153,7 @@ def reset():
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/"):
-	global course, canvas, students, graded_assignments, status
+	global course, canvas, students, graded_assignments, status, nearestAssignment
 	status['dataDir']=dataDirectory
 	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
 		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
@@ -202,6 +203,9 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	getGradedAssignments(course)
 
 	lastAssignment =getMostRecentAssignment()
+	nearestAssignment =getMostRecentAssignment(nearest=True)
+	if lastAssignment != nearestAssignment:
+		print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
 	for student in students:
 		sections[student.section]=student.sectionName
 
@@ -291,23 +295,27 @@ def getGradedAssignments(course):
 
 ######################################
 # Return the most recently due assignment of all the assignments that have peer reviews
-def getMostRecentAssignment():
+def getMostRecentAssignment(nearest=False):
+	#if nearest=True it will get the assignment with a due date closest to now, regardless of whether it is past due or not yet due
 	global lastAssignment
-	lastAssignment=None
+	theAssignment=None
 	if len(graded_assignments)==0:
 		getGradedAssignments(course)
 	minTimeDelta=3650*24*3600
 
 	for key, graded_assignment in graded_assignments.items():
 		delta=graded_assignment.secondsPastDue()
+		if nearest and delta<0:
+			delta*=-1
 		if (delta > 0  and delta < minTimeDelta and graded_assignment.published) :
 			minTimeDelta=delta
-			lastAssignment=graded_assignment
-	graded_assignments['last']=lastAssignment
-	if lastAssignment==None:
+			theAssignment=graded_assignment
+	if not nearest:
+		graded_assignments['last']=theAssignment
+	if theAssignment==None:
 		print("Couldn't find an assignment with peer reviews that is past due.")
 	status["gotMostRecentAssignment"]=True
-	return lastAssignment	
+	return theAssignment	
 
 
 ######################################
