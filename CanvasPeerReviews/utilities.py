@@ -285,7 +285,8 @@ def getGradedAssignments(course):
 				graded_assignments[assignment.id].sync(assignment)
 	for key in graded_assignments:
 		try:
-			assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
+			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
+				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
 		except:
 			print("Unable to add " + assignment.name + " to assignmentByNumber")	
 	status["gotGradedAssignments"]=True
@@ -577,13 +578,23 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 			if assignment.name in cells[0] and not placeholder in cells[1]:
 				solutionURLs[assignment.id]=cells[1].strip()
 				success=True
+		#append any new assignments
+		f = open(fileName, "a")
+		for key, assignment in graded_assignments.items():
+			line=assignment.name + ", " + placeholder +"\n"
+			if assignment.name not in "".join(lines):
+				f.write(line)
+		f.close()
 		if success:
 			return solutionURLs[assignment.id]
 	except:
-		f = open(fileName, "w")
+		f = open(fileName.replace("csv","-template.csv"), "w")
 		f.write("Assignment Name, Solution URL\n")
+		lines=[]
 		for key, assignment in graded_assignments.items():
-			f.write(assignment.name + ", " + placeholder +"\n")
+			line=assignment.name + ", " + placeholder +"\n"
+			f.write(line)
+			lines.append(line)
 		f.close()
 		subprocess.call(('open', fileName))
 		print("Put the solution URLs into the file '" + fileName + "'")
