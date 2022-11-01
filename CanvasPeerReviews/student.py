@@ -213,7 +213,7 @@ class Student:
 		if isinstance(assignment,int):
 			returnVal=assignment
 		else:
-			self.setAssignmentDueDate(self, assignment)
+			self.setAssignmentDueDate(assignment)
 			returnVal=assignment.id
 		return returnVal
 
