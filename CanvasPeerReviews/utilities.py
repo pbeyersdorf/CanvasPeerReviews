@@ -231,7 +231,6 @@ def assignSections(students):
 # to that assignment as an array of objects
 def getStudentWork(thisAssignment='last'):
 	global creations, graded_assignments, status
-	printLine("Getting submissions for " + thisAssignment.name,False)
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'getStudentWork'")
 		return
@@ -245,6 +244,7 @@ def getStudentWork(thisAssignment='last'):
 			val=int(input("Choose the assignment id to grade: "))
 			graded_assignments['last']=graded_assignments[val]
 		thisAssignment=graded_assignments['last']
+	printLine("Getting submissions for " + thisAssignment.name,False)
 	submissions=thisAssignment.get_submissions()
 	clearList(creations)
 	i=0
