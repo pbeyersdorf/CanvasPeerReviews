@@ -93,6 +93,14 @@ class Student:
 		except KeyError:
 			return 1
 
+	def assignedReviewOfCreation(self, creation):
+		for key in self._assignedReviews:
+			for pr in self._assignedReviews[key]:
+				if pr.asset_id == creation.id:
+					return True
+		return False
+		
+
 	def recordAssignedReview(self, assignment, peer_review):
 		assignmentID=self.idOfAssignment(assignment)
 		if not assignmentID in self._assignedReviews:

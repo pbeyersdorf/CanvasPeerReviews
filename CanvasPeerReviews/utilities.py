@@ -263,6 +263,9 @@ def getStudentWork(thisAssignment='last'):
 			status['err']="key error"
 	printLine("Getting reviews for " + thisAssignment.name,False)
 	getReviews(creations)
+	for c in creations:
+		c.reviewCount=len([s for s in students if s.assignedReviewOfCreation(c)])
+		#thisAssignment
 	printLine("",False)
 	print("\r",end="")
 	status["gotStudentsWork"]=True
