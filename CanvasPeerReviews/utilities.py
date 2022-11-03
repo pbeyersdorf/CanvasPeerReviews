@@ -420,7 +420,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		else:
 			print(" and " + studentsById[c.author_id].name)			
 	i=0
-	for reviewer in reviewers:
+	for j, reviewer in enumerate(reviewers):
 		tic=time.time()
 		while (	time.time()-tic < 1 and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
 			i+=1
@@ -428,16 +428,13 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
 		calibration = calibrations[i%len(calibrations)]
-		printLeftRight("Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name,str(i), end="")
 		i+=1
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
-			peer_review=calibration.create_submission_peer_review(reviewer.id)
-			reviewer=studentsById[peer_review.assessor_id]
-			reviewer.recordAssignedReview(assignment, peer_review)
+			msg=str(j+1) + "/" + str(len(reviewers))
+			peer_review=assignAndRecordPeerReview(calibration,reviewer, msg)
 		else:
 			printLine("skipping self review", newLine=False)
-		calibration.reviewCount+=1
 	saveStudents()
 	
 ######################################
