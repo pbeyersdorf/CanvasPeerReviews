@@ -1302,7 +1302,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 					default="unknown"
 					while not val in ["i","f","v","r","c", "p","cp", "pc", "e"]:
 						if " ".join(comments).lower().count(keywordReview) and not " ".join(comments).lower().count(keywordCreation):
-							print("Student indicated they want the reviews regraded (e) or (p) to evaluate peer review scores")
+							print("Student indicated they want the reviews recalculated (e) or (p) to evaluate peer review scores")
 							default="p"
 						elif " ".join(comments).lower().count(keywordCreation) and not " ".join(comments).lower().count(keywordReview):
 							print("Student indicated they want the creations regraded (e) or (c) to evaluate creation score")
