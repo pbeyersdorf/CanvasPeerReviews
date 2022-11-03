@@ -377,7 +377,15 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 	#print("using key " + str(assignmentKeyByNumber[val]))
 	return activeAssignment
 
-
+######################################
+#This function assigns a peer review and records it
+def assignAndRecordPeerReview(creation,reviewer, msg):
+	peer_review=creation.create_submission_peer_review(reviewer.id)
+	reviewer.recordAssignedReview(creation.assignment_id, peer_review)
+	creation.reviewCount+=1
+	printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation ", msg)	
+	return peer_review
+	
 ######################################
 #This takes a list of submissions which are to be used as calibration reviews
 # and assigns one to each student in the class, making sure to avoid assigning
@@ -420,20 +428,16 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
 		calibration = calibrations[i%len(calibrations)]
-		#printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work (Sec " + studentsById[calibrations[i%len(calibrations)].author_id].sectionName[-2:] +") to be reviewed by "+ studentsById[reviewer.id].name, newLine=False )
-		#printLine(str(i)+" Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name, newLine=False )
 		printLeftRight("Assigning " +str(studentsById[calibrations[i%len(calibrations)].author_id].name) +"'s work to "+ studentsById[reviewer.id].name,str(i), end="")
 		i+=1
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
 			peer_review=calibration.create_submission_peer_review(reviewer.id)
 			reviewer=studentsById[peer_review.assessor_id]
-			#reviewer.assignedReviews[assignment.id]=review
 			reviewer.recordAssignedReview(assignment, peer_review)
 		else:
 			printLine("skipping self review", newLine=False)
 		calibration.reviewCount+=1
-
 	saveStudents()
 	
 ######################################
@@ -442,7 +446,6 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 # review the submission.  It will select reviewers from the beginning of the list of
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
-#xxx need to ensure reviews are assigned to students in the same section
 def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999, AssignPeerReviewsToGraderSubmissions=False):
 	startTime=time.time()
 
@@ -454,33 +457,27 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		getStudentWork()
 		
 	if AssignPeerReviewsToGraderSubmissions:
-		creationsToConsider=makeList(creationsToConsider)
+		creationsToConsider=makeList(creationsToConsider) #set this to false if you want the graders submissions to be peer reviewed
 	else:
 		creationsToConsider=[c for c in makeList(creationsToConsider) if studentsById[c.author_id].role=='student']
 	creationList=creationsToConsider
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
-	peersWithSubmissions=[x for x in studentsWithSubmissions if x.role=='student']
 	graders=[x for x in students if x.role=='grader']
 	graders=randmoize(graders)
 	if reviewers=="randomize":
-		peersWithSubmissions=randmoize(peersWithSubmissions) 
-	reviewers=makeList(peersWithSubmissions)
+		studentsWithSubmissions=randmoize(studentsWithSubmissions) 
+	reviewers=makeList(studentsWithSubmissions)
 	#assign params.numberOfReviews reviews per creation
 	for i, creation in enumerate(creationList):
 		for j,reviewer in enumerate(reviewers):
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-				peer_review=creation.create_submission_peer_review(reviewer.id)
-				reviewer.recordAssignedReview(creation.assignment_id, peer_review)
-				creation.reviewCount+=1
-				counter=str(i+1) + "/" + str(len(creationList))
-				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter)
+				msg=str(i+1) + "/" + str(len(creationList))
+				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
 			reviewer=random.choice(reviewers)
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-				creation.create_submission_peer_review(reviewer.id)
-				creation.reviewCount+=1
-				counter=str(i+1) + "/" + str(len(creationList))
-				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation (as an additional assignment)", counter)	
+				msg="additional assignment " + str(i+1) + "/" + str(len(creationList))
+				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 		
 					#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
@@ -489,9 +486,8 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		while (reviewer.numberOfReviewsAssignedOnAssignment(creationList[0].assignment_id)  < params.numberOfReviews and time.time()-tic < 1):
 			creation=random.choice(creationList)
 			if (reviewer.section == studentsById[creation.user_id].section):
-				creation.create_submission_peer_review(reviewer.id)
-				creation.reviewCount+=1
-				printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", "---",  end="")
+				msg="---"
+				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 				#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
 	if len(graders)==0:
 		return
@@ -514,11 +510,8 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		for i,reviewer in enumerate(thisSectionsGraders):
 			for j,creation in enumerate(creationsListofList[i]):
 				if (reviewer.id != creation.user_id ):
-					peer_review=creation.create_submission_peer_review(reviewer.id)
-					reviewer.recordAssignedReview(creation.assignment_id, peer_review)
-					creation.graderReviewCount+=1
-					counter=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
-					printLeftRight("assigning grader " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation", counter, end="")
+					msg=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
+					peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 	saveStudents()
 	
 			
