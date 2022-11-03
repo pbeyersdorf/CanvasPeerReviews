@@ -1191,7 +1191,7 @@ def reviewGradeOnCalibrations(assignment, student):
 	totalGradeDetla= round(reviewGrade-oldReviewGrade)
 	totalPointsDelta= round(totalGradeDetla * params.weightingOfReviews)	
 	if not assignment.id in student.regradeComments:
-		student.regradeComments[assignment.id]=student.calibrationGradeExplanation[assignment.id]
+		student.regradeComments[assignment.id]= student.calibrationGradeExplanation[assignment.id]
 	else:
 		student.regradeComments[assignment.id]+="  After regrading your creation, I regraded your reviews.  " + student.calibrationGradeExplanation[assignment.id]
 
@@ -1211,9 +1211,9 @@ def reviewGradeOnCalibrations(assignment, student):
 		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
 		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total']))
 		if (totalPointsDelta) > 0:
-			student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'] + ".  ")
+			student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal']) + ".  "
 		else:
-			student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal']+ ".  ")
+			student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])+ ".  "
 	elif totalPointsDelta==0:
 		student.regradeComments[assignment.id]+="This did not change your review grade."
 	return student.points[assignment.id]['curvedTotal']
@@ -1375,7 +1375,16 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 			
 			for student_key in studentsNeedingRegrade:
 				student=studentsNeedingRegrade[student_key]
-				originalCurvedTotalPoints=originalGrades[student_key]['curvedTotal']
+				#get the grade from saved data for the student
+				originalCurvedTotalPoints=originalGrades[student_key]['curvedTotal'] 
+				#if possible, read the grade from canvas
+				submission=[c for c in creations if c.assignment_id == assignment.id and c.author_id == student.id]
+				if len(submission>0):
+					canvasGrade=submission.grade
+					if (canvasGrade!=originalCurvedTotalPoints):
+						print(f"Warning: Canvas grade of {canvasGrade} does not match what is in memory {originalCurvedTotalPoints}, but regardless the grade on canvas is about to be overwritten with a new grade")
+					originalCurvedTotalPoints=canvasGrade
+					
 				if student in studentsNeedingReviewRegradeList:
 					reviewGradeOnCalibrations(assignment,student)
 				digits=int(2-math.log10(assignment.points_possible))
@@ -1395,11 +1404,11 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 					printLine("\nRegrade comments for " + student.name, newLine=False)
 					print(student.regradeComments[assignment.id])
 					if scoreDelta<0:
-						print(f"{Fore.RED}{Style.BRIGHT}Score will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a loss of {-scoreDelta} points{Style.RESET_ALL}")
+						print(f"\n{Fore.RED}{Style.BRIGHT}Score will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a loss of {-scoreDelta} points{Style.RESET_ALL}")
 					elif scoreDelta>0:
-						print(f"Score will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a gain of {scoreDelta} points")
+						print(f"\nScore will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a gain of {scoreDelta} points")
 					else:
-						print(f"Score will not change")
+						print(f"\nScore will not change")
 					if confirm("Ok to post?"):
 						student.comments[assignment.id]=student.regradeComments[assignment.id]
 						postGrades(assignment, listOfStudents=[student])
