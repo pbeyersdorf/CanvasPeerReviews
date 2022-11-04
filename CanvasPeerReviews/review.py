@@ -16,10 +16,14 @@ class Review:
 		#previewURL #https://sjsu.instructure.com/courses/1490126/assignments/6272805/submissions/4552373?preview=1&version=1
 		#self.url=creation.preview_url.split("submissions/")[0] + "anonymous_submissions/"
 		self.urls=[]
-		for attachment in self.creation.attachments:
-			previewURL=attachment['url'].split("/download")[0]
-			self.urls.append(attachment['url'])
-			#self.urls.append(previewURL)
+		try:
+			for attachment in self.creation.attachments:
+				previewURL=attachment['url'].split("/download")[0]
+				self.urls.append(attachment['url'])
+				#self.urls.append(previewURL)
+		except:
+			previewURL=None
+			self.urls.append(None)
 		self.url=self.urls[0]
 		for s in self.data:
 			try:
