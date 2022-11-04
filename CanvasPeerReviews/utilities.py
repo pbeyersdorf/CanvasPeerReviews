@@ -377,10 +377,17 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 	#print("using key " + str(assignmentKeyByNumber[val]))
 	return activeAssignment
 
+# import random
+# class DummyPeerReview:
+# 	def __init__(self):
+# 		self.id=int(random.random()*10000000)
+# 		self.asset_id=int(random.random()*10000000)
+
 ######################################
 #This function assigns a peer review and records it
 def assignAndRecordPeerReview(creation,reviewer, msg):
 	peer_review=creation.create_submission_peer_review(reviewer.id)
+	#peer_review=DummyPeerReview()
 	reviewer.recordAssignedReview(creation.assignment_id, peer_review)
 	creation.reviewCount+=1
 	printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation ", msg)	
@@ -471,15 +478,25 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				msg=str(i+1) + "/" + str(len(creationList))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
-			reviewer=random.choice(reviewers)
+			#get the reviewer with the fewest reviews so far
+			sortedReviewers=sorted(reviewers, key=lambda r:r.numberOfReviewsAssignedOnAssignment(creation.assignment_id))
+			#reviewer=random.choice(reviewers)
+			k=0
+			reviewer=sortedReviewers[k]
+			tic=time.time()
+			while (reviewer.id == creation.user_id or reviewer.section != studentsById[creation.user_id].section) and (time.time()-tic < 1):
+				k+=1
+				reviewer=sortedReviewers[k]		
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 				msg="additional assignment " + str(i+1) + "/" + str(len(creationList))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 		
 					#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
+	
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
+		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationList[0].assignment_id)}")
 		while (reviewer.numberOfReviewsAssignedOnAssignment(creationList[0].assignment_id)  < params.numberOfReviews and time.time()-tic < 1):
 			creation=random.choice(creationList)
 			if (reviewer.section == studentsById[creation.user_id].section):
