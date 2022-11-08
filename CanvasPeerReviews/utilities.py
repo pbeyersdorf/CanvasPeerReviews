@@ -611,6 +611,21 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 	return ""
 
 # ######################################
+# Delete a given peer review from the canvas assignments
+def deleteReview(peer_review):
+	reviewer=studentsById[peer_review.assessor_id]
+	c=[creation for creation in creations if creation.id==peer_review.asset_id][0]
+	a=graded_assignments[c.assignment_id]
+	try:
+		s._assignedReviews[a.id].remove(peer_review)
+	except:
+		pass 
+	print("deleting " + reviewer.name + "'s peer review assignment of " + studentsById[c.author_id].name )
+	reviewer.removeAssignedReview(peer_review)
+	c.delete_submission_peer_review(peer_review.assessor_id)
+
+
+# ######################################
 # Count how many reviews have been assigned to each student using data from Canvas
 def resyncReviews(assignment,theCreations=[]):
 	global students
