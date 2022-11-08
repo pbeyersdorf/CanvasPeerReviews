@@ -1717,7 +1717,7 @@ def importGrades(assignment=None, fileName=None, overwrite=False):
 	try:
 		csvData=readCSV(fileName)
 	except:
-		raise Exception(f"unable to read file '{fileName}')
+		raise Exception("unable to read file '" + fileName +"'")
 	nameCol, gradeCol, creationCol, reviewCol, rawCol = -1 ,-1 ,-1 , -1, -1
 	for (i,col) in enumerate(csvData[0]):
 		if col.strip().lower() == "name":
