@@ -1717,8 +1717,7 @@ def importGrades(assignment=None, fileName=None, overwrite=False):
 	try:
 		csvData=readCSV(fileName)
 	except:
-		print(f"unable to read file '{fileName}')
-		return
+		raise Exception(f"unable to read file '{fileName}')
 	nameCol, gradeCol, creationCol, reviewCol, rawCol = -1 ,-1 ,-1 , -1, -1
 	for (i,col) in enumerate(csvData[0]):
 		if col.strip().lower() == "name":
@@ -1732,7 +1731,7 @@ def importGrades(assignment=None, fileName=None, overwrite=False):
 		elif col.strip().lower() == "raw total":
 			rawCol = i
 	if nameCol<0 or nameCol<0 or creationCol<0 or reviewCol<0 or rawCol<0:
-		print("Unable to  find all column headers")
+		raise Exception("Unable to  find all column headers")
 		return
 
 	for (j, row) in enumerate(csvData):
