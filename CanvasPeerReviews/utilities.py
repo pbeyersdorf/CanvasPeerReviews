@@ -1705,6 +1705,57 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 	assignment.curvedAverage=np.average(curvedTotal)
 	assignment.curvedStd=np.std(curvedTotal)
 	
+######################################
+# Import the student grades for the given assignment from a file =
+# them on the screen too.		
+def importGrades(assignment=None, fileName=None, overwrite=False):
+	if assignment==None:
+		assignment=chooseAssignment()
+	if fileName==None and assignment!= None:
+		fileName="scores for " + assignment.name + ".csv"
+	fileName=status['dataDir'] + fileName
+	try:
+		csvData=readCSV(fileName)
+	except:
+		print(f"unable to read file '{fileName}')
+		return
+	nameCol, gradeCol, creationCol, reviewCol, rawCol = -1 ,-1 ,-1 , -1, -1
+	for (i,col) in enumerate(csvData[0]):
+		if col.strip().lower() == "name":
+			nameCol=i
+		elif col.strip().lower() == "grade" or col.strip().lower() == "adjusted total" or col.strip().lower() == "total":
+			gradeCol = i
+		elif col.strip().lower() == "creation":
+			creationCol = i
+		elif col.strip().lower() == "review":
+			reviewCol = i
+		elif col.strip().lower() == "raw total":
+			rawCol = i
+	if nameCol<0 or nameCol<0 or creationCol<0 or reviewCol<0 or rawCol<0:
+		print("Unable to  find all column headers")
+		return
+
+	for (j, row) in enumerate(csvData):
+		temp=[s for s in students if s.name == row[nameCol]]
+		if len(temp)>0:
+			student=temp[0]
+			grade=row[gradeCol]
+			creationScore=row[creationCol]
+			reviewScore=row[reviewCol]
+			rawScore=row[rawCol]
+			if (not assignment.id in student.grades) or overwrite:
+				student.grades[assignment.id]=dict()
+				student.grades[assignment.id]['creation']=(float(creationScore)/0.7)
+				student.grades[assignment.id]['review']=(float(reviewScore)/0.3)
+				student.grades[assignment.id]['total']=(float(creationScore)+float(reviewScore))
+				student.grades[assignment.id]['curvedTotal']=float(grade)
+			if (not assignment.id in student.points) or overwrite:
+				student.points[assignment.id]=dict()
+				student.points[assignment.id]['creation']=int(creationScore)
+				student.points[assignment.id]['review']=int(reviewScore)
+				student.points[assignment.id]['total']=int(rawScore)
+				student.points[assignment.id]['curvedTotal']=int(grade)
+
 
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
