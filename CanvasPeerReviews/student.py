@@ -185,7 +185,10 @@ class Student:
 			if total[cid]>0:
 				self.adjustmentsByAssignment['current'][cid].compensation = compensationTotal[cid]/total[cid]
 				self.adjustmentsByAssignment['current'][cid].rms = (delta2Total[cid]/total[cid])**0.5
-				self.adjustmentsByAssignment['current'][cid].gradingPower=min(self._maxGradingPower,(1.0/(self.adjustmentsByAssignment['current'][cid].rms)**2)/normalizationFactor)
+				if self.adjustmentsByAssignment['current'][cid].rms!=0:
+					self.adjustmentsByAssignment['current'][cid].gradingPower=min(self._maxGradingPower,(1.0/(self.adjustmentsByAssignment['current'][cid].rms)**2)/normalizationFactor)
+				else:
+					self.adjustmentsByAssignment['current'][cid].gradingPower=self._maxGradingPower					
 				self.adjustmentsByAssignment['current'][cid].weight=total[cid]
 			
 	def gradingReport(self, returnInsteadOfPrint=False):
