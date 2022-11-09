@@ -324,7 +324,7 @@ def getMostRecentAssignment(nearest=False):
 
 ######################################
 # Choose an assignment to work on
-def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", promptOverrride=None):
+def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None):
 	global graded_assignments, lastAssignment, activeAssignment
 	if defaultAssignment==None:
 		defaultAssignment=graded_assignments['last']
@@ -357,12 +357,12 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		val=None
 		while not (val in assignmentKeyByNumber or (val=='0' and allowAll)):
 			if timeout==None:
-				if promptOverrride==None:
+				if prompt==None:
 					val=input("Enter a choice for the assignment to work on [" + defaultChoice+"]: ").upper()
 				else:
 					val=input(promptOverrride).upper()
 			else:
-				if promptOverrride==None:
+				if prompt==None:
 					val=inputWithTimeout("Enter a choice for the assignment to work on", default=defaultChoice, timeout=timeout).upper()
 				else:
 					val=inputWithTimeout(promptOverrride, default=defaultChoice, timeout=timeout).upper()					
