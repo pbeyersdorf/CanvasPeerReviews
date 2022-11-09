@@ -276,8 +276,8 @@ def getStudentWork(thisAssignment='last'):
 # from only those assignments that are set up to require peer reviews and
 # already have student submissions. 
 def getGradedAssignments(course):
+	global graded_assignments, assignments
 	assignments = course.get_assignments()
-	global graded_assignments
 	for i,assignment in enumerate(assignments):
 		#if (assignment.peer_reviews and assignment.has_submitted_submissions): #xxx is it ok to remove the requirement that there are submissions already?
 		if (assignment.peer_reviews):
@@ -358,14 +358,12 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		while not (val in assignmentKeyByNumber or (val=='0' and allowAll)):
 			if timeout==None:
 				if prompt==None:
-					val=input("Enter a choice for the assignment to work on [" + defaultChoice+"]: ").upper()
-				else:
-					val=input(promptOverrride).upper()
+					prompt="Enter a choice for the assignment to work on [" + defaultChoice+"]: "
+				val=input(prompt).upper()
 			else:
 				if prompt==None:
-					val=inputWithTimeout("Enter a choice for the assignment to work on", default=defaultChoice, timeout=timeout).upper()
-				else:
-					val=inputWithTimeout(promptOverrride, default=defaultChoice, timeout=timeout).upper()					
+					prompt="Enter a choice for the assignment to work on"
+				val=inputWithTimeout(prompt, default=defaultChoice, timeout=timeout).upper()					
 			if val=="":
 				val=defaultChoice
 		if requireConfirmation:
