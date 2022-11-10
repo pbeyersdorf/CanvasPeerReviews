@@ -88,7 +88,7 @@ status={'message': '',
 additionalGradingComment=""
 keywordReview="recalculate" # if this keyword is in a student comments flag the submission for a regrade
 keywordCreation="regrade" # if this keyword is in a student comments flag the submission for a regrade
-
+cachedAssignmentKey=None
 
 
 ######################################
@@ -152,9 +152,12 @@ def reset():
 ######################################
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
-def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/"):
-	global course, canvas, students, graded_assignments, status, nearestAssignment
+def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
+	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey
 	status['dataDir']=dataDirectory
+	if chooseAssignment and COURSE_ID!=None:
+		status['prefix']="course_" + str(COURSE_ID) + "_"
+		cachedAssignmentKey=getCachedAssignment(DATADIRECTORY)
 	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
 		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
 		print(Fore.RED +  Style.BRIGHT +  "Using test environment - set TEST_ENVIRONMENT=False to change" + Style.RESET_ALL)
@@ -321,11 +324,33 @@ def getMostRecentAssignment(nearest=False):
 	status["gotMostRecentAssignment"]=True
 	return theAssignment	
 
-
+######################################
+# Choose an assignment from a cache file and return the key for that assignment
+def getCachedAssignment(DATADIRECTORY):
+	try:
+		with open( DATADIRECTORY +"PickleJar/"+ status['prefix'] + "assignmentList.pkl", 'rb') as handle:
+			cacheData=pickle.load(handle)
+	except:
+		return
+	keyByStr=dict()
+	for line in cacheData:
+		#{'str':iStr, 'name': graded_assignments[key].name, 'key': key}	
+		print(f"\t{line['str']:<4}{line['name']}")
+		keyByStr[line['str'].split(")")[0].strip()]=line['key']
+	val=input("Select an assignmetn or hit <enter> if it isn't listed: ")
+	if val in keyByStr:
+		return keyByStr[val]
+	
 ######################################
 # Choose an assignment to work on
-def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None):
-	global graded_assignments, lastAssignment, activeAssignment
+def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None, key=None):
+	global graded_assignments, lastAssignment, activeAssignment, cachedAssignmentKey
+	if key!=None and key in graded_assignments:
+		return graded_assignments[key]
+	if cachedAssignmentKey!=None and cachedAssignmentKey in graded_assignments:
+		returnVal=graded_assignments[cachedAssignmentKey]
+		cachedAssignmentKey=None
+		return returnVal
 	if defaultAssignment==None:
 		defaultAssignment=graded_assignments['last']
 	confirmed=False
@@ -338,7 +363,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		i=0
 		assignmentKeyByNumber=dict()
 		print("\nAssignments with peer reviews enabled: ")
-		msg="Previously known peer reviewed assignments: \n"
+		cacheData=[]
 		assignmentIDswithNumbers=[assignmentByNumber[i].id for i in assignmentByNumber]
 		if allowAll:
 			print("\t0) All" )
@@ -350,7 +375,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				if (key != 'last'):
 					i+=1		
 			if (key != 'last'):
-				msg+=f"\t{iStr:<4}{graded_assignments[key].name}\n"
+				cacheData.append({'str':iStr, 'name': graded_assignments[key].name, 'key': key})
 				if graded_assignments[key] == defaultAssignment:
 					print(f"\t{Fore.BLUE}{iStr:<4}{graded_assignments[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
 					defaultChoice=iStr[:-1]
@@ -382,10 +407,8 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 			else:
 				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 	#print("using key " + str(assignmentKeyByNumber[val]))
-	msg+="Select an assignment or hit <enter> to refresh the list: "
-	f = open(status['dataDir'] +  "assignmentList.txt", "w")
-	f.write(msg)
-	f.close()
+	with open(status['dataDir'] + "PickleJar/" + status['prefix'] + 'assignmentList.pkl', 'wb') as handle:
+		pickle.dump(cacheData, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	return activeAssignment
 
 # import random
@@ -1670,10 +1693,12 @@ def findInLog(serchText, fileName=None):
 	f = open(theFile, "r")
 	lines = f.readlines()
 	f.close()
+	print("Previously known peer reviewed assignments: ")
 	for line in lines:
 		if serchText in line:
 			return True
-	return False
+	print("Select an assignment or hit <enter> to refresh the list: ")
+
 
 
 ######################################
