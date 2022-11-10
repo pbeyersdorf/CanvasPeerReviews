@@ -412,15 +412,25 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	elif not status['gotStudentsWork']:
 		print("getting student work")
 		getStudentWork(assignment)
+
+	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if c.author_id in studentsById and studentsById[c.author_id].role=='student']
+
 	if calibrations=="auto":
 		print("professor reviews for ", assignment.name, assignment.id)
 		professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id]]
 		calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
 		#return
+		if len(calibrations)==0 and confirm("There were no submissions reviewed by the professor, should a random submission be assigned as the calibration review?"):
+			calibratrions=="random"
+	if calibratrions=="random":
+		calibrations=random.choice(studentsWithSubmissions)
+		msg=f"{calibrations.name} has  been chosen as the calibration review for {assignment.name}"
+		print(msg)
+		log(msg)
 	else:
-		creations=calibrations
+		pass
+		#creations=calibrations
 
-	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if c.author_id in studentsById and studentsById[c.author_id].role=='student']
 	reviewers=randmoize(studentsWithSubmissions) 
 	
 	calibrations=makeList(calibrations)
