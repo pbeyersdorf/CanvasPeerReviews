@@ -330,6 +330,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		defaultAssignment=graded_assignments['last']
 	confirmed=False
 	defaultChoice=0
+	msg=""
 	while not confirmed:
 		codes=[chr(i+65) for i in range(26)]
 		for j in range(26):
@@ -337,6 +338,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		i=0
 		assignmentKeyByNumber=dict()
 		print("\nAssignments with peer reviews enabled: ")
+		msg="Previously known peer reviewed assignments: \n"
 		assignmentIDswithNumbers=[assignmentByNumber[i].id for i in assignmentByNumber]
 		if allowAll:
 			print("\t0) All" )
@@ -348,6 +350,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				if (key != 'last'):
 					i+=1		
 			if (key != 'last'):
+				msg+=f"\t{iStr:<4}{graded_assignments[key].name}\n"
 				if graded_assignments[key] == defaultAssignment:
 					print(f"\t{Fore.BLUE}{iStr:<4}{graded_assignments[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
 					defaultChoice=iStr[:-1]
@@ -379,6 +382,10 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 			else:
 				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 	#print("using key " + str(assignmentKeyByNumber[val]))
+	msg+="Select an assignment or hit <enter> to refresh the list: "
+	f = open(status['dataDir'] +  "assignmentList.txt", "w")
+	f.write(msg)
+	f.close()
 	return activeAssignment
 
 # import random
