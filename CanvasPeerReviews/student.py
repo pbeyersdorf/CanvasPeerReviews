@@ -131,11 +131,13 @@ class Student:
 			self.adjustmentsByAssignment[assignmentID][cid].rms=self.adjustmentsByAssignment['current'][cid].rms
 			self.adjustmentsByAssignment[assignmentID][cid].weight=self.adjustmentsByAssignment['current'][cid].weight
 		
-	def updateAdjustments(self, normalize=True, weeklyDegradationFactor=1):
+	def updateAdjustments(self, normalize=True, weeklyDegradationFactor=1, cidsToIncludeInSummarry="All"):
 		compensationTotal=dict()
 		delta2Total=dict()
 		total=dict()
 		normalizationFactor=1
+		if cidsToIncludeInSummarry=="All":
+			cidsToIncludeInSummarry=list(self.criteriaDescription)
 		assignmentIDsInOrder=sorted(list(self._dataByAssignment),key=lambda x: -self.getDaysSinceDueDate(x))
 		for cid in list(self.criteriaDescription) + [0]:
 			if normalize:
@@ -157,9 +159,10 @@ class Student:
 				if cid==0:
 					compensation=0
 					delta2=0
-					for cid2 in list(self.criteriaDescription):
-						compensation+=self.adjustmentsByAssignment[assignmentID][cid].compensation
-						delta2+=(self.adjustmentsByAssignment[assignmentID][cid].rms)**2
+					for cid2 in cidsToIncludeInSummarry:
+						if cid2 not in cidsToIgnore:
+							compensation+=self.adjustmentsByAssignment[assignmentID][cid].compensation
+							delta2+=(self.adjustmentsByAssignment[assignmentID][cid].rms)**2
 					rms=(delta2/len(self.criteriaDescription))**0.5
 					compensation/=len(self.criteriaDescription)
 				else:					
