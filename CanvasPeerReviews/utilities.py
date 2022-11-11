@@ -39,6 +39,7 @@ import csv
 import math
 import time
 import inspect
+import threading
 
 if errormsg!="":
 	raise Exception(errormsg)
@@ -149,15 +150,105 @@ def reset():
 	except:
 		pass
 
+
+
+# ######################################
+# # threaded input, see https://stackoverflow.com/questions/2408560/non-blocking-console-input
+# class KeyboardThread(threading.Thread):
+# 
+# 	def __init__(self, input_cbk = None, name='keyboard-input-thread'):
+# 		self.input_cbk = input_cbk
+# 		super(KeyboardThread, self).__init__(name=name)
+# 		self.start()
+# 		self.run=True
+# 
+# 
+# 	def run(self):
+# 		global cachedAssignmentKey
+# 		getCachedAssignment(DATADIRECTORY, getInput=False)
+# 		print("Enter the assignment you wish to work on: \n")
+# 		self.input_cbk(input(), self) #waits to get input + Return
+# 		return
+# 		while self.run:
+# 			self.input_cbk(input(), self) #waits to get input + Return
+# 			self.run=False
+# 
+# def setCachedAsssignmentKey(val, theThread):
+# 	#evaluate the keyboard input
+# 	global cachedAssignmentKey, keyByStr, kthread
+# 	theThread.run=False
+# 	cachedAssignmentKey=None
+# 	print("keyByStr is")
+# 	print(val, keyByStr, val in keyByStr)
+# 	if val in keyByStr:
+# 		cachedAssignmentKey=keyByStr[val]
+# 		print("Setting cachedAssignmentKey to",keyByStr[val])
+# 	print('You Entered:', val)
+
+
 ######################################
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
-	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey
+	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread
 	status['dataDir']=dataDirectory
-	if chooseAssignment and COURSE_ID!=None:
-		status['prefix']="course_" + str(COURSE_ID) + "_"
-		cachedAssignmentKey=getCachedAssignment(DATADIRECTORY)
+	initReturnVals=dict()
+
+	def initialCommunicationWithCanvas(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
+		global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread			
+			
+		if not os.path.exists(dataDirectory):
+			os.makedirs(dataDirectory)
+		printCommand=False
+		if (CANVAS_URL==None or COURSE_ID==None):
+			response=input("Enter the full URL for the homepage of your course: ")
+			parts=response.split('/courses/')
+			CANVAS_URL=parts[0]
+			COURSE_ID=int(parts[1].split('/')[0])
+			printCommand=True
+		if (TOKEN==None):
+			print("Go to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
+			print("More info at https://community.canvaslms.com/t5/Admin-Guide/How-do-I-manage-API-access-tokens-as-an-admin/ta-p/89")
+			print("")
+			TOKEN=input("Enter the token here: ")
+			printCommand=True
+		canvas = Canvas(CANVAS_URL, TOKEN)
+		course = canvas.get_course(COURSE_ID)
+		if printCommand:
+			print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
+			if 	writeCredentials==True:
+				print("Generating a credentials template file to use in the future")
+				f = open("credentials.py", "a")
+				f.write("# credentials automatically generated ["+str(datetime.now())+"] for the canvas course to be used by the other python scripts int his folder\n"
+					+ "COURSE_ID = " +str(COURSE_ID) +" #6 digit code that appears in the URL of your canvas course\n"
+					+ "CANVAS_URL = '" + CANVAS_URL + "'\n"
+					+ "TOKEN = '" + TOKEN+  "' # the canvas token for accessing your course.  See https://community.canvaslms.com/t5/Admin-Guide/How-do-I-obtain-an-API-access-token-in-the-Canvas-Data-Portal/ta-p/157\n"
+					+ "RELATIVE_DATA_PATH='" + os.path.abspath(dataDirectory).replace(homeFolder,"")+"/" + "' # location of data directory relative to home directory.  Example '/Nextcloud/Phys 51/Grades/CanvasPeerReviews/Data/'\n"
+				)
+				f.close()
+		loadCache()
+		#print(status['message'],end="")
+		printLine(status['message'],False)
+		printLine("Getting students",False)
+		getStudents(course)
+		printLine("Getting assignments",False)
+		getGradedAssignments(course)
+
+		lastAssignment =getMostRecentAssignment()
+		nearestAssignment =getMostRecentAssignment(nearest=True)
+		if lastAssignment != nearestAssignment:
+			print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
+		for student in students:
+			sections[student.section]=student.sectionName
+
+		status["initialized"]=True
+
+		initReturnVals['students']= students
+		initReturnVals['graded_assignments']= graded_assignments
+		initReturnVals['lastAssignment']= lastAssignment
+		return students, graded_assignments, lastAssignment
+	#end of initialCommunicationWithCanvas function
+
 	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
 		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
 		print(Fore.RED +  Style.BRIGHT +  "Using test environment - set TEST_ENVIRONMENT=False to change" + Style.RESET_ALL)
@@ -168,52 +259,16 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
 	else:
 		print("Using production environment - set TEST_ENVIRONMENT=True to change")
-	if not os.path.exists(dataDirectory):
-		os.makedirs(dataDirectory)
-	printCommand=False
-	if (CANVAS_URL==None or COURSE_ID==None):
-		response=input("Enter the full URL for the homepage of your course: ")
-		parts=response.split('/courses/')
-		CANVAS_URL=parts[0]
-		COURSE_ID=int(parts[1].split('/')[0])
-		printCommand=True
-	if (TOKEN==None):
-		print("Go to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
-		print("More info at https://community.canvaslms.com/t5/Admin-Guide/How-do-I-manage-API-access-tokens-as-an-admin/ta-p/89")
-		print("")
-		TOKEN=input("Enter the token here: ")
-		printCommand=True
-	canvas = Canvas(CANVAS_URL, TOKEN)
-	course = canvas.get_course(COURSE_ID)
-	if printCommand:
-		print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
-		if 	writeCredentials==True:
-			print("Generating a credentials template file to use in the future")
-			f = open("credentials.py", "a")
-			f.write("# credentials automatically generated ["+str(datetime.now())+"] for the canvas course to be used by the other python scripts int his folder\n"
-				+ "COURSE_ID = " +str(COURSE_ID) +" #6 digit code that appears in the URL of your canvas course\n"
-				+ "CANVAS_URL = '" + CANVAS_URL + "'\n"
-				+ "TOKEN = '" + TOKEN+  "' # the canvas token for accessing your course.  See https://community.canvaslms.com/t5/Admin-Guide/How-do-I-obtain-an-API-access-token-in-the-Canvas-Data-Portal/ta-p/157\n"
-				+ "RELATIVE_DATA_PATH='" + os.path.abspath(dataDirectory).replace(homeFolder,"")+"/" + "' # location of data directory relative to home directory.  Example '/Nextcloud/Phys 51/Grades/CanvasPeerReviews/Data/'\n"
-			)
-			f.close()
-	loadCache()
-	#print(status['message'],end="")
-	printLine(status['message'],False)
-	printLine("Getting students",False)
-	getStudents(course)
-	printLine("Getting assignments",False)
-	getGradedAssignments(course)
 
-	lastAssignment =getMostRecentAssignment()
-	nearestAssignment =getMostRecentAssignment(nearest=True)
-	if lastAssignment != nearestAssignment:
-		print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
-	for student in students:
-		sections[student.section]=student.sectionName
+	initThread = threading.Thread(target=initialCommunicationWithCanvas, args=(CANVAS_URL, TOKEN, COURSE_ID, dataDirectory, chooseAssignment,))
+	initThread.start()
+	if chooseAssignment and COURSE_ID!=None:
+		status['prefix']="course_" + str(COURSE_ID) + "_"
+		#keyboardThread = KeyboardThread(setCachedAsssignmentKey)
+		cachedAssignmentKey=getCachedAssignment(DATADIRECTORY)
 
-	status["initialized"]=True
-	return students, graded_assignments, lastAssignment
+	initThread.join()
+	return initReturnVals['students'], initReturnVals['graded_assignments'], initReturnVals['lastAssignment']
 
 ######################################
 # Record what section a student is in
@@ -326,7 +381,8 @@ def getMostRecentAssignment(nearest=False):
 
 ######################################
 # Choose an assignment from a cache file and return the key for that assignment
-def getCachedAssignment(DATADIRECTORY):
+def getCachedAssignment(DATADIRECTORY, getInput=True):
+	global keyByStr
 	try:
 		with open( DATADIRECTORY +"PickleJar/"+ status['prefix'] + "assignmentList.pkl", 'rb') as handle:
 			cacheData=pickle.load(handle)
@@ -337,7 +393,12 @@ def getCachedAssignment(DATADIRECTORY):
 		#{'str':iStr, 'name': graded_assignments[key].name, 'key': key}	
 		print(f"\t{line['str']:<4}{line['name']}")
 		keyByStr[line['str'].split(")")[0].strip()]=line['key']
-	val=input("Select an assignmetn or hit <enter> if it isn't listed: ")
+	if not getInput:
+		return
+	print("Select an assignment or hit <enter> if it isn't listed: ", end="", flush=True)
+	allowPrinting(False)
+	val=input("Select an assignment or hit <enter> if it isn't listed: ")
+	allowPrinting(True)
 	if val in keyByStr:
 		return keyByStr[val]
 	
@@ -2178,6 +2239,39 @@ def formatWithBoldOptions(prompt):
 # format text to print reversed on a terminal
 def reverseText(msg):
 	return  "\033[7m" + msg + "\033[0m"		
+
+######################################
+# Wait for input until a flag is set
+# def inputUntilFlag():
+# 	import signal, threading
+# 	class Countdown:
+# 		def __init__(self):
+# 			self._running=True
+# 		
+# 		def terminate(self):
+# 			self._running = False
+# 	
+# 		def run(self,n, prompt):
+# 			while self._running:
+# 				time.sleep(0.01)
+# 			
+# 	def alarm_handler(signum, frame):
+# 		raise TimeoutExpired
+# 	getInput=Countdown()
+# 	new_thread = threading.Thread(target=getInput.run)
+# 	new_thread.start()	
+# 	signal.signal(signal.SIGALRM, alarm_handler)
+# 	#signal.alarm(timeout) # produce SIGALRM in `timeout` seconds
+# 	try:
+# 		val= input()
+# 		getInput.terminate()
+# 		signal.alarm(0)
+# 		return val
+# 	except:
+# 		signal.alarm(0)
+# 		getInput.terminate()
+# 		return None
+
 	
 ######################################
 # Prompt for user input, but give up after a timeout
@@ -2295,5 +2389,14 @@ def interact():
 	print("Type 'c' in debugger to continue with script")
 	breakpoint()
 	return
+
+######################################
+# prevent the print function from displaying anything see https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print
+def allowPrinting(allow):
+	if allow:
+		 sys.stdout = sys.__stdout__
+	else:
+	    sys.stdout = open(os.devnull, 'w')
+   
 
 
