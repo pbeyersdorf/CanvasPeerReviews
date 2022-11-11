@@ -1623,7 +1623,7 @@ def getParameters(ignoreFile=False):
 					if not criteria['id'] in params.multiplier:
 						needInput=True
 			except AttributeError:
-				print("No graded assignments with rubrics attached")
+				print(f"{assignment.name} does not have a rubrics attached")
 			if needInput:
 				if not headerWritten:
 					logFile.write("----" + str(datetime.now()) + "----\n")
