@@ -61,6 +61,7 @@ reviewsByCreationId=dict()
 params=Parameters()
 students=[]
 creations=[]
+creationsById=dict()
 solutionURLs=dict()
 graded_assignments=dict()
 lastAssignment=None
@@ -240,6 +241,9 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 			print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
 		for student in students:
 			sections[student.section]=student.sectionName
+			for key in student.creations:
+				creationsById[student.creations[key].id]=student.creations[key]
+
 
 		status["initialized"]=True
 
@@ -323,6 +327,7 @@ def getStudentWork(thisAssignment='last'):
 	getReviews(creations)
 	for c in creations:
 		c.reviewCount=len([s for s in students if s.assignedReviewOfCreation(c)])
+		creationsById[c.id]=c
 		#thisAssignment
 	printLine("",False)
 	print("\r",end="")
