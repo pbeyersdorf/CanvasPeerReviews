@@ -1,0 +1,8 @@
+canvasapi==2.2.0
+colorama==0.4.4
+credentials==1.1
+dill==0.3.5.1
+matplotlib==3.3.2
+numpy==1.19.2
+pytz==2020.1
+requests==2.28.1
