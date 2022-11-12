@@ -21,6 +21,7 @@ class GradedAssignment:
 		self.date=self.getDate(assignment)
 		self.pointsByCidOverride=dict()
 		self.reviewScoreMethod="calibrated grading"
+		self.includeInCalibrations=True
 
 	def sync(self, assignment):
 		if assignment.id == self.id:

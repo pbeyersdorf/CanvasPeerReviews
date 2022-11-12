@@ -862,7 +862,8 @@ def calibrate(studentsToCalibrate="all"):
 									weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
 							elif otherReview.review_type == "grading":
 								weight=params.gradingPowerForInstructors
-							student.addDeviationData(cid, weight, thisGivenReview, otherReview)
+							if graded_assignments[thisGivenReview.assignment_id].includeInCalibrations:
+								student.addDeviationData(cid, weight, thisGivenReview, otherReview)
 
 		student.updateAdjustments(normalize=False, weeklyDegradationFactor=params.weeklyDegradationFactor())		
 	#		Now that all of the students grading powers have been updated, normalize everything so that the average
