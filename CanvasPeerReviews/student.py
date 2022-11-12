@@ -51,6 +51,7 @@ class Student:
 		self.get_missing_submissions=user.get_missing_submissions
 		self.sjsuid=user.sis_user_id
 		self.creations=dict()
+		self.submissionPlaceholders=dict()
 		self.rms_deviation_by_category=dict()
 		self.deviation_by_category=dict()
 		self.deviation_by_category_and_assignment=dict()

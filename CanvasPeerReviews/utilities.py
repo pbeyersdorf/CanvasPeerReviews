@@ -313,12 +313,14 @@ def getStudentWork(thisAssignment='last'):
 	for submission in submissions:
 		i+=1
 		try:
+			author=studentsById[submission.user_id]
 			submission.courseid=thisAssignment.courseid
 			submission.reviewCount=0
 			submission.author_id=submission.user_id
+			author.submissionPlaceholders[thisAssignment.id]=submission
 			if not submission.missing:
 				creations.append(Creation(submission))
-				studentsById[submission.user_id].creations[thisAssignment.id]=creations[-1]
+				author.creations[thisAssignment.id]=creations[-1]
 				creationsByAuthorId[submission.user_id]=creations[-1]
 				#printLine("Getting submission of " + studentsById[submission.user_id].name ,False)
 		except Exception:
@@ -354,7 +356,7 @@ def getGradedAssignments(course):
 			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
 				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
 		except:
-			print("Unable to add " + assignment.name + " to assignmentByNumber")	
+			print("Unable to add '" + assignment.name + "' to assignmentByNumber")	
 	status["gotGradedAssignments"]=True
 
 
