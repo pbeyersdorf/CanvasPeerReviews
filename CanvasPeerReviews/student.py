@@ -160,9 +160,8 @@ class Student:
 					compensation=0
 					delta2=0
 					for cid2 in cidsToIncludeInSummarry:
-						if cid2 not in cidsToIgnore:
-							compensation+=self.adjustmentsByAssignment[assignmentID][cid].compensation
-							delta2+=(self.adjustmentsByAssignment[assignmentID][cid].rms)**2
+						compensation+=self.adjustmentsByAssignment[assignmentID][cid].compensation
+						delta2+=(self.adjustmentsByAssignment[assignmentID][cid].rms)**2
 					rms=(delta2/len(self.criteriaDescription))**0.5
 					compensation/=len(self.criteriaDescription)
 				else:					
