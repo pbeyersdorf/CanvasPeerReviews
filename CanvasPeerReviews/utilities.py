@@ -726,15 +726,15 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 # Delete a given peer review from the canvas assignments
 def deleteReview(peer_review):
 	reviewer=studentsById[peer_review.assessor_id]
-	c=[creation for creation in creations if creation.id==peer_review.asset_id][0]
-	a=graded_assignments[c.assignment_id]
+	creation=[creation for creation in creations if creation.id==peer_review.asset_id][0]
+	assignment=graded_assignments[c.assignment_id]
 	try:
-		s._assignedReviews[a.id].remove(peer_review)
+		reviewer._assignedReviews[assignment.id].remove(peer_review)
 	except:
 		pass 
-	print("deleting " + reviewer.name + "'s peer review assignment of " + studentsById[c.author_id].name )
+	print("deleting " + reviewer.name + "'s peer review assignment of " + studentsById[creation.author_id].name )
 	reviewer.removeAssignedReview(peer_review)
-	c.delete_submission_peer_review(peer_review.assessor_id)
+	creation.delete_submission_peer_review(peer_review.assessor_id)
 
 
 # ######################################
@@ -805,6 +805,16 @@ def getReviews(creations):
 					if ((assessment['assessment_type']=='grading' or assessment['assessment_type']=='peer_review') and creation.id == assessment['artifact_id'] ):
 						review=Review(assessment, creation)
 						reviewsById[review.id]=review
+						#
+						try:
+							reviewer=studentsById[assessment['assessor_id']]						
+							for pr in reviewer.assignedReviews(creation.assignment_id):
+								if review.author_id==pr.user_id:
+									review.peer_review=pr
+						except:
+							pass
+							#print(f"Student with id {assessment['assessor_id']} not in list of students")
+						#
 						alreadyProcessed = any(thisReview.fingerprint() == review.fingerprint() for thisReview in studentsById[creation.user_id].reviewsReceived)
 						if not alreadyProcessed:
 							studentsById[creation.user_id].reviewsReceived.append(review)
