@@ -1484,8 +1484,6 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 						if val=="p":
 							student.regrade[assignment.id]="Started review"
 		print("\n")
-		status["regraded"]=True
-		assignment.regraded=True
 		msg=assignment.name +  " regraded with the following point values:\n"
 		for cid in assignment.criteria_ids():
 			msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
@@ -1524,8 +1522,9 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 				originalCurvedTotalPoints=originalGrades[student_key]['curvedTotal'] 
 				#if possible, read the grade from canvas
 				submission=[c for c in creations if c.assignment_id == assignment.id and c.author_id == student.id]
-				if len(submission>0):
-					canvasGrade=submission.grade
+				if len(submission)>0:
+					submission=submission[0]
+					canvasGrade=float(submission.grade)
 					if (canvasGrade!=originalCurvedTotalPoints):
 						print(f"Warning: Canvas grade of {canvasGrade} does not match what is in memory {originalCurvedTotalPoints}, but regardless the grade on canvas is about to be overwritten with a new grade")
 					originalCurvedTotalPoints=canvasGrade
@@ -1576,7 +1575,9 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 				assignment.regradesCompleted=True
 			else:
 				assignment.regradesCompleted=False
-				
+		
+		status["regraded"]=True
+		assignment.regraded=True		
 	#postGrades(assignment, listOfStudents=list(studentsNeedingRegrade.values()))
 	saveStudents()
 	saveAssignments()
@@ -1892,7 +1893,10 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 	header="Name" + delimiter +"Sortable Name" + delimiter + "ID" + delimiter
 	if assignment!=None:
 		for cid in assignment.criteria_ids():
-			header+='"' + criteriaDescription[cid] + '"' + delimiter #"LO" + str(cid) + delimiter
+			try:
+				header+='"' + assignment.criteria_descriptions(cid) + '"' + delimiter #"LO" + str(cid) + delimiter
+			except:
+				header+='"' + cid + '"' + delimiter #"LO" + str(cid) + delimiter
 		header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 	else:
 		header+="Grade, Comment\n"

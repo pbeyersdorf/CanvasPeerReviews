@@ -135,5 +135,15 @@ class GradedAssignment:
 			except:
 				cids.append(None)
 		return cids
+
+	def criteria_descriptions(self, cid):
+		for criteria in self.rubric:
+			try:
+				if criteria['id'] == cid:
+					return criteria['description']
+			except:
+			 pass
+		return None
+
 		
 		
