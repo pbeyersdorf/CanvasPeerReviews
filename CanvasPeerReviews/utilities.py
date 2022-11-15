@@ -116,9 +116,10 @@ def loadCache():
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
-			[_reviewsById,_reviewsByCreationId]=pickle.load(handle)
+			[_reviewsById,_reviewsByCreationId, _professorsReviews]=pickle.load(handle)
 		reviewsById.update(_reviewsById)
 		reviewsByCreationId.update(_reviewsByCreationId)
+		professorsReviews.update(_professorsReviews)
 		loadedData.append("review data")
 	except:
 		status['message']+="Unable to find 'reviews.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
@@ -269,7 +270,7 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	if chooseAssignment and COURSE_ID!=None:
 		status['prefix']="course_" + str(COURSE_ID) + "_"
 		#keyboardThread = KeyboardThread(setCachedAsssignmentKey)
-		cachedAssignmentKey=getCachedAssignment(DATADIRECTORY)
+		cachedAssignmentKey=getCachedAssignment(status['dataDir'])
 
 	initThread.join()
 	return initReturnVals['students'], initReturnVals['graded_assignments'], initReturnVals['lastAssignment']
@@ -475,6 +476,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 			else:
 				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
 	#print("using key " + str(assignmentKeyByNumber[val]))
+	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	with open(status['dataDir'] + "PickleJar/" + status['prefix'] + 'assignmentList.pkl', 'wb') as handle:
 		pickle.dump(cacheData, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	return activeAssignment
@@ -741,7 +743,7 @@ def deleteReview(peer_review):
 # Count how many reviews have been assigned to each student using data from Canvas
 def resyncReviews(assignment,theCreations=[]):
 	global students
-	if len(creations)==0:
+	if len(theCreations)==0:
 		getStudentWork(assignment)
 		theCreations=creations	
 # 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
@@ -2203,14 +2205,16 @@ def backup(ndays=0):
 ######################################
 # saves variable objects to file
 def saveReviews():
+	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviews.pkl', 'wb') as handle:
-		pickle.dump([reviewsById,reviewsByCreationId], handle, protocol=pickle.HIGHEST_PROTOCOL)
+		pickle.dump([reviewsById,reviewsByCreationId, professorsReviews], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 ######################################
 # saves the student objects to file
 def saveStudents():
+	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'students.pkl', 'wb') as handle:
 		pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -2218,6 +2222,7 @@ def saveStudents():
 ######################################
 # saves the graded_Assignments objects to file
 def saveAssignments():
+	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'assignments.pkl', 'wb') as handle:
 		pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -2225,6 +2230,7 @@ def saveAssignments():
 ######################################
 # saves the graded_Assignments objects to file
 def saveParameters():
+	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	backup(4) #backup the data if there is no backup in the last 4 days
 	with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'parameters.pkl', 'wb') as handle:
 		pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)	

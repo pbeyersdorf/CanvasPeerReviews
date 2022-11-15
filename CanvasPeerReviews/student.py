@@ -81,6 +81,7 @@ class Student:
 		self._maxGradingPower=10
 		self._dataByAssignment=dict()
 		self._dueDateByAssignment=dict()
+		self.rms_deviation_by_assignment=dict()
 					
 	def getGradingPower(self,cid=0, normalize=True):
 		normalizationFactor=1
