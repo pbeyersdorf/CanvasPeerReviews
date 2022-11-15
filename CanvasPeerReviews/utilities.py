@@ -1088,7 +1088,6 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					if not cid in student.reviewData[assignment.id]:
 						student.reviewData[assignment.id][cid]=[]
 					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid]}
-					#xxx the block below is meant to avoid having the same review recorded multiple times. 
 					replacedData=False
 					for i,itm in enumerate(student.reviewData[assignment.id][cid]):
 						if itm['reviewerID']==review.reviewer_id:
@@ -1096,8 +1095,6 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 							student.reviewData[assignment.id][cid][i]=newData
 					if not replacedData:
 						student.reviewData[assignment.id][cid].append(newData)
-					#if len([itm for itm in student.reviewData[assignment.id][cid] if itm['reviewerID']==review.reviewer_id])==0:
-					#	student.reviewData[assignment.id][cid].append(newData)
 					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
 					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
 						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
