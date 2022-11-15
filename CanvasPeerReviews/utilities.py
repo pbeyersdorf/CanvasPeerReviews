@@ -729,7 +729,7 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 def deleteReview(peer_review):
 	reviewer=studentsById[peer_review.assessor_id]
 	creation=[creation for creation in creations if creation.id==peer_review.asset_id][0]
-	assignment=graded_assignments[c.assignment_id]
+	assignment=graded_assignments[creation.assignment_id]
 	try:
 		reviewer._assignedReviews[assignment.id].remove(peer_review)
 	except:
