@@ -527,10 +527,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		msg=f"{calibrations.name} has  been chosen as the calibration review for {assignment.name}"
 		print(msg)
 		log(msg)
-	else:
-		pass
-		#creations=calibrations
-
+		
 	reviewers=randmoize(studentsWithSubmissions) 
 	
 	calibrations=makeList(calibrations)
@@ -578,7 +575,6 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		creationsToConsider=makeList(creationsToConsider) #set this to false if you want the graders submissions to be peer reviewed
 	else:
 		creationsToConsider=[c for c in makeList(creationsToConsider) if studentsById[c.author_id].role=='student']
-	creationList=creationsToConsider
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	graders=[x for x in students if x.role=='grader']
 	graders=randmoize(graders)
@@ -586,10 +582,10 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		studentsWithSubmissions=randmoize(studentsWithSubmissions) 
 	reviewers=makeList(studentsWithSubmissions)
 	#assign params.numberOfReviews reviews per creation
-	for i, creation in enumerate(creationList):
+	for i, creation in enumerate(creationsToConsider):
 		for j,reviewer in enumerate(reviewers):
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-				msg=str(i+1) + "/" + str(len(creationList))
+				msg=str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
 			#get the reviewer with the fewest reviews so far
@@ -602,7 +598,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				k+=1
 				reviewer=sortedReviewers[k]		
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
-				msg="additional assignment " + str(i+1) + "/" + str(len(creationList))
+				msg="additional assignment " + str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 		
 					#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
@@ -610,9 +606,9 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
-		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationList[0].assignment_id)}")
-		while (reviewer.numberOfReviewsAssignedOnAssignment(creationList[0].assignment_id)  < params.numberOfReviews and time.time()-tic < 1):
-			creation=random.choice(creationList)
+		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)}")
+		while (reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)  < params.numberOfReviews and time.time()-tic < 1):
+			creation=random.choice(creationsToConsider)
 			if (reviewer.section == studentsById[creation.user_id].section):
 				msg="---"
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
@@ -625,7 +621,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		sections[grader.section] = grader.sectionName
 	for key in sections:
 		thisSectionsGraders=[x for x in students if (x.role=='grader' and x.section == key)]
-		thisSectionsCreations=[x for x in creationList if (studentsById[x.author_id].section == key)]
+		thisSectionsCreations=[x for x in creationsToConsider if (studentsById[x.author_id].section == key)]
 		reviewsPerGrader=int(len(thisSectionsCreations)/len(thisSectionsGraders))
 		thisSectionsGraders=makeList(thisSectionsGraders)
 		#lol(list,sublistSize) takes a list and returns a list-of-lists with each sublist of size sublistSize
@@ -689,7 +685,7 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 	global status, solutionURLs
 	solutionURLs={}
 	fileName=status['dataDir'] + fileName.replace("/","").replace(":","")
-	placeholder="solution URLs go here"
+	placeholder="solution_URLs_go_here"
 	status["gotSolutionURLs"]=True
 	print("looking for solution urls in", fileName)
 	try:
@@ -746,11 +742,9 @@ def resyncReviews(assignment,theCreations=[]):
 	if len(theCreations)==0:
 		getStudentWork(assignment)
 		theCreations=creations	
-# 	#when append=True it will check how many review have already been assigned which is slow (takes about a minute).  When append=False it will set the review count to zero.
 	theCreations=makeList(theCreations)
 	for s in students:
 		s._assignedReviews[assignment.id]=[]
-# 	#for student in students:
 	print("Checking how many peer reviews each students has already been assigned...")
 	for i,creation in enumerate(theCreations):
 		printLine("    " +str(i) + "/" + str(len(theCreations)) +" Checking reviews of " + studentsById[creation.author_id].name, False)
@@ -863,7 +857,6 @@ def calibrate(studentsToCalibrate="all"):
 		cids[cid]=True
 	for student in studentsToCalibrate:
 		for key,thisGivenReview in student.reviewsGiven.items():
-			#student.assignmentsCalibrated[thisGivenReview.assignment_id]=datetime.now()
 			blankCreation=len([c for c in creations if c.id == key and c.missing])>0
 			alreadyCalibratedAgainst=thisGivenReview.submission_id in student.submissionsCalibratedAgainst
 			if not blankCreation and not alreadyCalibratedAgainst: #don't bother if creation is blank or we've already calibrated against this review 
@@ -912,11 +905,9 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default"):
 		print("Error: You must first run 'initialize()' before calling 'grade'")
 		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
-		for student in makeList(students):
-			gradeStudent(assignment, student, reviewScoreGrading)
-	else:
-		for student in makeList(studentsToGrade):
-			gradeStudent(assignment, student, reviewScoreGrading)
+		studentsToGrade=students
+	for student in makeList(studentsToGrade):
+		gradeStudent(assignment, student, reviewScoreGrading)
 	if reviewScoreGrading=="default":
 		val=inputWithTimeout(f"Review grades will use '{assignment.reviewScoreMethod}' method.  (c) to change", 3)		
 		if val=='c':
@@ -1175,13 +1166,10 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 							status['err']="Key error" 
 		for cid in tempDelta:
 			if (tempDelta[cid]>0):
-				#student.reviewGradeExplanation+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
 				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
 			elif (tempDelta[cid]<0):
-				#student.reviewGradeExplanation+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
 				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
 			else:
-				#student.reviewGradeExplanation+="    " + " about the same as other graders with an rms deviation of " + str(int(100*math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))/100)
 				student.reviewGradeExplanation+="    %.2f points off from other graders " % ( math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))
 			student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
 
@@ -1192,7 +1180,6 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		student.rms_deviation_by_assignment[assignment.id]=rms
 
 		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
-		#reviewGrade=min(1,student.numberOfReviewsGivenOnAssignment(assignment.id)/student.numberOfReviewsAssignedOnAssignment(assignment.id)) * reviewGradeFunc(rms)			
 		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
 		if (reviewGrade<100):
 			pass
@@ -1303,8 +1290,9 @@ def reviewGradeOnCalibrations(assignment, student):
 		student.calibrationGradeExplanation
 	except:
 		student.calibrationGradeExplanation=dict()
-	#student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by the instructor, compared to the instructor the scores you gave out on average were:\n"
 
+	#consider reviews in common with the instructor
+	#student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by the instructor, compared to the instructor the scores you gave out on average were:\n"
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
@@ -1322,15 +1310,7 @@ def reviewGradeOnCalibrations(assignment, student):
 						tempTotalWeight[cid]=1						
 						delta2+=((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
 						numberOfComparisons+=1 
-# 	for cid in tempDelta:
-# 		if (tempDelta[cid]>0.05):
-# 			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points higher than the instructor "
-# 		elif (tempDelta[cid]<-0.05):
-# 			student.calibrationGradeExplanation[assignment.id]+="    " + str(int(-100*tempDelta[cid]/tempTotalWeight[cid])/100) + " points lower than the instructor "
-# 		else:
-# 			student.calibrationGradeExplanation[assignment.id]+="    " + " about the same as the instructor "
-# 		student.calibrationGradeExplanation[assignment.id]+="for '" + str(criteriaDescription[cid]) +"'\n"
-	
+
 	averagePointsPerCriteria=totalCriteriaPoints/numberOfCriteria
 	if numberOfComparisons!=0:
 		rms=(delta2/numberOfComparisons)**0.5
@@ -1373,7 +1353,7 @@ def reviewGradeOnCalibrations(assignment, student):
 	return student.points[assignment.id]['curvedTotal']
 
 ######################################
-# find submissions that need to be regraded as based on the word regrade in the comments
+# find submissions that need to be regraded as based on a keyword in the comments
 def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 	global status, activeAssignment
 	if not status['initialized']:
@@ -1587,7 +1567,6 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 		
 		status["regraded"]=True
 		assignment.regraded=True		
-	#postGrades(assignment, listOfStudents=list(studentsNeedingRegrade.values()))
 	saveStudents()
 	saveAssignments()
 		
@@ -1638,7 +1617,6 @@ def postFromCSV(fileName=None, thisAssignment=None):
 		thisAssignment=assignments[val]
 	elif thisAssignment.lower()=='last':
 		thisAssignment=graded_assignments['last']
-	#getStudentWork(thisAssignment)
 	print("accessing "+thisAssignment.name+"...")
 	submissions=thisAssignment.get_submissions()
 	
@@ -1681,7 +1659,6 @@ def postFromCSV(fileName=None, thisAssignment=None):
 							submission.edit(comment={'text_comment':row[commentCol]})
 							msg+="\tcomment: '" + row[commentCol] +"'\n"
 						print(msg, end="")
-
 				except Exception:
 					status['err']="unable to process test student"
 	thisAssignment.gradesPosted=True	
