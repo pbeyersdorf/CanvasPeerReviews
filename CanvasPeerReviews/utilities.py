@@ -1061,13 +1061,15 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 				role=""
 				gradingExplanationLine=""
 				if (review.reviewer_id in studentsById):
-					role=studentsById[review.reviewer_id].role
+					reviewer=studentsById[review.reviewer_id]
+					role=reviewer.role
 				if review.review_type == "peer_review" and not (assignment.id in student.assignmentsGradedByInstructor):
 					if role == 'grader':
 						weight=params.gradingPowerForGraders
 						gradingExplanationLine="Review [G"+ str(review.reviewer_id) +"_" + str(cid) +"] "
 					elif role== 'student':
-						weight=studentsById[review.reviewer_id].getGradingPower(cid); 
+						#weight=studentsById[review.reviewer_id].getGradingPower(cid); 
+						weight=reviewer.adjustmentsByAssignment[assignment.id][cid].gradingPower
 						gradingExplanationLine="Review [P"+ str(review.reviewer_id)+"_" + str(cid) +"] "
 				elif review.review_type == "grading":
 					gradingExplanationLine="Review [I"+ str(review.reviewer_id)+"_" + str(cid) +"] "
@@ -1075,7 +1077,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 				if cid in review.scores:
 					try:
 						reviewer=studentsById[review.reviewer_id]
-						compensation=reviewer.deviation_by_category[cid]*params.compensationFactor
+						compensation=reviewer.adjustmentsByAssignment[assignment.id][cid].compensation*params.compensationFactor
+						#compensation=reviewer.deviation_by_category[cid]*params.compensationFactor
 						compensation=min(compensation, params.maxCompensationFraction* multiplier)
 						compensation=max(compensation, -params.maxCompensationFraction* multiplier)
 					except:
@@ -1086,8 +1089,15 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 						student.reviewData[assignment.id][cid]=[]
 					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid]}
 					#xxx the block below is meant to avoid having the same review recorded multiple times. 
-					if len([itm for itm in student.reviewData[assignment.id][cid] if itm['reviewerID']==review.reviewer_id])==0:
+					replacedData=False
+					for i,itm in enumerate(student.reviewData[assignment.id][cid]):
+						if itm['reviewerID']==review.reviewer_id:
+							replacedData=True
+							student.reviewData[assignment.id][cid][i]=newData
+					if not replacedData:
 						student.reviewData[assignment.id][cid].append(newData)
+					#if len([itm for itm in student.reviewData[assignment.id][cid] if itm['reviewerID']==review.reviewer_id])==0:
+					#	student.reviewData[assignment.id][cid].append(newData)
 					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
 					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
 						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
