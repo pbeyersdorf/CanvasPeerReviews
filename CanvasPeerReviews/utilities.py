@@ -1275,6 +1275,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
 		student.regradeComments[assignment.id]="I've regraded your work.  My review of your work give the following scores:\n"+scoringSummaryString
 		student.regradeComments[assignment.id]+=regradedScoringSummaryString
+	student.recordAdjustments(assignment)
 
 ######################################
 # Get a review grade based only on calibrations that the instructor graded

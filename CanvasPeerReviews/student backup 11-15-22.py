@@ -4,10 +4,6 @@ import numpy as np
 class Student:
 	
 	class Adjustments:
-		# this class defines how much the scores the student awards on a peer
-		# review should be adjusted (the compensation value gets added to the score 
-		# they gave) and how strongly they should count relative to tother 
-		# students (gradingPower)
 		def __init__(self, dd=None, maxGradingPower=10):
 			if dd==None or dd.weight==0:
 				self.compensation = 0
@@ -27,12 +23,6 @@ class Student:
 				return f"compensation = {round(self.compensation,2)}, gradingPower = {round(self.gradingPower,2)}" 
 			
 	class DeviationData:
-		# The deviation data keeps track of the total deviation for a set of the students 
-		# review scores compared to the scores given by other reviewers,
-		# it has methods to accumulate data (addDate) for a comparison to
-		# a reviewer with a given grading power (that 
-		# turns in to the weight for that data point).  There are also methods
-		# to return the average or rms deviation for this set of data.
 		def __init__(self):
 			self.delta=0
 			self.delta2=0
@@ -47,6 +37,7 @@ class Student:
 			if self.weight ==0:
 				return None
 			return self.delta / self.weight
+
 		
 		def rms(self):
 			if self.weight ==0:
@@ -82,6 +73,7 @@ class Student:
 		self.reviewCount=dict()
 		self.assignmentsGradedByInstructor=dict()
 		self.pointsByCriteria=dict()
+		#self.assignmentsCalibrated=dict()
 		self.role="student"
 		self.baseGradingPower=1
 		self.section=0
@@ -92,11 +84,6 @@ class Student:
 		self.rms_deviation_by_assignment=dict()
 					
 	def getGradingPower(self,cid=0, normalize=True):
-		# returns the grading power for this students for the given criteria ID
-		# when normalized it uses the gradingPowerNormalizationFactor which is 
-		# meant ot be set as the average grading power for all studnets, but must
-		# be calculated and set from outside this class, since calculating it 
-		# requires access to ALL student data.
 		normalizationFactor=1
 		if normalize:
 			try:
@@ -109,8 +96,6 @@ class Student:
 			return 1
 
 	def assignedReviewOfCreation(self, creation):
-		# when passed a creation object will return True/False based on if that
-		# creation has been assigned to this user.
 		for key in self._assignedReviews:
 			for pr in self._assignedReviews[key]:
 				if pr.asset_id == creation.id:
@@ -119,31 +104,24 @@ class Student:
 		
 
 	def recordAssignedReview(self, assignment, peer_review):
-		# this adds a given peer_review object to the internal list _assignedReviews
-		# of reviews that have been assigned to this student, organized in a dictionary
-		# based on the assignment id.  It will create a dictionary entry if necessary 
 		assignmentID=self.idOfAssignment(assignment)
 		if not assignmentID in self._assignedReviews:
 			self._assignedReviews[assignmentID]=[]
+		#fingerprint="assignment_id=" + str(assignmentID) + "&author_id=" + str(peer_review.user_id) + "&reviewer_id="+str(peer_review.assessor_id)
 		if not peer_review.id in [pr.id for pr in self._assignedReviews[assignmentID]]:
 			self._assignedReviews[assignmentID].append(peer_review)
 
 	def amountReviewed(self,assignment):
-		# returns a number from 0-1 representing the fraction of the total number of 
-		# peer reviews assigned on a given assignment have been completed.  Useful
-		# for keeping track of review progress and for assigning grades based on 
-		# how complete the students peer reviews are on an assignment.   
 		assignmentID=self.idOfAssignment(assignment)
+		#completed=len([1 for pr in self.assignedReviews(assignmentID) if pr.workflow_state=='completed'])
 		completed=self.numberOfReviewsGivenOnAssignment(assignmentID)
+		#assigned=len([1 for pr in self.assignedReviews(assignmentID)])
 		assigned=self.numberOfReviewsAssignedOnAssignment(assignmentID)
 		if assigned>0:
 			return min(1.0,completed*1.0/assigned)
 		return 0
 
 	def recordAdjustments(self, assignment):
-		# when grading an assignment, take the adjustments being used defined by 
-		# adjustmentsByAssignment['current'] and add it to a dictionary keyed to 
-		# the assignment ID for later reference.  
 		assignmentID=self.idOfAssignment(assignment)
 		if not assignmentID in self.adjustmentsByAssignment:
 			self.adjustmentsByAssignment[assignmentID]=dict()
@@ -184,14 +162,14 @@ class Student:
 					compensation=0
 					delta2=0
 					for cid2 in cidsToIncludeInSummarry:
-						compensation+=self._dataByAssignment[assignmentID][cid].compensation
-						delta2+=(self._dataByAssignment[assignmentID][cid].rms)**2
+						compensation+=self.adjustmentsByAssignment[assignmentID][cid].compensation
+						delta2+=(self.adjustmentsByAssignment[assignmentID][cid].rms)**2
 					rms=(delta2/len(self.criteriaDescription))**0.5
 					compensation/=len(self.criteriaDescription)
 				else:					
-					compensation=self._dataByAssignment[assignmentID][cid].compensation
-					rms=self._dataByAssignment[assignmentID][cid].rms
-					weight=self._dataByAssignment[assignmentID][cid].weight
+					compensation=self.adjustmentsByAssignment[assignmentID][cid].compensation
+					rms=self.adjustmentsByAssignment[assignmentID][cid].rms
+					weight=self.adjustmentsByAssignment[assignmentID][cid].weight
 			
 				total[cid]=total[cid]*weeklyDegradationFactor+weight
 				compensationTotal[cid]=compensationTotal[cid]*weeklyDegradationFactor + compensation * weight
