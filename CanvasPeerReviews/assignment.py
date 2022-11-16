@@ -24,11 +24,25 @@ class GradedAssignment:
 		self.includeInCalibrations=True
 
 	def sync(self, assignment):
+		# if the due date has changed on canvas this updates that
+		# records that change.
 		if assignment.id == self.id:
 			self.__dict__.update(assignment.__dict__)
 			self.date=self.getDate(assignment)
 	
 	def setReviewScoringMethod(self):
+		# There are three ways that peer reviews can be scores:
+		#
+		# 'Calibrated Grading' compares scores assigned by the reviewer
+		# to those given by others.  The closer the scores align the
+		# higher the review score.
+		#
+		# 'percent complete' simply gives a score based on what percent
+		# of the assigned reviews were completed.  If all reviews
+		# were completed a score of 100% is given
+		#
+		# 'ignore' will not grade the peer reviews but will instead 
+		# copy the creation score to the review score.
 		print()
 		try:
 			currentMethod =  self.reviewScoreMethod
@@ -53,6 +67,7 @@ class GradedAssignment:
 			
 	
 	def secondsPastDue(self):
+		# return the number of seconds past the due date for the assignment
 		now=datetime.utcnow().replace(tzinfo=pytz.UTC)
 		try:
 			delta=now-self.date
@@ -61,6 +76,9 @@ class GradedAssignment:
 			return -99999999
 	
 	def getDate(self, assignment):
+		# return the due date of the assignment.  If there are 
+		# multiple due dates for different students it returns the
+		# last of the possible dates.
 		d=None
 		try:
 			d=assignment.due_at_date
@@ -71,31 +89,25 @@ class GradedAssignment:
 		except AttributeError:
 			pass
 		return d
-		
-	def calibrate():
-		return
-		
-	def comments():
-		return "this is a comment"
-		
-	def creation_grade(students):		
-		return 0
-	
-	def review_grade():
-		return 0
-	
-	def grade(self, students):
-		return 0
-				
+										
 	def countPeerReviews(self):
+		# returns the number of peer reviews that have been assigned
+		# in total for this assignment by polling canvas for a list
+		# of all peer reviews and counting them.
 		peer_reviews=self.get_peer_reviews()
 		cnt=0		
 		for peer_review in peer_reviews:
 			cnt+=1
 		return cnt
 		
-	#points defined by the criteria rubric	
+		
 	def criteria_points(self, cid):
+		# points defined by the criteria rubric in canvas
+		# if for example a criteria is set to 5 points in canvas
+		# so that students can give a score of 0-5, but the criteria
+		# is meant to account for 50 points as set by setPoints(), 
+		# then the raw score recorded from canvas would be divided
+		#by 5 and multiplied by 50.  
 		for criteria in self.rubric:
 			if "id" in criteria:
 				if criteria['id'] == cid:
@@ -107,6 +119,9 @@ class GradedAssignment:
 
 	#points that the score should be scaled to for grading
 	def setPoints(self, defaults={}):
+		# this prompts the user for how many points (typically out of 100) each criteria 
+		# should be worth.  If not defined the course defaults set in the
+		# parameters object will be used when grading this assignment
 		print("Set an override to the defaul points on " + self.name + ":\n")
 		for criteria in self.rubric:
 			cid=criteria['id']
@@ -123,11 +138,16 @@ class GradedAssignment:
 			self.multiplier[cid]=val
 
 	def pointsForCid(self, cid):
+		# this returns how many points (typically out of 100) a given criteria 
+		# should be worth.  The defaults for this are defined in the course
+		# parameters object, but if they are defined here it will override the
+		# course defaults when grading this assignment
 		if cid in self.multiplier:
 			return self.multiplier[cid]
 		return "default"	
 			
 	def criteria_ids(self):
+		# return a list of ids for the various grading criteria for this assignment
 		cids=[]
 		for criteria in self.rubric:
 			try:
@@ -137,6 +157,7 @@ class GradedAssignment:
 		return cids
 
 	def criteria_descriptions(self, cid):
+		# return the name of a grading criteria associated with the id passed as an argument
 		for criteria in self.rubric:
 			try:
 				if criteria['id'] == cid:
