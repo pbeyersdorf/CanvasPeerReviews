@@ -23,12 +23,12 @@ class GradedAssignment:
 		self.reviewScoreMethod="calibrated grading"
 		self.includeInCalibrations=True
 
-	def sync(self, assignment):
+	def sync(self, updatedAssignment):
 		# if the due date has changed on canvas this updates that
 		# records that change.
-		if assignment.id == self.id:
-			self.__dict__.update(assignment.__dict__)
-			self.date=self.getDate(assignment)
+		if updatedAssignment.id == self.id:
+			self.__dict__.update(updatedAssignment.__dict__)
+			self.date=self.getDate(updatedAssignment)
 	
 	def setReviewScoringMethod(self):
 		# There are three ways that peer reviews can be scores:
@@ -75,13 +75,15 @@ class GradedAssignment:
 		except:
 			return -99999999
 	
-	def getDate(self, assignment):
+	def getDate(self, updatedAssignment=None):
 		# return the due date of the assignment.  If there are 
 		# multiple due dates for different students it returns the
 		# last of the possible dates.
+		if updatedAssignment==None:
+			updatedAssignment=self
 		d=None
 		try:
-			d=assignment.due_at_date
+			d=updatedAssignment.due_at_date
 			for o in self.get_overrides():
 				do=o.due_at_date
 				if (do>d):

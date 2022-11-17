@@ -8,6 +8,7 @@ except:
 	errormsg+="Missing canvasapi module.  Run 'pip install canvasapi' to intall\n"
 from CanvasPeerReviews.creation import Creation
 from CanvasPeerReviews.student import Student
+from CanvasPeerReviews.comparison import Comparison
 from CanvasPeerReviews.assignment import GradedAssignment
 from CanvasPeerReviews.parameters import Parameters
 from CanvasPeerReviews.review import Review
@@ -40,6 +41,7 @@ import math
 import time
 import inspect
 import threading
+import pytz
 
 if errormsg!="":
 	raise Exception(errormsg)
@@ -845,7 +847,8 @@ def getReviews(creations):
 # review will more heavily weighted.  The results are save as a "grading power" for the 
 # student in the Student object.  This grading power is used for future calibrations,
 # and is used as a weighting factor when assigning grades to students they reviewed.
-def calibrate(studentsToCalibrate="all"):
+def calibrate(studentsToCalibrate="all", endDate=datetime.utcnow().replace(tzinfo=pytz.UTC)):
+	global graded_assignments
 	if (studentsToCalibrate=="all"):
 		studentsToCalibrate=students
 	global status
@@ -855,37 +858,38 @@ def calibrate(studentsToCalibrate="all"):
 	cids=dict()
 	for cid in criteriaDescription:
 		cids[cid]=True
+		
+	# record all of the comparisons
 	for student in studentsToCalibrate:
 		for key,thisGivenReview in student.reviewsGiven.items():
 			blankCreation=len([c for c in creations if c.id == key and c.missing])>0
-			alreadyCalibratedAgainst=thisGivenReview.submission_id in student.submissionsCalibratedAgainst
-			if not blankCreation and not alreadyCalibratedAgainst: #don't bother if creation is blank or we've already calibrated against this review 
+			for cid in thisGivenReview.scores:
+				student.criteriaDescription[cid]=criteriaDescription[cid]
+			if not blankCreation: 
 				if not thisGivenReview.submission_id in reviewsByCreationId:
 					print(len(reviewsByCreationId), len(reviewsById))
 					print("error for " + thisGivenReview.fingerprint())
 				for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
-					if (otherReview.reviewer_id != student.id): #don't compare this review to itself
-						for cid in thisGivenReview.scores:
-							student.criteriaDescription[cid]=criteriaDescription[cid]
-							if otherReview.review_type == "peer_review" and otherReview.reviewer_id in studentsById:
-								if (studentsById[otherReview.reviewer_id]).role == 'grader':
-									weight=params.gradingPowerForGraders
-								else:
-									weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
-							elif otherReview.review_type == "grading":
-								weight=params.gradingPowerForInstructors
-							if graded_assignments[thisGivenReview.assignment_id].includeInCalibrations:
-								student.addDeviationData(cid, weight, thisGivenReview, otherReview)
+					alreadyCalibratedAgainst=otherReview.id in student.comparisons
+					if (otherReview.reviewer_id != student.id and not alreadyCalibratedAgainst): #don't compare this review to itself and dont repeat a calibration	
+						if otherReview.reviewer_id in studentsById:
+							student.comparisons[otherReview.id]=Comparison(thisGivenReview, otherReview, graded_assignments[thisGivenReview.assignment_id], studentsById[otherReview.reviewer_id], params)
 
-		student.updateAdjustments(normalize=False, weeklyDegradationFactor=params.weeklyDegradationFactor())		
+		#student.updateAdjustments(normalize=False, weeklyDegradationFactor=params.weeklyDegradationFactor())		
+		#process the comparisons to get the current grading adjustments
+		student.updateAdjustments(normalize=False, weeklyDegradationFactor=params.weeklyDegradationFactor(), endDate=endDate)		
 	#		Now that all of the students grading powers have been updated, normalize everything so that the average
 	#		grading power for all of the students is 1
+
 	for cid in list(cids)+[0]:
-		avg=np.average([s.getGradingPower(cid,  normalize=False) for s in students])
+		avg=np.average([s.getGradingPower(cid) for s in students])
 		for student in students:
 			student.gradingPowerNormalizationFactor[cid]=avg
-	student.updateAdjustments(normalize=True,  weeklyDegradationFactor=params.weeklyDegradationFactor())	
+	
+	for student in students:
+		student.updateAdjustments(normalize=True,  weeklyDegradationFactor=params.weeklyDegradationFactor(), endDate=endDate)	
 	saveStudents()
+
 	status["calibrated"]=True
 
 ######################################
@@ -1028,6 +1032,7 @@ def checkForUnreviewed(assignment, openPage=False):
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
 def gradeStudent(assignment, student, reviewScoreGrading="default"):
+	global params
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
 	# get a list of the criteria ids assessed on this assignment
@@ -1060,7 +1065,10 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 						gradingExplanationLine="Review [G"+ str(review.reviewer_id) +"_" + str(cid) +"] "
 					elif role== 'student':
 						#weight=studentsById[review.reviewer_id].getGradingPower(cid); 
-						weight=reviewer.adjustmentsByAssignment[assignment.id][cid].gradingPower
+						if assignment.id in reviewer.adjustmentsByAssignment:
+							weight=reviewer.adjustmentsByAssignment[assignment.id][cid].gradingPower()
+						else:
+							weight=reviewer.adjustments[cid].gradingPower()
 						gradingExplanationLine="Review [P"+ str(review.reviewer_id)+"_" + str(cid) +"] "
 				elif review.review_type == "grading":
 					gradingExplanationLine="Review [I"+ str(review.reviewer_id)+"_" + str(cid) +"] "
@@ -1069,7 +1077,6 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					try:
 						reviewer=studentsById[review.reviewer_id]
 						compensation=reviewer.adjustmentsByAssignment[assignment.id][cid].compensation*params.compensationFactor
-						#compensation=reviewer.deviation_by_category[cid]*params.compensationFactor
 						compensation=min(compensation, params.maxCompensationFraction* multiplier)
 						compensation=max(compensation, -params.maxCompensationFraction* multiplier)
 					except:
@@ -1089,7 +1096,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
 					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
 						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
-					total+=max(0,min((review.scores[cid] - compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
+					total+=max(0,min((review.scores[cid] + compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
 					weightCount+=weight
 					numberCount+=1
 		if not assignment.id in student.pointsByCriteria:
@@ -1177,7 +1184,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	
 		if numberOfComparisons!=0:
 			rms=(delta2/numberOfComparisons)**0.5
-		student.rms_deviation_by_assignment[assignment.id]=rms
+		student.rmsByAssignment[assignment.id]=rms
 
 		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
@@ -1942,8 +1949,8 @@ def assignGraders():
 	listOfGraders=[s for s in students if s.role=='grader']
 	viewGraders()
 	if confirm("is this ok? "):
-		for s in listOfGraders:
-			s.baseGradingPower=params.gradingPowerForGraders
+		#for s in listOfGraders:
+		#	s.baseGradingPower=params.gradingPowerForGraders
 		saveStudents()
 		return
 	for (i,student) in enumerate(students):
@@ -1989,14 +1996,14 @@ def gradingPowerRanking(theStudent="all",cid=0, percentile=False):
 # Get the grading deviation ranking
 
 def gradingDeviationRanking(theStudent="all", cid=0, percentile=False):
-	sortedStudents=sorted(students, key = lambda x : x.adjustmentsByAssignment['current'][cid].compensation, reverse=True) 
+	sortedStudents=sorted(students, key = lambda x : x.adjustments[cid].deviation, reverse=True) 
 	if theStudent=="all":
 		print("--Easiest graders--")
 		for (i,student) in enumerate(sortedStudents):
 			if student.role == 'student':
-				print(str(i+1)+")\t" + student.name + " %.2f" % student.adjustmentsByAssignment['current'][cid].compensation)
+				print(str(i+1)+")\t" + student.name + " %.2f" % student.adjustments[cid].deviation)
 			elif student.role == 'grader':
-				print(str(i+1)+")\t" + student.name + " %.2f  (grader)" % student.adjustmentsByAssignment['current'][cid].compensation)
+				print(str(i+1)+")\t" + student.name + " %.2f  (grader)" % student.adjustments[cid].deviation)
 		print("--Hardest graders--")
 		return
 	rank=0
