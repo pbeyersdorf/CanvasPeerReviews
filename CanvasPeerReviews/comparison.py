@@ -16,6 +16,7 @@ class Comparison:
 		self.delta2[0]=0
 		self.weight[0]=0
 		self.weeklyDegredationFactor=params.weeklyDegradationFactor()
+		self.pointsPossible=dict()
 		for cid in otherReview.scores:
 			if cid in thisGivenReview.scores:
 				self.delta[cid]=thisGivenReview.scores[cid] - otherReview.scores[cid]
@@ -31,6 +32,8 @@ class Comparison:
 				self.delta[0]+=self.delta[cid]*weight
 				self.delta2[0]+=self.delta2[cid]*weight
 				self.weight[0]+=weight
+				self.pointsPossible[cid]=assignment.criteria_points(cid)
+				
 		if self.weight[0]>0:
 			self.delta[0]/=self.weight[0]		
 			self.delta2[0]/=self.weight[0]		
