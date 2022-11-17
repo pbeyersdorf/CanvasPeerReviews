@@ -38,12 +38,16 @@ class Comparison:
 			self.delta[0]/=self.weight[0]		
 			self.delta2[0]/=self.weight[0]		
 
-	def adjustedData(self,cid):
+	def adjustedData(self,cid, relativeValues=False):
 		try:
 			# return the comparison data with the weighting adjusted for its age
 			now=datetime.utcnow().replace(tzinfo=pytz.UTC)
 			weeksSinceDue=(now-self.date).total_seconds()/(7*24*60*60)
 			degredationFactor=self.weeklyDegredationFactor**(weeksSinceDue)
-			return {'delta': self.delta[cid], 'delta2': self.delta2[cid], 'weight':self.weight[cid]*degredationFactor}
+			if relativeValues:
+				return {'delta': self.delta[cid]/self.pointsPossible[cid], 'delta2': self.delta2[cid]/self.pointsPossible[cid], 'weight':self.weight[cid]*degredationFactor}
+			else:
+				return {'delta': self.delta[cid], 'delta2': self.delta2[cid], 'weight':self.weight[cid]*degredationFactor}
+			
 		except Exception:
 			return {'delta': 0, 'delta2': 0, 'weight':0}
