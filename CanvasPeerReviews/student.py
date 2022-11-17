@@ -11,7 +11,7 @@ class Student:
 		# they gave) and how strongly they should count relative to tother 
 		# students (gradingPower)
 		#def __init__(self, dd=None, maxGradingPower=10):
-		def __init__(self, delta, delta2, weight, maxGradingPower=10):
+		def __init__(self, delta, delta2, weight, maxGradingPower=10, pointsPossible=1):
 			if weight!=0:
 				self.deviation=delta/weight
 				self.rms=(delta2/weight)**0.5
@@ -22,15 +22,19 @@ class Student:
 			self.weight=weight
 			self.maxGradingPower=maxGradingPower
 			self.gradingPowerNormalizationFactor=1
+			self.pointsPossible=pointsPossible
 
 					
 		def gradingPower(self, normalizationFactor=1):
+			#x=5*self.rms/self.pointsPossible # the measure used to assign a grading power
+			gradingPowerFormula = f'1.0/(x**2.5+1/{self.maxGradingPower})'
+			gradingPowerFunc=eval('lambda x:' + gradingPowerFormula)
 			if self.rms==0 and self.weight!=0:
 				return self.maxGradingPower
 			elif self.weight!=0 and normalizationFactor=="auto":
-				return min(self.maxGradingPower,(1.0/(self.rms)**2)/self.gradingPowerNormalizationFactor)
+				return min(self.maxGradingPower,gradingPowerFunc(self.rms)/self.gradingPowerNormalizationFactor)
 			elif self.weight!=0:
-				return min(self.maxGradingPower,(1.0/(self.rms)**2)/normalizationFactor)
+				return min(self.maxGradingPower,gradingPowerFunc(self.rms)/normalizationFactor)
 			return 1
 							
 		#def __repr__(self):
@@ -68,8 +72,7 @@ class Student:
 		#._dueDateByAssignment=dict()
 		self.rmsByAssignment=dict()
 		self.comparisons=dict()
-
-					
+		
 	def getGradingPower(self,cid=0, normalize=True):
 		# returns the grading power for this students for the given criteria ID
 		# when normalized it uses the gradingPowerNormalizationFactor which is 
@@ -79,8 +82,7 @@ class Student:
 		if cid not in self.gradingPowerNormalizationFactor:
 			print("no normalizatoin factor set")
 			self.gradingPowerNormalizationFactor[cid]=1
-		normalizationFactor=self.gradingPowerNormalizationFactor[cid]
-			
+		normalizationFactor=self.gradingPowerNormalizationFactor[cid]	
 		try:
 			return self.adjustments[cid].gradingPower(normalizationFactor)
 		except:
@@ -94,7 +96,6 @@ class Student:
 				if pr.asset_id == creation.id:
 					return True
 		return False
-		
 
 	def recordAssignedReview(self, assignment, peer_review):
 		# this adds a given peer_review object to the internal list _assignedReviews
@@ -129,8 +130,6 @@ class Student:
 			self.adjustmentsByAssignment[assignmentID][cid]=copy.deepcopy(self.adjustments[cid]) 
 			self.adjustmentsByAssignment[assignmentID][cid].gradingPowerNormalizationFactor = self.gradingPowerNormalizationFactor[cid]
 
-
-
 	def updateAdjustments(self, normalize=True, weeklyDegradationFactor=1, cidsToIncludeInSummary="All",  endDate=datetime.utcnow().replace(tzinfo=pytz.UTC)):
 		# go through all of the comparisons on all prior assignments in order accumulating the data
 		# while degrading older data to get the current compensation parameters
@@ -146,21 +145,26 @@ class Student:
 			totalDelta=0
 			totalDelta2=0
 			totalWeight=0
+			pointsPossible=0
 			for key in self.comparisons:
-				adjustedData=self.comparisons[key].adjustedData(cid)
+				adjustedData=self.comparisons[key].adjustedData(cid, relativeValues=False)
 				beforeEndDate=(endDate-self.comparisons[key].date).total_seconds()>0
+				if cid ==0:
+					pointsPossible=np.average(list(self.comparisons[key].pointsPossible.values()))					
+				elif cid in self.comparisons[key].pointsPossible:
+					pointsPossible=self.comparisons[key].pointsPossible[cid]
+				else:
+					pointsPossible=0
 				if beforeEndDate:
 					totalDelta+=adjustedData['delta']*adjustedData['weight']
 					totalDelta2+=adjustedData['delta2']*adjustedData['weight']
 					totalWeight+=adjustedData['weight']
-			self.adjustments[cid]=self.Adjustments(totalDelta, totalDelta2, totalWeight, self.maxGradingPower)
+			self.adjustments[cid]=self.Adjustments(totalDelta, totalDelta2, totalWeight, self.maxGradingPower, pointsPossible)
 			if cid in self.gradingPowerNormalizationFactor:
 				self.adjustments[cid].gradingPowerNormalizationFactor=self.gradingPowerNormalizationFactor[cid]
 			else:
 				self.adjustments[cid].gradingPowerNormalizationFactor=1
 			
-			
-
 	def gradingReport(self, returnInsteadOfPrint=False):
 		self.updateAdjustments(normalize=True)
 		msg="Grading report for " + self.name +"\n"
@@ -177,9 +181,6 @@ class Student:
 		if returnInsteadOfPrint:
 			return(msg)
 		print(msg)
-
-		
-
 
 # 	def setAssignmentDueDate(self, assignment):
 # 		self._dueDateByAssignment[assignment.id]=assignment.due_at_date
