@@ -425,7 +425,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 	if defaultAssignment==None:
 		defaultAssignment=graded_assignments['last']
 	confirmed=False
-	defaultChoice=0
+	defaultChoice=None
 	msg=""
 	while not confirmed:
 		codes=[chr(i+65) for i in range(26)]
@@ -455,9 +455,11 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				assignmentKeyByNumber[iStr[:-1]]=key
 		val=None
 		while not (val in assignmentKeyByNumber or (val=='0' and allowAll)):
-			if timeout==None:
-				if prompt==None:
-					prompt="Enter a choice for the assignment to work on [" + defaultChoice+"]: "
+			if timeout==None or defaultChoice==None:
+				if prompt==None and defaultChoice==None:
+					prompt=f"Enter a choice for the assignment to work on: "
+				elif prompt==None:
+					prompt=f"Enter a choice for the assignment to work on [{defaultChoice}]: "
 				val=input(prompt).upper()
 			else:
 				if prompt==None:
@@ -2339,14 +2341,14 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 		print("\r", end="")
 		time.sleep(0.1)
 		signal.alarm(0)
-		return val
+		return str(val)
 	except:
 		printLine("",False)
 		print("\r", end="")
 	signal.alarm(0)
 	cnt.terminate()
 	time.sleep(0.1)
-	return default
+	return str(default)
 	
 ######################################
 # print a line by printing white space

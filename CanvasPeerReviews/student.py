@@ -27,7 +27,7 @@ class Student:
 					
 		def gradingPower(self, normalizationFactor=1):
 			#x=5*self.rms/self.pointsPossible # the measure used to assign a grading power
-			gradingPowerFormula = f'1.0/(x**2.5+1/{self.maxGradingPower})'
+			gradingPowerFormula = f'1.0/(x**2+1/{self.maxGradingPower})'
 			gradingPowerFunc=eval('lambda x:' + gradingPowerFormula)
 			if self.rms==0 and self.weight!=0:
 				return self.maxGradingPower
