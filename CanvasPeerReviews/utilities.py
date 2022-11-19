@@ -1156,7 +1156,6 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 									weight=params.gradingPowerForGraders
 							except:
 								weight=1
-						
 						elif otherReview.review_type == "grading":
 							weight=params.gradingPowerForInstructors
 
@@ -1173,6 +1172,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 							numberOfComparisons+=weight 
 						except:
 							status['err']="Key error" 
+		student.rmsByAssignment[assignment.id]=dict()
+		student.relativeRmsByAssignment[assignment.id]=dict()
+		student.weightsByAssignment[assignment.id]=dict()
 		for cid in tempDelta:
 			if (tempDelta[cid]>0):
 				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (  math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]), tempDelta[cid]/tempTotalWeight[cid])
@@ -1181,12 +1183,17 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 			else:
 				student.reviewGradeExplanation+="    %.2f points off from other graders " % ( math.sqrt(tempDelta2[cid]/tempTotalWeight[cid]))
 			student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
+			student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])
+			student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])/ assignment.criteria_points(cid)
+			student.weightsByAssignment[assignment.id][cid]=tempTotalWeight[cid]
 
 		rms=2
 	
 		if numberOfComparisons!=0:
 			rms=(delta2/numberOfComparisons)**0.5
-		student.rmsByAssignment[assignment.id]=rms
+		student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(cid)
+		student.relativeRmsByAssignment[assignment.id][0]=rms
+		student.weightsByAssignment[assignment.id][0]=numberOfComparisons
 
 		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)

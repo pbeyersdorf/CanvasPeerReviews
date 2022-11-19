@@ -25,10 +25,12 @@ class Student:
 			self.pointsPossible=pointsPossible
 
 					
-		def gradingPower(self, normalizationFactor=1):
+		def gradingPower(self, normalizationFactor=1, getFormula=False):
 			#x=5*self.rms/self.pointsPossible # the measure used to assign a grading power
 			gradingPowerFormula = f'1.0/(x**2+1/{self.maxGradingPower})'
 			gradingPowerFunc=eval('lambda x:' + gradingPowerFormula)
+			if getFormula:
+				return gradingPowerFormula
 			if self.rms==0 and self.weight!=0:
 				return self.maxGradingPower
 			elif self.weight!=0 and normalizationFactor=="auto":
@@ -70,8 +72,12 @@ class Student:
 		self.sectionName="unknown"
 		self.maxGradingPower=5
 		#._dueDateByAssignment=dict()
-		self.rmsByAssignment=dict()
+		self.rmsByAssignment=dict() # this is the raw rms, so for a 10 point assignment it could be up to 10
+		self.relativeRmsByAssignment=dict() # this is the rms out of 1 (relative to the points available on the assignment).  This is what is used for calculating grades.
+		self.weightsByAssignment=dict()
 		self.comparisons=dict()
+		
+
 		
 	def getGradingPower(self,cid=0, normalize=True):
 		# returns the grading power for this students for the given criteria ID
@@ -284,10 +290,25 @@ class Student:
 		except KeyError: 
 			return None
 			
-	def getRmsByAssignment(self, assignment, cid=0):
+	def getRmsByAssignment(self, assignment, cid=0, relative=False):
 		assignmentID=self.idOfAssignment(assignment)
 		try:
-			return self.adjustmentsByAssignment[assignmentID][cid].rms
+			if relative:
+				return self.relativeRmsByAssignment[assignmentID][cid]			
+			else:
+				return self.rmsByAssignment[assignmentID][cid]
+			#return self.adjustmentsByAssignment[assignmentID][cid].rms
 		except KeyError: 
 			return None
 		
+	def getGradingPowerByAssignment(self, assignment, cid=0):
+		#returns the contribution to the grading power from a single assignment
+		assignmentID=self.idOfAssignment(assignment)
+		try:
+			adjustment=self.adjustmentsByAssignment[assignmentID][cid]
+			gradingPowerFormula=adjustment.gradingPower(getFormula=True)
+			gradingPowerFunc=eval('lambda x:' + gradingPowerFormula)
+			rms=self.rmsByAssignment[assignmentID][cid]
+			return gradingPowerFunc(rms)/adjustment.gradingPowerNormalizationFactor
+		except KeyError: 
+			return None
