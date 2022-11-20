@@ -12,6 +12,7 @@ class Comparison:
 		self.weight=dict()
 		self.date=assignment.getDate()
 		self.reviewIDComparedTo=otherReview.id
+		self.reviewID=thisGivenReview.id
 		self.delta[0]=0
 		self.delta2[0]=0
 		self.weight[0]=0
@@ -19,6 +20,8 @@ class Comparison:
 		self.pointsPossible=dict()
 		self.updateable=False
 		self.otherReviewType=otherReview.review_type
+		self.assignment_id=assignment.id
+		self.creation_id=thisGivenReview.creation.id
 		for cid in otherReview.scores:
 			if cid in thisGivenReview.scores:
 				self.delta[cid]=thisGivenReview.scores[cid] - otherReview.scores[cid]
@@ -38,7 +41,7 @@ class Comparison:
 				self.weight[cid]= weight if assignment.includeInCalibrations else 0
 				self.delta[0]+=self.delta[cid]*weight
 				self.delta2[0]+=self.delta2[cid]*weight
-				self.weight[0]+=weight
+				self.weight[0]+=weight if assignment.includeInCalibrations else 0
 				self.pointsPossible[cid]=assignment.criteria_points(cid)
 				
 		if self.weight[0]>0:
@@ -51,12 +54,12 @@ class Comparison:
 		for cid in self.weight:
 			self.weight[cid]= otherReviewer.getGradingPower(cid)
 
-	def adjustedData(self,cid, relativeValues=False):
+	def adjustedData(self,cid, relativeValues=False, undegredated=False):
 		try:
 			# return the comparison data with the weighting adjusted for its age
 			now=datetime.utcnow().replace(tzinfo=pytz.UTC)
 			weeksSinceDue=(now-self.date).total_seconds()/(7*24*60*60)
-			degredationFactor=self.weeklyDegredationFactor**(weeksSinceDue)
+			degredationFactor = 1 if undegredated else self.weeklyDegredationFactor**(weeksSinceDue)
 			if relativeValues:
 				return {'delta': self.delta[cid]/self.pointsPossible[cid], 'delta2': self.delta2[cid]/self.pointsPossible[cid], 'weight':self.weight[cid]*degredationFactor}
 			else:
