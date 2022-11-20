@@ -154,7 +154,7 @@ class Student:
 			pointsPossible=0
 			for key in self.comparisons:
 				adjustedData=self.comparisons[key].adjustedData(cid, relativeValues=False)
-				beforeEndDate=(endDate-self.comparisons[key].date).total_seconds()>0
+				beforeEndDate=(endDate-self.comparisons[key].date).total_seconds()>=0
 				if cid ==0:
 					pointsPossible=np.average(list(self.comparisons[key].pointsPossible.values()))					
 				elif cid in self.comparisons[key].pointsPossible:
@@ -165,7 +165,12 @@ class Student:
 					totalDelta+=adjustedData['delta']*adjustedData['weight']
 					totalDelta2+=adjustedData['delta2']*adjustedData['weight']
 					totalWeight+=adjustedData['weight']
+					#if self.id==4508048 and cid=='_2681': #debug
+					#	print(f"update has delta2 {adjustedData['delta2']} with weight of {adjustedData['weight']}")
 			self.adjustments[cid]=self.Adjustments(totalDelta, totalDelta2, totalWeight, self.maxGradingPower, pointsPossible)
+			#if self.id==4508048 and cid=='_2681': #debug
+			#	print(f"for a result of  {totalDelta2} with weight of {totalWeight} and rms of {self.adjustments[cid].rms}")
+
 			if cid in self.gradingPowerNormalizationFactor:
 				self.adjustments[cid].gradingPowerNormalizationFactor=self.gradingPowerNormalizationFactor[cid]
 			else:

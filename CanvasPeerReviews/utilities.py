@@ -123,6 +123,12 @@ def loadCache():
 		reviewsByCreationId.update(_reviewsByCreationId)
 		professorsReviews.update(_professorsReviews)
 		loadedData.append("review data")
+		#eliminate duplicate entries
+		# for key in reviewsByCreationId:
+# 			uniqueEntries=dict()
+# 			for r in reviewsByCreationId[key]:
+# 				uniqueEntries[r.fingerprint()]=r
+# 			reviewsByCreationId[key]=list(uniqueEntries.values())
 	except:
 		status['message']+="Unable to find 'reviews.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 
@@ -824,10 +830,11 @@ def getReviews(creations):
 							for i,thisReview in enumerate(studentsById[creation.user_id].reviewsReceived):
 								if thisReview.fingerprint() == review.fingerprint() and assessment['assessment_type']=="grading":
 									studentsById[creation.user_id].reviewsReceived[i]=review			
-						if creation.id in reviewsByCreationId and not review in reviewsByCreationId[creation.id]:
-							reviewsByCreationId[creation.id].append(review)
+						if creation.id in reviewsByCreationId:
+							#reviewsByCreationId[creation.id].append(review)
+							reviewsByCreationId[creation.id][review.id]=review
 						else:
-							reviewsByCreationId[creation.id]=[review]
+							reviewsByCreationId[creation.id]={review.id: review}
 						if assessment['assessment_type']=='grading':
 							if creation.assignment_id in professorsReviews:
 								professorsReviews[creation.assignment_id].append(review)
@@ -869,14 +876,12 @@ def calibrate(studentsToCalibrate="all", endDate=datetime.utcnow().replace(tzinf
 				student.criteriaDescription[cid]=criteriaDescription[cid]
 			if not blankCreation: 
 				if not thisGivenReview.submission_id in reviewsByCreationId:
-					print(len(reviewsByCreationId), len(reviewsById))
 					print("error for " + thisGivenReview.fingerprint())
-				for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
+				for otherReview in reviewsByCreationId[thisGivenReview.submission_id].values():
 					alreadyCalibratedAgainst=otherReview.id in student.comparisons
 					if (otherReview.reviewer_id != student.id and not alreadyCalibratedAgainst): #don't compare this review to itself and dont repeat a calibration	
-						if otherReview.reviewer_id in studentsById:
-							student.comparisons[otherReview.id]=Comparison(thisGivenReview, otherReview, graded_assignments[thisGivenReview.assignment_id], studentsById[otherReview.reviewer_id], params)
-
+						#if otherReview.reviewer_id in studentsById:
+						student.comparisons[otherReview.id]=Comparison(thisGivenReview, otherReview, graded_assignments[thisGivenReview.assignment_id], studentsById, params)
 		#student.updateAdjustments(normalize=False, weeklyDegradationFactor=params.weeklyDegradationFactor())		
 		#process the comparisons to get the current grading adjustments
 		student.updateAdjustments(normalize=False, weeklyDegradationFactor=params.weeklyDegradationFactor(), endDate=endDate)		
@@ -890,6 +895,13 @@ def calibrate(studentsToCalibrate="all", endDate=datetime.utcnow().replace(tzinf
 	
 	for student in students:
 		student.updateAdjustments(normalize=True,  weeklyDegradationFactor=params.weeklyDegradationFactor(), endDate=endDate)	
+
+# 	# update all of the comparisons with the new grading weights
+# 	for student in studentsToCalibrate:
+# 		for comp in student.comparisons.values():
+# 			otherReviewer=studentsById[reviewsById[comp.reviewIDComparedTo].reviewer_id]
+# 			comp.updateWeight(otherReviewer)
+
 	saveStudents()
 
 	status["calibrated"]=True
@@ -1135,7 +1147,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		for key, thisGivenReview in student.reviewsGiven.items():
 			blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 			if thisGivenReview.assignment_id == assignment.id and not blankCreation:
-				for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
+				for otherReview in reviewsByCreationId[thisGivenReview.submission_id].values():
 					if not assignment.id in student.givenReviewData:
 						student.givenReviewData[assignment.id]=dict()
 					if not otherReview.submission_id in student.givenReviewData[assignment.id]:
@@ -1167,10 +1179,16 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 							else:
 								tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
 								tempDelta2[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )	**2	
-								tempTotalWeight[cid]=weight						
+								tempTotalWeight[cid]=weight		
+							
+							#if student.id==4508048 and cid=='_2681': #For debugging
+							#	print(f"{student.name} on cid={cid} had delta2 of {(thisGivenReview.scores[cid] - otherReview.scores[cid] )	**2	} with a weight of {weight} when reviewing {studentsById[otherReview.author_id].name}" )								
+											
 							delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
 							numberOfComparisons+=weight 
 						except:
+							#if student.id==4508048 and cid=='_2681': #For debugging
+							#	print(f"{student.name} missing cid={cid} for review by {studentsById[otherReview.author_id].name}" )								
 							status['err']="Key error" 
 		student.rmsByAssignment[assignment.id]=dict()
 		student.relativeRmsByAssignment[assignment.id]=dict()
@@ -1186,6 +1204,10 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 			student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])
 			student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])/ assignment.criteria_points(cid)
 			student.weightsByAssignment[assignment.id][cid]=tempTotalWeight[cid]
+			
+			#if student.id==4508048: #For debugging
+			#	print(f"{student.name} on {	assignment.name}, cid={cid} had a total weight of {tempTotalWeight[cid]} and a total delta2 of {tempDelta2[cid]} for an RMS of {math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])}" )								
+
 
 		rms=2
 	
@@ -1313,7 +1335,7 @@ def reviewGradeOnCalibrations(assignment, student):
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
-			for otherReview in reviewsByCreationId[thisGivenReview.submission_id]:
+			for otherReview in reviewsByCreationId[thisGivenReview.submission_id].values():
 				if otherReview.review_type == "grading":
 					totalCriteriaPoints=0
 					numberOfCriteria=0

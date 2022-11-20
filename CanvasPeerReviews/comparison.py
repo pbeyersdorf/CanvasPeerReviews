@@ -6,7 +6,7 @@ class Comparison:
 	# Comparison(thisGivenReview, otherReview, assignment, otherReviewer, params)
 	# The comparison data records the deviation and weight 
 	# for a comparison to another review
-	def __init__(self,  thisGivenReview, otherReview, assignment, otherReviewer, params):	
+	def __init__(self,  thisGivenReview, otherReview, assignment, studentsById, params):	
 		self.delta=dict()
 		self.delta2=dict()
 		self.weight=dict()
@@ -17,15 +17,22 @@ class Comparison:
 		self.weight[0]=0
 		self.weeklyDegredationFactor=params.weeklyDegradationFactor()
 		self.pointsPossible=dict()
+		self.updateable=False
+		self.otherReviewType=otherReview.review_type
 		for cid in otherReview.scores:
 			if cid in thisGivenReview.scores:
 				self.delta[cid]=thisGivenReview.scores[cid] - otherReview.scores[cid]
 				self.delta2[cid]=self.delta[cid]**2
 				if otherReview.review_type == "peer_review":
-					if otherReviewer.role == 'grader':
-						weight=params.gradingPowerForGraders
+					if otherReview.reviewer_id in studentsById:
+						otherReviewer=studentsById[otherReview.reviewer_id]
+						if otherReviewer.role == 'grader':
+							weight=params.gradingPowerForGraders
+						else:
+							weight=otherReviewer.getGradingPower(cid)
+							self.updateable=assignment.includeInCalibrations
 					else:
-						weight=otherReviewer.getGradingPower(cid); 
+						weight=0 # the student dropped the class, so let's not count this review
 				elif otherReview.review_type == "grading":
 					weight=params.gradingPowerForInstructors
 				self.weight[cid]= weight if assignment.includeInCalibrations else 0
@@ -37,6 +44,12 @@ class Comparison:
 		if self.weight[0]>0:
 			self.delta[0]/=self.weight[0]		
 			self.delta2[0]/=self.weight[0]		
+
+	def updateWeight(self, otherReviewer):
+		if not self.updateable:
+			return
+		for cid in self.weight:
+			self.weight[cid]= otherReviewer.getGradingPower(cid)
 
 	def adjustedData(self,cid, relativeValues=False):
 		try:
