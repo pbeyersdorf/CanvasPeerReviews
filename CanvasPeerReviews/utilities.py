@@ -1521,7 +1521,7 @@ def reviewGradeOnCalibrations(assignment, student):
 
 ######################################
 # find submissions that need to be regraded as based on a keyword in the comments
-def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
+def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 	global status, activeAssignment
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'regrade'")
@@ -1717,6 +1717,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=True):
 							student.regrade[assignment.id]="Done"
 				else:
 					print("Not posting anything for " + student.name)
+				printLine(line=True)
 		else:
 			print("There are no pending regrade requests for " + assignment.name)
 		printLine()
