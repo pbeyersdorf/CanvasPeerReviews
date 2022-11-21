@@ -2,6 +2,7 @@ from datetime import datetime
 import numpy as np
 import copy
 import pytz
+from colorama import Fore, Back, Style
 
 class Student:
 	
@@ -157,7 +158,6 @@ class Student:
 					if len(list(self.comparisons[key].pointsPossible.values()))>0:
 						pointsPossible=np.average(list(self.comparisons[key].pointsPossible.values()))					
 					else:
-						#print(self.name + " has no possible points on assignment id " + str(self.comparisons[key].assignment_id) )
 						pointsPossible=None
 					#pointsPossible=np.nanmean(list(self.comparisons[key].pointsPossible.values()))					
 				elif cid in self.comparisons[key].pointsPossible:
@@ -265,6 +265,7 @@ class Student:
 			points=0
 			adjpoints=0
 			weights=0
+			colorString=""
 			pointsString="("
 			weightsString="["
 			compString="{"
@@ -272,9 +273,15 @@ class Student:
 				points+=a['points']
 				adjpoints+=a['weight']*(a['points']-a['compensation'])
 				weights+=a['weight']
-				pointsString+='{:.4s}'.format('{:0.4f}'.format(a['points'])) + ", "
-				weightsString+='{:.4s}'.format('{:0.4f}'.format(a['weight']))	 + ", "
-				compString+='{:.4s}'.format('{:0.4f}'.format(a['compensation']))	 + ", "
+				if a['reviewerRole']=="grader":
+					colorString=Fore.GREEN
+				elif a['reviewerRole']=="instructor":
+					colorString=Fore.BLUE
+				else:
+					colorString=""
+				pointsString+=colorString+'{:.4s}'.format('{:0.4f}'.format(a['points'])) + Style.RESET_ALL + ", "
+				weightsString+=colorString+'{:.4s}'.format('{:0.4f}'.format(a['weight']))	+ Style.RESET_ALL  + ", "
+				compString+=colorString+'{:.4s}'.format('{:0.4f}'.format(a['compensation']))	+ Style.RESET_ALL  + ", "
 				#weightsString+=str(a['weight']) + ", "
 			pointsString=pointsString[:-2]+ ") points"
 			weightsString=weightsString[:-2]+ "] weights"

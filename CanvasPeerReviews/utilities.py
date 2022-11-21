@@ -1250,6 +1250,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 				elif review.review_type == "grading":
 					gradingExplanationLine="Review [I"+ str(review.reviewer_id)+"_" + str(cid) +"] "
 					weight=params.gradingPowerForInstructors
+					role='instructor'
 				if cid in review.scores:
 					try:
 						reviewer=studentsById[review.reviewer_id]
@@ -1261,8 +1262,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					if not assignment.id in student.reviewData:
 						student.reviewData[assignment.id]=dict()
 					if not cid in student.reviewData[assignment.id]:
-						student.reviewData[assignment.id][cid]=[]
-					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid]}
+						student.reviewData[assignment.id][cid]=[]	
+					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid], 'reviewerRole': role}
 					replacedData=False
 					for i,itm in enumerate(student.reviewData[assignment.id][cid]):
 						if itm['reviewerID']==review.reviewer_id:
@@ -1344,16 +1345,19 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		for cid in [cid for cid in tempWeight if cid!=0]:
 			delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
 			weigth+=tempWeight[cid]
-		if weigth>0:
-			rms=(delta2/weigth)**0.5
-			student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(cid)
-			student.relativeRmsByAssignment[assignment.id][0]=rms
-			student.weightsByAssignment[assignment.id][0]=tempWeight[0]
+		if assignment.id in student.relativeRmsByAssignment:
+			rms=student.relativeRmsByAssignment[assignment.id][cid]
 		else:
-			rms=2
-			student.rmsByAssignment[assignment.id][0]=None
-			student.relativeRmsByAssignment[assignment.id][0]=None
-			student.weightsByAssignment[assignment.id][0]=0	
+			if weigth>0:
+				rms=(delta2/weigth)**0.5
+				student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(cid)
+				student.relativeRmsByAssignment[assignment.id][0]=rms
+				student.weightsByAssignment[assignment.id][0]=tempWeight[0]
+			else:
+				rms=2
+				student.rmsByAssignment[assignment.id][0]=None
+				student.relativeRmsByAssignment[assignment.id][0]=None
+				student.weightsByAssignment[assignment.id][0]=0	
 		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
 		if (reviewGrade<100):
