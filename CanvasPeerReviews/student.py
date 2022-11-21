@@ -143,8 +143,6 @@ class Student:
 			cidsToIncludeInSummary=list(self.criteriaDescription)
 		cidsToIncludeInSummary+=[0]
 		self.adjustments=dict()
-		#if not 'current' in self.adjustmentsByAssignment:
-		#	self.adjustments=dict()
 		for cid in cidsToIncludeInSummary:	
 			if not normalize:
 				self.gradingPowerNormalizationFactor[cid]=1
@@ -156,7 +154,12 @@ class Student:
 				adjustedData=self.comparisons[key].adjustedData(cid, relativeValues=False)
 				beforeEndDate=(endDate-self.comparisons[key].date).total_seconds()>=0
 				if cid ==0:
-					pointsPossible=np.average(list(self.comparisons[key].pointsPossible.values()))					
+					if len(list(self.comparisons[key].pointsPossible.values()))>0:
+						pointsPossible=np.average(list(self.comparisons[key].pointsPossible.values()))					
+					else:
+						#print(self.name + " has no possible points on assignment id " + str(self.comparisons[key].assignment_id) )
+						pointsPossible=None
+					#pointsPossible=np.nanmean(list(self.comparisons[key].pointsPossible.values()))					
 				elif cid in self.comparisons[key].pointsPossible:
 					pointsPossible=self.comparisons[key].pointsPossible[cid]
 				else:
@@ -168,9 +171,6 @@ class Student:
 					#if self.id==4508048 and cid=='_2681': #debugging
 					#	print(f"update has delta2 {adjustedData['delta2']} with weight of {adjustedData['weight']}")
 			self.adjustments[cid]=self.Adjustments(totalDelta, totalDelta2, totalWeight, self.maxGradingPower, pointsPossible)
-			#if self.id==4508048 and cid=='_2681': #debug
-			#	print(f"for a result of  {totalDelta2} with weight of {totalWeight} and rms of {self.adjustments[cid].rms}")
-
 			if cid in self.gradingPowerNormalizationFactor:
 				self.adjustments[cid].gradingPowerNormalizationFactor=self.gradingPowerNormalizationFactor[cid]
 			else:
@@ -279,7 +279,6 @@ class Student:
 			pointsString=pointsString[:-2]+ ") points"
 			weightsString=weightsString[:-2]+ "] weights"
 			compString=compString[:-2]+ "} compensations"
-			#print(self.reviewData[assignmentID][key][0]['description'], round(adjpoints/weights,2), pointsString)
 			if weights!=0:
 				avgStr=str(round(adjpoints/weights,2))
 			else:
