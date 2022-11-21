@@ -4,7 +4,7 @@ errormsg=""
 from datetime import datetime, timedelta
 try:
 	from canvasapi import Canvas
-except:
+except Exception:
 	errormsg+="Missing canvasapi module.  Run 'pip install canvasapi' to intall\n"
 from CanvasPeerReviews.creation import Creation
 from CanvasPeerReviews.student import Student
@@ -15,19 +15,19 @@ from CanvasPeerReviews.review import Review
 
 try:
 	from dill.source import getsource	
-except:
+except Exception: 
 	errormsg+="Missing dill module.  Run 'pip install dill' to intall\n"
 try:
 	import pickle
-except:
+except Exception:
 	errormsg+="Missing pickle module.  Run 'pip install pickle5' to intall\n"
 try:
 	import numpy as np
-except:
+except Exception:
 	errormsg+="Missing numpy module.  Run 'pip install numpy' to intall\n"
 try:
 	from colorama import Fore, Back, Style
-except:
+except Exception:
 	errormsg+="Missing colorama module.  Run 'pip install colorama' to intall\n"
 
 
@@ -51,7 +51,7 @@ try:
 	from credentials import *
 	DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH
 	writeCredentials=False
-except:
+except Exception:
 	writeCredentials=True
 
 ######################################
@@ -112,7 +112,7 @@ def loadCache():
 		with open( status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl', 'rb') as handle:
 			students=pickle.load(handle)
 		loadedData.append("student data")
-	except:
+	except Exception:
 		status['students']="not loaded"
 		status['message']+="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
 	try:
@@ -120,7 +120,7 @@ def loadCache():
 			_graded_assignments=pickle.load(handle)
 		graded_assignments.update(_graded_assignments)
 		loadedData.append("assginment data")
-	except:
+	except Exception:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
@@ -135,14 +135,14 @@ def loadCache():
 # 			for r in reviewsByCreationId[key]:
 # 				uniqueEntries[r.fingerprint()]=r
 # 			reviewsByCreationId[key]=list(uniqueEntries.values())
-	except:
+	except Exception:
 		status['message']+="Unable to find 'reviews.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
 
 	try:
 		with open(status['dataDir'] +"PickleJar/"+ status['prefix']+'parameters.pkl', 'rb') as handle:
 			params = pickle.load(handle)
 		params.loadedFromFile=True
-	except:
+	except Exception:
 		params=Parameters()
 		params.loadedFromFile=False 
 	
@@ -155,15 +155,15 @@ def reset():
 	global status
 	try:
 		os.remove(status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl')
-	except:
+	except Exception:
 		pass
 	try:
 		os.remove(status['dataDir'] +"PickleJar/"+ status['prefix']+'parameters.pkl')
-	except:
+	except Exception:
 		pass
 	try:
 		os.remove(status['dataDir'] +status['prefix']+'solution urls.csv')
-	except:
+	except Exception:
 		pass
 
 
@@ -316,7 +316,7 @@ def getStudentWork(thisAssignment='last'):
 			for key in 	graded_assignments:
 				try:
 					print(key, graded_assignments[key].name)
-				except:
+				except Exception:
 					pass
 			val=int(input("Choose the assignment id to grade: "))
 			graded_assignments['last']=graded_assignments[val]
@@ -370,7 +370,7 @@ def getGradedAssignments(course):
 		try:
 			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
 				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
-		except:
+		except Exception:
 			print("Unable to add '" + assignment.name + "' to assignmentByNumber")	
 	status["gotGradedAssignments"]=True
 
@@ -408,7 +408,7 @@ def getCachedAssignment(DATADIRECTORY, getInput=True):
 	try:
 		with open( DATADIRECTORY +"PickleJar/"+ status['prefix'] + "assignmentList.pkl", 'rb') as handle:
 			cacheData=pickle.load(handle)
-	except:
+	except Exception:
 		return
 	keyByStr=dict()
 	for line in cacheData:
@@ -669,7 +669,7 @@ def getStudents(course):
 				if	student.id==user.id:
 					alreadyAdded=True
 					studentsById[user.id]=student
-		except:
+		except Exception:
 			pass
 		if not alreadyAdded:
 			studentsById[user.id]=Student(user)
@@ -723,7 +723,7 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 		f.close()
 		if success:
 			return solutionURLs[assignment.id]
-	except:
+	except Exception:
 		f = open(fileName.replace("csv","-template.csv"), "w")
 		f.write("Assignment Name, Solution URL\n")
 		lines=[]
@@ -744,7 +744,7 @@ def deleteReview(peer_review):
 	assignment=graded_assignments[creation.assignment_id]
 	try:
 		reviewer._assignedReviews[assignment.id].remove(peer_review)
-	except:
+	except Exception:
 		pass 
 	print("deleting " + reviewer.name + "'s peer review assignment of " + studentsById[creation.author_id].name )
 	reviewer.removeAssignedReview(peer_review)
@@ -782,11 +782,11 @@ def reviewSummary(assessment, display=False):
 		msg+="\t" + criteriaDescription[d['criterion_id']] 
 		try:
 			msg+=" [" + str(d['points']) + "]"
-		except:
+		except Exception:
 			msg+=" [missing]"
 		try:
 			msg+=" "+d['comments']
-		except:
+		except Exception:
 			pass
 		msg+="\n"
 	#get general comments on the submission
@@ -823,7 +823,7 @@ def getReviews(creations):
 							for pr in reviewer.assignedReviews(creation.assignment_id):
 								if review.author_id==pr.user_id:
 									review.peer_review=pr
-						except:
+						except Exception:
 							pass
 							#print(f"Student with id {assessment['assessor_id']} not in list of students")
 						#
@@ -1072,7 +1072,7 @@ def checkForUnreviewed(assignment, openPage=False):
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student, reviewScoreGrading="default"):
+def gradeStudent1(assignment, student, reviewScoreGrading="default"):
 	global params
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
@@ -1120,7 +1120,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 						compensation=reviewer.adjustmentsByAssignment[assignment.id][cid].compensation*params.compensationFactor
 						compensation=min(compensation, params.maxCompensationFraction* multiplier)
 						compensation=max(compensation, -params.maxCompensationFraction* multiplier)
-					except:
+					except Exception:
 						compensation=0	
 					if not assignment.id in student.reviewData:
 						student.reviewData[assignment.id]=dict()
@@ -1184,7 +1184,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 						if otherReview.reviewer_id not in revieweids:
 							try:
 								student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
-							except:
+							except Exception:
 								student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
 						if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
 							student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
@@ -1194,7 +1194,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 									weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
 									if (studentsById[otherReview.reviewer_id]).role == 'grader':
 										weight=params.gradingPowerForGraders
-								except:
+								except Exception:
 									weight=1
 							elif otherReview.review_type == "grading":
 								weight=params.gradingPowerForInstructors
@@ -1228,8 +1228,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 			student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])/ assignment.criteria_points(cid)
 			student.weightsByAssignment[assignment.id][cid]=tempTotalWeight[cid]
 			
-			if student.id==4508048: #For debugging
-				print(f"{student.name} on {	assignment.name}, cid={cid} had a total weight of {tempTotalWeight[cid]} and a total delta2 of {tempDelta2[cid]} for an RMS of {math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])}" )								
+			#if student.id==4508048: #For debugging
+			#	print(f"{student.name} on {	assignment.name}, cid={cid} had a total weight of {tempTotalWeight[cid]} and a total delta2 of {tempDelta2[cid]} for an RMS of {math.sqrt(tempDelta2[cid]/tempTotalWeight[cid])}" )								
 
 
 		rms=2
@@ -1338,7 +1338,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		student.regradeComments[assignment.id]+=regradedScoringSummaryString
 	student.recordAdjustments(assignment)
 
-def gradeStudent2(assignment, student, reviewScoreGrading="default"):
+def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	global params
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
@@ -1386,7 +1386,7 @@ def gradeStudent2(assignment, student, reviewScoreGrading="default"):
 						compensation=reviewer.adjustmentsByAssignment[assignment.id][cid].compensation*params.compensationFactor
 						compensation=min(compensation, params.maxCompensationFraction* multiplier)
 						compensation=max(compensation, -params.maxCompensationFraction* multiplier)
-					except:
+					except Exception:
 						compensation=0	
 					if not assignment.id in student.reviewData:
 						student.reviewData[assignment.id]=dict()
@@ -1427,40 +1427,33 @@ def gradeStudent2(assignment, student, reviewScoreGrading="default"):
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)
 	
-	
-
 	if reviewScoreGrading.lower()=="calibrated grading":
 		#calculate review grades
-		delta2=0
 		tempDelta=dict()
 		tempDelta2=dict()
 		tempWeight=dict()
-		numberOfComparisons=0
 		student.reviewGradeExplanation="On peer reviews the scores you gave out on average were:\n"
 
-
-		####xxx
 		compsOnThisAssignment=[student.comparisons[key] for key in student.comparisons if student.comparisons[key].assignment_id == assignment.id]
-		if not assignment.id in student.givenReviewData:
-			student.givenReviewData[assignment.id]=dict()
+#		if not assignment.id in student.givenReviewData:
+#			student.givenReviewData[assignment.id]=dict()
 		for comp in compsOnThisAssignment:
 			otherReview=reviewsById[comp.reviewIDComparedTo]
 			thisGivenReview=reviewsById[comp.reviewID]
 			
-			if not otherReview.submission_id in student.givenReviewData[assignment.id]:
-				student.givenReviewData[assignment.id][otherReview.submission_id]=[]
-			revieweids=[r['reviewerID'] for r in student.givenReviewData[assignment.id][otherReview.submission_id]]
-			if otherReview.reviewer_id not in revieweids:
-				try:
-					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
-				except:
-					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
-			if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
-				student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
+# 			if not otherReview.submission_id in student.givenReviewData[assignment.id]:
+# 				student.givenReviewData[assignment.id][otherReview.submission_id]=[]
+# 			reviewerids=[r['reviewerID'] for r in student.givenReviewData[assignment.id][otherReview.submission_id]]
+# 			if otherReview.reviewer_id not in reviewerids:
+# 				try:
+# 					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
+# 				except Exception:
+# 					student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
+# 			if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
+# 				student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
 			
-			#adjustedData=dict()			
 			for cid in comp.weight:
-				adjustedData=comp.adjustedData(cid)
+				adjustedData=comp.adjustedData(cid, degraded=False)
 				if cid not in tempWeight:
 					tempDelta[cid]=adjustedData['delta']*adjustedData['weight']
 					tempDelta2[cid]=adjustedData['delta2']*adjustedData['weight']
@@ -1469,63 +1462,10 @@ def gradeStudent2(assignment, student, reviewScoreGrading="default"):
 					tempDelta[cid]+=adjustedData['delta']*adjustedData['weight']
 					tempDelta2[cid]+=adjustedData['delta2']*adjustedData['weight']
 					tempWeight[cid]+=adjustedData['weight']
-# 			
-# 			
-# 		for key, thisGivenReview in student.reviewsGiven.items():
-# 			blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
-# 			if thisGivenReview.assignment_id == assignment.id and not blankCreation:
-# 				for otherReview in reviewsByCreationId[thisGivenReview.submission_id].values():
-# 				
-# 					if not reviewsById[otherReview.id].reviewer_id ==student.id: # don't compare the review to itself
-# 				
-# 						if not assignment.id in student.givenReviewData:
-# 							student.givenReviewData[assignment.id]=dict()
-# 						if not otherReview.submission_id in student.givenReviewData[assignment.id]:
-# 							student.givenReviewData[assignment.id][otherReview.submission_id]=[]
-# 						revieweids=[r['reviewerID'] for r in student.givenReviewData[assignment.id][otherReview.submission_id]]
-# 						if otherReview.reviewer_id not in revieweids:
-# 							try:
-# 								student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': studentsById[otherReview.reviewer_id].name})
-# 							except:
-# 								student.givenReviewData[assignment.id][otherReview.submission_id].append({'points': otherReview.scores,  'reviewerID': otherReview.reviewer_id, 'reviewerName': 'Unknown'})
-# 						if {'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name} not in student.givenReviewData[assignment.id][thisGivenReview.submission_id]:
-# 							student.givenReviewData[assignment.id][thisGivenReview.submission_id].append({'points': thisGivenReview.scores,  'reviewerID': thisGivenReview.reviewer_id, 'reviewerName': studentsById[thisGivenReview.reviewer_id].name})
-# 						for cid in thisGivenReview.scores:
-# 							if otherReview.review_type == "peer_review":
-# 								try:
-# 									weight=studentsById[otherReview.reviewer_id].getGradingPower(cid); 
-# 									if (studentsById[otherReview.reviewer_id]).role == 'grader':
-# 										weight=params.gradingPowerForGraders
-# 								except:
-# 									weight=1
-# 							elif otherReview.review_type == "grading":
-# 								weight=params.gradingPowerForInstructors
-# 
-# 							try:
-# 								if cid in tempDelta:
-# 									tempDelta[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )
-# 									tempDelta2[cid]+=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )**2
-# 									tempWeight[cid]+=weight
-# 								else:
-# 									tempDelta[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )		
-# 									tempDelta2[cid]=weight*(thisGivenReview.scores[cid] - otherReview.scores[cid] )	**2	
-# 									tempWeight[cid]=weight		
-# 							
-# # 								if student.id==4508048 and cid=='_2681': #For debugging
-# # 									print(f"{student.name} on cid={cid} had delta2 of {(thisGivenReview.scores[cid] - otherReview.scores[cid] )	**2	} with a weight of {weight} when reviewing {studentsById[otherReview.author_id].name}" )								
-# # 									if not (otherReview.id in student.comparisons):
-# # 										print(f"missing comparison of {otherReview.id}")
-# # 									comp=student.comparisons[otherReview.id]
-# # 									print(f" cid=                    comp had delta2 of {comp.delta2[cid]} with a weight of {comp.weight[cid]}")
-# 								
-# 								
-# 											
-# 								delta2+=weight*((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
-# 								numberOfComparisons+=weight 
-# 							except:
-# # 								if student.id==4508048 and cid=='_2681': #For debugging
-# # 									print(f"{student.name} missing cid={cid} for review by {studentsById[otherReview.author_id].name}" )								
-# 								status['err']="Key error" 
+				#if student.id==4508048 and cid=='_2681': #For debugging
+				#	print(f"gradeStudent had a delta2 of {adjustedData['delta2']} with a weight of {adjustedData['weight']}" )								
+
+
 		student.rmsByAssignment[assignment.id]=dict()
 		student.relativeRmsByAssignment[assignment.id]=dict()
 		student.weightsByAssignment[assignment.id]=dict()
@@ -1539,20 +1479,19 @@ def gradeStudent2(assignment, student, reviewScoreGrading="default"):
 				student.reviewGradeExplanation+="    %.2f points off from other graders " % ( math.sqrt(tempDelta2[cid]/tempWeight[cid]))
 			student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
 			student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
-			student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])/ assignment.criteria_points(cid)
+			student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
 			student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
 			
-# 			if student.id==4508048: #For debugging
-# 				print(f"{student.name} on {	assignment.name}, cid={cid} had a total weight of {tempWeight[cid]} and a total delta2 of {tempDelta2[cid]} for an RMS of {math.sqrt(tempDelta2[cid]/tempWeight[cid])}" )								
+			#if student.id==4508048: #For debugging
+			#	print(f"{student.name} on {	assignment.name}, cid={cid} had a total weight of {tempWeight[cid]} and a total delta2 of {tempDelta2[cid]} for an RMS of {math.sqrt(tempDelta2[cid]/tempWeight[cid])}" )								
 	
-		if 0 in tempWeight and tempWeight[0]!=0:
-			delta20=0
-			weigth0=0
-			for cid in [cid for cid in tempWeight if cid!=0]:
-				delta20+=tempDelta2[cid]*tempWeight[cid]
-				weigth0+=tempWeight[cid]
-			#rms=(tempDelta2[0]/tempWeight[0])**0.5
-			rms=(delta20/weigth0)**0.5
+		delta2=weigth=0
+		for cid in [cid for cid in tempWeight if cid!=0]:
+			delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
+			weigth+=tempWeight[cid]
+		#rms=(tempDelta2[0]/tempWeight[0])**0.5
+		if weigth>0:
+			rms=(delta2/weigth)**0.5
 			student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(cid)
 			student.relativeRmsByAssignment[assignment.id][0]=rms
 			student.weightsByAssignment[assignment.id][0]=tempWeight[0]
@@ -1562,13 +1501,6 @@ def gradeStudent2(assignment, student, reviewScoreGrading="default"):
 			student.relativeRmsByAssignment[assignment.id][0]=None
 			student.weightsByAssignment[assignment.id][0]=0
 	
-	
-# 		if numberOfComparisons!=0:
-# 			rms=(delta2/numberOfComparisons)**0.5
-# 		student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(cid)
-# 		student.relativeRmsByAssignment[assignment.id][0]=rms
-# 		student.weightsByAssignment[assignment.id][0]=numberOfComparisons
-
 		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
 		if (reviewGrade<100):
@@ -1679,7 +1611,7 @@ def reviewGradeOnCalibrations(assignment, student):
 	oldReviewGrade=student.grades[assignment.id]['review'] 
 	try:
 		student.calibrationGradeExplanation
-	except:
+	except Exception:
 		student.calibrationGradeExplanation=dict()
 
 	#consider reviews in common with the instructor
@@ -2080,7 +2012,7 @@ def getParameters(ignoreFile=False):
 					if not criteria['id'] in params.multiplier:
 						needInput=True
 			except AttributeError:
-				print(f"{assignment.name} does not have a rubrics attached")
+				print(f"{assignment.name} does not have a rubric attached")
 			if needInput:
 				if not headerWritten:
 					logFile.write("----" + str(datetime.now()) + "----\n")
@@ -2219,7 +2151,7 @@ def importGrades(assignment=None, fileName=None, overwrite=False):
 	fileName=status['dataDir'] + fileName
 	try:
 		csvData=readCSV(fileName)
-	except:
+	except Exception:
 		raise Exception("unable to read file '" + fileName +"'")
 	nameCol, gradeCol, creationCol, reviewCol, rawCol = -1 ,-1 ,-1 , -1, -1
 	for (i,col) in enumerate(csvData[0]):
@@ -2272,7 +2204,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 		for cid in assignment.criteria_ids():
 			try:
 				header+='"' + assignment.criteria_descriptions(cid) + '"' + delimiter #"LO" + str(cid) + delimiter
-			except:
+			except Exception:
 				header+='"' + cid + '"' + delimiter #"LO" + str(cid) + delimiter
 		header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 	else:
@@ -2347,7 +2279,7 @@ def assignGraders():
 		for ip in indicesPlusOneOfGraders:
 			i=int(ip)-1 # convert from 1-based numbering scheme to zero based scheme
 			students[i].role='grader'
-	except:
+	except Exception:
 		print("Error with your input.  Try again.")
 	assignGraders()
 
@@ -2415,7 +2347,7 @@ def message(theStudents, body, subject='', display=False):
 	for student in studentList:
 		try:
 			canvas.create_conversation(student.id, body=body, subject=subject)
-		except:
+		except Exception:
 			print("error messaging " ,student.name, ".  Perhaps the student dropped." )
 		if display:
 			print("messaging " +  student.name)
@@ -2466,7 +2398,7 @@ def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=N
 				return val
 			else:
 				print("Your response must be between " + str(limits[0]) + " and " + str(limits[1]))
-		except:
+		except Exception:
 			print("Your response must be numeric")			
 
 ######################################
@@ -2579,33 +2511,33 @@ def backup(ndays=0):
 
 ######################################
 # Saves any data that has beem marked for saving
-def saveData():
+def saveData(listToSave=[]):
 	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	backup(4) #backup the data if there is no backup in the last 4 days
-	if dataToSave['students']:
+	if dataToSave['students'] or 'students' in listToSave:
 		with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'students.pkl', 'wb') as handle:
 			pickle.dump(students, handle, protocol=pickle.HIGHEST_PROTOCOL)
 		print("student data saved")
-	if dataToSave['assignments']:
+	if dataToSave['assignments'] or 'assignments' in listToSave:
 		with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'assignments.pkl', 'wb') as handle:
 			pickle.dump(graded_assignments, handle, protocol=pickle.HIGHEST_PROTOCOL)
 		print("assignment data saved")
-	if dataToSave['parameters']:
+	if dataToSave['parameters'] or 'parameters' in listToSave:
 		with open(status['dataDir'] +"PickleJar/" + status['prefix'] + 'parameters.pkl', 'wb') as handle:
 			pickle.dump(params, handle, protocol=pickle.HIGHEST_PROTOCOL)	
 		print("parameter data saved")
-	if dataToSave['reviews']:
+	if dataToSave['reviews']  or 'reviews' in listToSave:
 		with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'reviews.pkl', 'wb') as handle:
 			pickle.dump([reviewsById,reviewsByCreationId, professorsReviews], handle, protocol=pickle.HIGHEST_PROTOCOL)
 		print("review data saved")
 
-def finish(save=None):
-	if save==None:
-		save=confirm("Shall any changes be saved? ")
-	if save:
+def finish(saveBeforeExit=None):
+	if saveBeforeExit==None:
+		saveBeforeExit=confirm("Shall any changes be saved? ")
+	if saveBeforeExit:
 		saveData()
+	#os._exit(1) # exits without traceback but doesn't stay in shell 
 	print("Done!")
-	exit()
 
 ######################################
 # Take an array and return a shuffled version of it 
@@ -2667,7 +2599,7 @@ def reverseText(msg):
 # 		getInput.terminate()
 # 		signal.alarm(0)
 # 		return val
-# 	except:
+# 	except Exception:
 # 		signal.alarm(0)
 # 		getInput.terminate()
 # 		return None
@@ -2720,7 +2652,7 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 		time.sleep(0.1)
 		signal.alarm(0)
 		return str(val)
-	except:
+	except Exception:
 		printLine("",False)
 		print("\r", end="")
 	signal.alarm(0)

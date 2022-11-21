@@ -62,7 +62,7 @@ class Student:
 		self.regrade=dict()
 		self.comments=dict()
 		self.reviewData=dict()
-		self.givenReviewData=dict()
+		#self.givenReviewData=dict()
 		self.regradeComments=dict()
 		self.assignmentsGradedByInstructor=dict()
 		self.pointsByCriteria=dict()
@@ -165,7 +165,7 @@ class Student:
 					totalDelta+=adjustedData['delta']*adjustedData['weight']
 					totalDelta2+=adjustedData['delta2']*adjustedData['weight']
 					totalWeight+=adjustedData['weight']
-					#if self.id==4508048 and cid=='_2681': #debug
+					#if self.id==4508048 and cid=='_2681': #debugging
 					#	print(f"update has delta2 {adjustedData['delta2']} with weight of {adjustedData['weight']}")
 			self.adjustments[cid]=self.Adjustments(totalDelta, totalDelta2, totalWeight, self.maxGradingPower, pointsPossible)
 			#if self.id==4508048 and cid=='_2681': #debug

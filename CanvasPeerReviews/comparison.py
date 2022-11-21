@@ -54,12 +54,12 @@ class Comparison:
 		for cid in self.weight:
 			self.weight[cid]= otherReviewer.getGradingPower(cid)
 
-	def adjustedData(self,cid, relativeValues=False, undegredated=False):
+	def adjustedData(self,cid, relativeValues=False, degraded=True):
 		try:
 			# return the comparison data with the weighting adjusted for its age
 			now=datetime.utcnow().replace(tzinfo=pytz.UTC)
 			weeksSinceDue=(now-self.date).total_seconds()/(7*24*60*60)
-			degredationFactor = 1 if undegredated else self.weeklyDegredationFactor**(weeksSinceDue)
+			degredationFactor = 1 if not degraded else self.weeklyDegredationFactor**(weeksSinceDue)
 			if relativeValues:
 				return {'delta': self.delta[cid]/self.pointsPossible[cid], 'delta2': self.delta2[cid]/self.pointsPossible[cid], 'weight':self.weight[cid]*degredationFactor}
 			else:
