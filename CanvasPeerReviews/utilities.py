@@ -1706,8 +1706,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 					else:
 						print(f"\nScore will not change")
 					if confirm("Ok to post?"):
-						student.comments[assignment.id]=student.regradeComments[assignment.id]
-						postGrades(assignment, listOfStudents=[student])
+						postGrades(assignment, listOfStudents=[student], useRegradeComments=True)
 						student.regrade[assignment.id]="Done"
 						print("Posted regrade for " + student.name)
 					else:
@@ -1737,7 +1736,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated
 # comments.	 The optional arguments allow you to suppress posting comments or the grades
-def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='all'):
+def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='all', useRegradeComments=False):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'postGrades'")
@@ -1757,7 +1756,12 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 			if postGrades:
 				creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
 			if postComments:
-				creation.edit(comment={'text_comment':student.comments[assignment.id]})
+				theComment=""
+				if useRegradeComments and assignment.id in student.regradeComments[assignment.id]:
+					theComment=student.regradeComments[assignment.id]
+				elif not useRegradeComments:
+					theComment=student.comments[assignment.id]
+				creation.edit(comment={'text_comment':theComment})			
 		else:
 			printLine("No creation to post for " + student.name, newLine=False)
 	printLine()
