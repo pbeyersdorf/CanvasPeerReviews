@@ -863,7 +863,7 @@ def checkForUnreviewed(assignment, openPage=False):
 		mostNumberOfReviewsReceived=max(mostNumberOfReviewsReceived,student.numberOfReviewsReceivedOnAssignment(assignment.id))
 	creationsByNumberOfReviews=[0]*(mostNumberOfReviewsReceived+1)
 	for n in range(mostNumberOfReviewsReceived+1):
-		creationsByNumberOfReviews[n]=[c for c in creations if studentsById[c.author_id].numberOfReviewsReceivedOnAssignment(assignment.id)==n and studentsById[c.author_id].role=='student']		
+		creationsByNumberOfReviews[n]=sorted([c for c in creations if studentsById[c.author_id].numberOfReviewsReceivedOnAssignment(assignment.id)==n and studentsById[c.author_id].role=='student'], key=lambda x: studentsById[x.author_id].sortable_name)
 	if len(creationsByNumberOfReviews[0])==0 and len(creationsByNumberOfReviews[1])==0 and len(creationsByNumberOfReviews[2])==0:
 		print("All creations have been reviewed at least three times")
 	elif len(creationsByNumberOfReviews[0])==0 and len(creationsByNumberOfReviews[1])==0:
