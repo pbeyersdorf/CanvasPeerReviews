@@ -462,8 +462,8 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
 		#return
 		if len(calibrations)==0 and confirm("There were no submissions reviewed by the professor, should a random submission be assigned as the calibration review?"):
-			calibratrions=="random"
-	if calibratrions=="random":
+			calibrations=="random"
+	if calibrations=="random":
 		calibrations=random.choice(studentsWithSubmissions)
 		msg=f"{calibrations.name} has  been chosen as the calibration review for {assignment.name}"
 		print(msg)
