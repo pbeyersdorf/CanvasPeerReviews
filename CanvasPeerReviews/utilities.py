@@ -1436,7 +1436,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	totalScoringSummaryString+=curvedScoreString
 	student.comments[assignment.id]+="\n" + totalScoringSummaryString
 	student.comments[assignment.id]+="\n\n" + commentAboutRanking
-	student.comments[assignment.id]+="\n\nIf you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '"+keywordCreation+"' to have it regrdaed."
+	student.comments[assignment.id]+="\n\nIf you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '"+keywordCreation+"' to have it regraded."
 	if student.numberOfReviewsGivenOnAssignment(assignment.id)>0:
 		student.comments[assignment.id]+="  If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '"+keywordReview+"' in it."		
 	if not assignment.id in student.creations:
