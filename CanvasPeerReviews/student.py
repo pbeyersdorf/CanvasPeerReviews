@@ -74,9 +74,11 @@ class Student:
 		self.maxGradingPower=5
 		#._dueDateByAssignment=dict()
 		self.rmsByAssignment=dict() # this is the raw rms, so for a 10 point assignment it could be up to 10
+		self.deviationByAssignment=dict() # this is the raw deviation for each cid
 		self.relativeRmsByAssignment=dict() # this is the rms out of 1 (relative to the points available on the assignment).  This is what is used for calculating grades.
 		self.weightsByAssignment=dict()
 		self.comparisons=dict()
+		
 		
 
 		

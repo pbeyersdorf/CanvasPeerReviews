@@ -1198,6 +1198,172 @@ def checkForUnreviewed(assignment, openPage=False):
 # 		student.regradeComments[assignment.id]+=regradedScoringSummaryString
 # 	student.recordAdjustments(assignment)
 
+
+######################################
+# write a template file for the user to later edit
+def writeTemplate(fileName="feedback_template.txt"):
+		f = open(fileName, "w")
+		msg='''#     This is a template file for student feedback on grades
+#     variables should be enclosed in curly braces.  Allowable variable are
+# 
+#		{keywordCreation}
+# 		{keywordReview}
+#		{points_by_criteria}
+#		{description_by_criteria}
+#		{creationGrade}
+#		{reviewGrade}
+#		{rawGrade}
+#		{curvedGrade}
+# 
+#     any line with by_criteria in it will be written
+#     multiple times, once for each grading criteria
+#########################################################################
+# 							user defined variables				 		#
+#########################################################################
+# one definition per line.  
+{comment on review: high grade}=Good job on the reviews.  Keep it up!
+{comment on review: low grade}=Your review grade will improve as it aligns more closely with other graders.
+{comment if grades are curved}=This was curved to give an adjusted score of {curvedGrade}.
+{review feedback by criteria: higher scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average {absolute_value_of_deviation} higher than other reviewers)
+{review feedback by criteria: similar scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average about the same  as other reviewers)
+{review feedback by criteria: lower scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average {absolute_value_of_deviation} lower than other reviewers)
+
+#########################################################################
+# 			general feedback with calibrated review grading				#
+#########################################################################
+A weighted average of the reviews of your work give the following scores:
+    {points_by_criteria} for '{description_by_criteria}'
+
+Compared to reviews by the instructor and other students, the peer review scores you gave others deviated by
+{review feedback by criteria}
+{comment on review}
+
+You earned {creationGrade}% for your submission and {reviewGrade}% for your reviews.   When combined this gives you {rawGrade}%.  {comment if grades are curved}
+
+If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
+
+If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
+#########################################################################
+# 				 general feedback ignoring reviews			 			#
+#########################################################################
+A weighted average of the reviews of your work give the following scores:
+    {points_by_criteria} for '{description_by_criteria}'
+
+You earned {creationGrade}% for your submission.  {comment if grades are curved}
+
+If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
+
+If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
+
+#########################################################################
+# 					general feedback for uncurved grades			 		#
+#########################################################################
+A weighted average of the reviews of your work give the following scores:
+    {points_by_criteria} for '{description_by_criteria}'
+{comment on review}
+
+You earned {creationGrade}% for your submission and {reviewGrade}% for your reviews.   When combined this gives you {rawGrade}%.
+
+If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
+
+If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
+
+#########################################################################
+# 							regrade comments							#
+#########################################################################
+I've regraded your work.  My review of your work give the following scores:
+    {points_by_criteria} for '{description_by_criteria}'
+Based on the regrading you earned {creationGrade}% for your submission
+which brings your 
+
+'''
+		f.write(msg)
+		f.close()
+		return msg
+
+
+######################################
+# read a template file and extract and return the part identified by 'name'
+def getTemplate(fileName="feedback_template.txt", name=None):
+	global status	
+	try:
+		f = open(fileName, "r")
+		raw_lines = f.readlines()
+		f.close()
+	except:
+		raw_lines=writeTemplate(fileName)
+		print(f"created new template file")
+	foundTemplate=False
+	for i,line in enumerate(raw_lines):
+		if line[0]=="#" and name in line:
+			foundTemplate=True
+			break
+	#clear any commented lines:
+	while raw_lines[i][0]=="#":
+		i+=1
+	lines=[]
+	while foundTemplate and i<len(raw_lines) and raw_lines[i][0]!="#":
+		lines.append(raw_lines[i])
+		i+=1
+	if len(lines)==0:
+		print(f"No text found for '{name}' template.  Using generated template.  Edit and save before continuing.")
+		subprocess.call(('open', fileName))
+		if not confirm("Accept the new template? "):
+			if confirm("Save data beforfe exiting? "):
+				finish()
+			exit()
+		return getTemplate(fileName, name)
+	return "".join(lines)
+	
+######################################
+# fill out student grade information using a template to format it
+def processTemplate(student, assignment, name, fileName="feedback_template.txt"):
+	global params
+	fileName=status['dataDir'] + fileName
+	
+	def processUserDefinedKeywords(templateText, fileName):
+		userDefiendKeywords=getTemplate(fileName, name="user defined variables")
+		for line in userDefiendKeywords.split("\n"):
+			if "=" in line:
+				templateText=templateText.replace(line.split("=")[0],line.split("=")[1])
+		return templateText
+	templateText=getTemplate(fileName, name)
+	# preprocess conditional keywords	
+	if student.grades[assignment.id]['review']>90:
+		templateText=templateText.replace("{comment on review}","{comment on review: high grade}")
+	elif student.grades[assignment.id]['review']<=70:
+		templateText=templateText.replace("{comment on review}","{comment on review: low grade}")
+	else:
+		templateText=templateText.replace("\n{comment on review}","")
+		templateText=templateText.replace("{comment on review}","")
+	if student.grades[assignment.id]['total']==student.grades[assignment.id]['curvedTotal']:
+		templateText=templateText.replace("{comment if grades are curved}","")
+	templateText=processUserDefinedKeywords(templateText, fileName)
+	template_lines=templateText.split("\n")
+	processed_lines=[]
+	cids=assignment.criteria_ids()
+	# fill in all predefined substitutions
+	for line in template_lines:
+		if "by_criteria" in line or "by criteria" in line:
+			for cid in cids:
+				if  student.deviationByAssignment[assignment.id][cid] > 0.05:
+					tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
+				elif student.deviationByAssignment[assignment.id][cid] < -0.05:
+					tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
+				else:
+					tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
+				tempLine=processUserDefinedKeywords(tempLine, fileName)
+				if student.pointsByCriteria[assignment.id][cid]!='':
+					points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
+				else:
+					points=0
+				processed_lines+=tempLine.format(points_by_criteria=points, description_by_criteria=criteriaDescription[cid], keywordCreation="regrade", keywordReview="recalculate", review_rms_by_criteria=round(student.rmsByAssignment[assignment.id][cid],1), absolute_value_of_deviation=round(abs(student.deviationByAssignment[assignment.id][cid]),1))	+"\n"
+		else:
+			processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']))+"\n"
+	returnVal="".join(processed_lines)
+	return returnVal
+
+
 ######################################
 # Go through all submissions for an assignment. If the assignment was created by
 # a student in the list of students given, determine a grade for the submission
@@ -1328,28 +1494,31 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					tempDelta2[cid]+=adjustedData['delta2']*adjustedData['weight']
 					tempWeight[cid]+=adjustedData['weight']
 		student.rmsByAssignment[assignment.id]=dict()
+		student.deviationByAssignment[assignment.id]=dict()
 		student.relativeRmsByAssignment[assignment.id]=dict()
-		student.weightsByAssignment[assignment.id]=dict()	
+		student.weightsByAssignment[assignment.id]=dict()
 		for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
-			if (tempDelta[cid]>0):
-				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (  math.sqrt(tempDelta2[cid]/tempWeight[cid]), tempDelta[cid]/tempWeight[cid])
-			elif (tempDelta[cid]<0):
-				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (  math.sqrt(tempDelta2[cid]/tempWeight[cid]), tempDelta[cid]/tempWeight[cid])
-			else:
-				student.reviewGradeExplanation+="    %.2f points off from other graders " % ( math.sqrt(tempDelta2[cid]/tempWeight[cid]))
 			student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
 			student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
+			student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
 			student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
 			student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
-		delta2=weigth=0
+			if (tempDelta[cid]>0):
+				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (student.rmsByAssignment[assignment.id][cid], student.deviationByAssignment[assignment.id][cid])
+			elif (tempDelta[cid]<0):
+				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (student.rmsByAssignment[assignment.id][cid], student.deviationByAssignment[assignment.id][cid])
+			else:
+				student.reviewGradeExplanation+="    %.2f points off from other graders " % (student.rmsByAssignment[assignment.id][cid])
+		delta2=weight=0
 		for cid in [cid for cid in tempWeight if cid!=0]:
 			delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
-			weigth+=tempWeight[cid]
+			weight+=tempWeight[cid]
 		if assignment.id in student.relativeRmsByAssignment:
-			rms=student.relativeRmsByAssignment[assignment.id][cid]
+			rms=student.relativeRmsByAssignment[assignment.id][0]
 		else:
-			if weigth>0:
-				rms=(delta2/weigth)**0.5
+			student.relativeRmsByAssignment[assignment.id]=dict()
+			if weight>0:
+				rms=(delta2/weight)**0.5
 				student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(cid)
 				student.relativeRmsByAssignment[assignment.id][0]=rms
 				student.weightsByAssignment[assignment.id][0]=tempWeight[0]
