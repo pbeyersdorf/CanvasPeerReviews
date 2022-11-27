@@ -91,7 +91,6 @@ dataToSave={
 	'parameters': False,
 	'reviews': False,
 }
-additionalGradingComment=""
 keywordReview="recalculate" # if this keyword is in a student comments flag the submission for a regrade
 keywordCreation="regrade" # if this keyword is in a student comments flag the submission for a regrade
 cachedAssignmentKey=None
@@ -1223,6 +1222,7 @@ def writeTemplate(fileName="feedback_template.txt"):
 # one definition per line.  
 {comment on review: high grade}=Good job on the reviews.  Keep it up!
 {comment on review: low grade}=Your review grade will improve as it aligns more closely with other graders.
+{comment on review: no reviews complete}=You did not complete any of your peer reviews, so your review grade was 0.
 {comment if grades are curved}=This was curved to give an adjusted score of {curvedGrade}.
 {review feedback by criteria: higher scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average {absolute_value_of_deviation} higher than other reviewers)
 {review feedback by criteria: similar scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average about the same  as other reviewers)
@@ -1250,19 +1250,6 @@ A weighted average of the reviews of your work give the following scores:
     {points_by_criteria} for '{description_by_criteria}'
 
 You earned {creationGrade}% for your submission.  {comment if grades are curved}
-
-If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
-
-If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
-
-#########################################################################
-# 					general feedback for uncurved grades			 		#
-#########################################################################
-A weighted average of the reviews of your work give the following scores:
-    {points_by_criteria} for '{description_by_criteria}'
-{comment on review}
-
-You earned {creationGrade}% for your submission and {reviewGrade}% for your reviews.   When combined this gives you {rawGrade}%.
 
 If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
 
@@ -1329,7 +1316,9 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 		return templateText
 	templateText=getTemplate(fileName, name)
 	# preprocess conditional keywords	
-	if student.grades[assignment.id]['review']>90:
+	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
+		templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
+	elif student.grades[assignment.id]['review']>90:
 		templateText=templateText.replace("{comment on review}","{comment on review: high grade}")
 	elif student.grades[assignment.id]['review']<=70:
 		templateText=templateText.replace("{comment on review}","{comment on review: low grade}")
@@ -1374,7 +1363,7 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student, reviewScoreGrading="default"):
+def gradeStudent_without_template(assignment, student, reviewScoreGrading="default"):
 	global params
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
@@ -1620,6 +1609,197 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		student.regradeComments[assignment.id]="I've regraded your work.  My review of your work give the following scores:\n"+scoringSummaryString
 		student.regradeComments[assignment.id]+=regradedScoringSummaryString
 	student.recordAdjustments(assignment)
+
+def gradeStudent(assignment, student, reviewScoreGrading="default"):
+	global params
+	if reviewScoreGrading=="default":
+		reviewScoreGrading=assignment.reviewScoreMethod
+	# get a list of the criteria ids assessed on this assignment
+	#calculate creation grades
+	curveFunc=eval('lambda x:' + assignment.curve)
+	student.gradingExplanation="Creation grade information for " +str(assignment.name) +"\n\n"
+	for review in student.reviewsReceived:
+		if review.review_type == "grading" and review.assignment_id == assignment.id:
+			student.assignmentsGradedByInstructor[assignment.id]=True
+			student.gradingExplanation+="This submission was graded by the instructor.\n"
+	creationGrade=0
+	creationWasReviewed=False
+	for cid in assignment.criteria_ids():
+		total, numberCount, weightCount = 0, 0, 0
+		student.gradingExplanation+=str(criteriaDescription[cid]) + ":\n"
+		gradingExplanationLine=""
+		multiplier=params.pointsForCid(cid, assignment)
+		for review in student.reviewsReceived:
+			if review.assignment_id == assignment.id:
+				weight=0
+				creationWasReviewed=True
+				role=""
+				gradingExplanationLine=""
+				if (review.reviewer_id in studentsById):
+					reviewer=studentsById[review.reviewer_id]
+					role=reviewer.role
+				if review.review_type == "peer_review" and not (assignment.id in student.assignmentsGradedByInstructor):
+					if role == 'grader':
+						weight=params.gradingPowerForGraders
+						gradingExplanationLine="Review [G"+ str(review.reviewer_id) +"_" + str(cid) +"] "
+					elif role== 'student':
+						#weight=studentsById[review.reviewer_id].getGradingPower(cid); 
+						if assignment.id in reviewer.adjustmentsByAssignment:
+							weight=reviewer.adjustmentsByAssignment[assignment.id][cid].gradingPower()
+						else:
+							weight=reviewer.adjustments[cid].gradingPower()
+						gradingExplanationLine="Review [P"+ str(review.reviewer_id)+"_" + str(cid) +"] "
+				elif review.review_type == "grading":
+					gradingExplanationLine="Review [I"+ str(review.reviewer_id)+"_" + str(cid) +"] "
+					weight=params.gradingPowerForInstructors
+					role='instructor'
+				if cid in review.scores:
+					try:
+						reviewer=studentsById[review.reviewer_id]
+						compensation=reviewer.adjustmentsByAssignment[assignment.id][cid].compensation*params.compensationFactor
+						compensation=min(compensation, params.maxCompensationFraction* multiplier)
+						compensation=max(compensation, -params.maxCompensationFraction* multiplier)
+					except Exception:
+						compensation=0	
+					if not assignment.id in student.reviewData:
+						student.reviewData[assignment.id]=dict()
+					if not cid in student.reviewData[assignment.id]:
+						student.reviewData[assignment.id][cid]=[]	
+					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid], 'reviewerRole': role}
+					replacedData=False
+					for i,itm in enumerate(student.reviewData[assignment.id][cid]):
+						if itm['reviewerID']==review.reviewer_id:
+							replacedData=True
+							student.reviewData[assignment.id][cid][i]=newData
+					if not replacedData:
+						student.reviewData[assignment.id][cid].append(newData)
+					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
+					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
+						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
+					total+=max(0,min((review.scores[cid] + compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
+					weightCount+=weight
+					numberCount+=1
+		if not assignment.id in student.pointsByCriteria:
+			student.pointsByCriteria[assignment.id]=dict()		
+		if (weightCount>0):
+			creationGrade+=multiplier*total/(weightCount*assignment.criteria_points(cid))
+			student.pointsByCriteria[assignment.id][cid]=multiplier*total/(weightCount*assignment.criteria_points(cid))
+		else:
+			student.pointsByCriteria[assignment.id][cid]=""
+	if (not creationWasReviewed) or weightCount==0:
+		#If student had no reviews
+		if not assignment.id in student.creations:
+			creationGrade=0
+			student.gradingExplanation+="No submission received"
+			print("No submission for",student.name,"on assignment",assignment.name, "assigning grade of", creationGrade)
+		else:
+			if student.creations[assignment.id].submitted_at != None:
+				creationGrade=100 # Change this
+				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
+				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
+	if reviewScoreGrading.lower()=="calibrated grading":
+		#calculate review grades
+		tempDelta=dict()
+		tempDelta2=dict()
+		tempWeight=dict()
+		compsOnThisAssignment=[student.comparisons[key] for key in student.comparisons if student.comparisons[key].assignment_id == assignment.id]
+		for comp in compsOnThisAssignment:
+			otherReview=reviewsById[comp.reviewIDComparedTo]
+			thisGivenReview=reviewsById[comp.reviewID]			
+			for cid in comp.weight:
+				adjustedData=comp.adjustedData(cid, degraded=False)
+				if cid not in tempWeight:
+					tempDelta[cid]=adjustedData['delta']*adjustedData['weight']
+					tempDelta2[cid]=adjustedData['delta2']*adjustedData['weight']
+					tempWeight[cid]=adjustedData['weight']
+				else:
+					tempDelta[cid]+=adjustedData['delta']*adjustedData['weight']
+					tempDelta2[cid]+=adjustedData['delta2']*adjustedData['weight']
+					tempWeight[cid]+=adjustedData['weight']
+		if assignment.id not in student.relativeRmsByAssignment: # i.e. if we haven't already graded this students reviews
+			student.rmsByAssignment[assignment.id]=dict()
+			student.deviationByAssignment[assignment.id]=dict()
+			student.relativeRmsByAssignment[assignment.id]=dict()
+			student.weightsByAssignment[assignment.id]=dict()
+			for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
+				student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
+				student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
+				student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
+				student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
+				student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
+			delta2=weight=0
+			for cid in [cid for cid in tempWeight if cid!=0]:
+				delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
+				weight+=tempWeight[cid]
+				if weight>0:
+					rms=(delta2/weight)**0.5
+					student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(0)
+					student.relativeRmsByAssignment[assignment.id][0]=rms
+					student.weightsByAssignment[assignment.id][0]=tempWeight[0]
+				else:
+					rms=2
+					student.rmsByAssignment[assignment.id][0]=None
+					student.relativeRmsByAssignment[assignment.id][0]=None
+					student.weightsByAssignment[assignment.id][0]=0	
+		if 0 in student.relativeRmsByAssignment[assignment.id]:
+			rms=student.relativeRmsByAssignment[assignment.id][0]
+		else:
+			print("Unable to get rms for "+ student.name)
+			rms=2
+		if rms != None:
+			reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
+			reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
+		else:
+			reviewGrade=0
+		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
+	elif reviewScoreGrading.lower()=="percent completed":
+		reviewGrade=student.amountReviewed(assignment) *100
+		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
+	elif reviewScoreGrading.lower()=="ignore":
+		reviewGrade=creationGrade
+		totalGrade=creationGrade
+	elif reviewScoreGrading.lower()=="keep":
+		reviewGrade=student.grades[assignment.id]['review']
+		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
+	else:
+		print("Unknown scorign method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
+		exit()	
+	#adjust the points from a scale of 100 down to the number of points for the assingmnet
+	digits=int(2-math.log10(assignment.points_possible))
+	if reviewScoreGrading.lower()=="ignore":
+		creationPoints=round(creationGrade*assignment.points_possible/100.0 ,digits)
+	else:
+		creationPoints=round(creationGrade*assignment.points_possible/100.0*  params.weightingOfCreation ,digits)
+	reviewPoints=round(reviewGrade*assignment.points_possible/100.0 * params.weightingOfReviews ,digits)
+	if (digits ==0):
+		creationPoints=int(creationPoints)
+		reviewPoints=int(reviewPoints)
+	totalPoints=creationPoints + reviewPoints
+	curvedTotalPoints=curveFunc(totalPoints)
+	if not assignment.id in student.creations:
+		curvedTotalPoints=0 # no submission
+	if reviewScoreGrading=="ignore":
+		student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+		student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}	
+	else:
+		student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+		student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
+	percentileRanking=gradingPowerRanking(student, percentile=True)	
+	#make a summary of their points
+
+	if reviewScoreGrading.lower()=="ignore":
+		templateName="general feedback ignoring reviews"
+	elif reviewScoreGrading.lower()=="calibrated grading":
+		templateName="general feedback with calibrated review grading"
+		
+	student.comments[assignment.id]=processTemplate(student,assignment,name=templateName)
+	if not assignment.id in student.creations:
+		student.gradingExplanation+="No submission received"
+		student.comments[assignment.id]="No submission received"
+	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
+		student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
+	student.recordAdjustments(assignment)
+
 
 ######################################
 # Get a review grade based only on calibrations that the instructor graded
