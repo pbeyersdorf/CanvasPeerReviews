@@ -1493,42 +1493,44 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					tempDelta[cid]+=adjustedData['delta']*adjustedData['weight']
 					tempDelta2[cid]+=adjustedData['delta2']*adjustedData['weight']
 					tempWeight[cid]+=adjustedData['weight']
-		student.rmsByAssignment[assignment.id]=dict()
-		student.deviationByAssignment[assignment.id]=dict()
-		student.relativeRmsByAssignment[assignment.id]=dict()
-		student.weightsByAssignment[assignment.id]=dict()
-		for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
-			student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
-			student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
-			student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
-			student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
-			student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
-			if (tempDelta[cid]>0):
-				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (student.rmsByAssignment[assignment.id][cid], student.deviationByAssignment[assignment.id][cid])
-			elif (tempDelta[cid]<0):
-				student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (student.rmsByAssignment[assignment.id][cid], student.deviationByAssignment[assignment.id][cid])
-			else:
-				student.reviewGradeExplanation+="    %.2f points off from other graders " % (student.rmsByAssignment[assignment.id][cid])
-		delta2=weight=0
-		for cid in [cid for cid in tempWeight if cid!=0]:
-			delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
-			weight+=tempWeight[cid]
-		if assignment.id in student.relativeRmsByAssignment:
-			rms=student.relativeRmsByAssignment[assignment.id][0]
-		else:
+		if assignment.id not in student.relativeRmsByAssignment: # i.e. if we haven't already graded this students reviews
+			student.rmsByAssignment[assignment.id]=dict()
+			student.deviationByAssignment[assignment.id]=dict()
 			student.relativeRmsByAssignment[assignment.id]=dict()
-			if weight>0:
-				rms=(delta2/weight)**0.5
-				student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(cid)
-				student.relativeRmsByAssignment[assignment.id][0]=rms
-				student.weightsByAssignment[assignment.id][0]=tempWeight[0]
-			else:
-				rms=2
-				student.rmsByAssignment[assignment.id][0]=None
-				student.relativeRmsByAssignment[assignment.id][0]=None
-				student.weightsByAssignment[assignment.id][0]=0	
-		reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
-		reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
+			student.weightsByAssignment[assignment.id]=dict()
+			for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
+				student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
+				student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
+				student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
+				student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
+				student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
+				if (tempDelta[cid]>0):
+					student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f higher)" % (student.rmsByAssignment[assignment.id][cid], student.deviationByAssignment[assignment.id][cid])
+				elif (tempDelta[cid]<0):
+					student.reviewGradeExplanation+="    %.2f points off from other graders (on average %.2f lower)" % (student.rmsByAssignment[assignment.id][cid], student.deviationByAssignment[assignment.id][cid])
+				else:
+					student.reviewGradeExplanation+="    %.2f points off from other graders " % (student.rmsByAssignment[assignment.id][cid])
+			delta2=weight=0
+			for cid in [cid for cid in tempWeight if cid!=0]:
+				delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
+				weight+=tempWeight[cid]
+				if weight>0:
+					rms=(delta2/weight)**0.5
+					student.rmsByAssignment[assignment.id][0]=rms*assignment.criteria_points(0)
+					student.relativeRmsByAssignment[assignment.id][0]=rms
+					student.weightsByAssignment[assignment.id][0]=tempWeight[0]
+				else:
+					rms=2
+					student.rmsByAssignment[assignment.id][0]=None
+					student.relativeRmsByAssignment[assignment.id][0]=None
+					student.weightsByAssignment[assignment.id][0]=0	
+
+		rms=student.relativeRmsByAssignment[assignment.id][0]
+		if rms != None:
+			reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
+			reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
+		else:
+			reviewGrade=0
 		if (reviewGrade<100):
 			pass
 			#student.reviewGradeExplanation+="Your review grade will improve as it aligns more closely with other graders"
@@ -1652,6 +1654,7 @@ def reviewGradeOnCalibrations(assignment, student):
 	averagePointsPerCriteria=totalCriteriaPoints/numberOfCriteria
 	if numberOfComparisons!=0:
 		rms=(delta2/numberOfComparisons)**0.5
+		student.relativeRmsByAssignment[assignment.id][0]=rms # this is new...untested.  Can delete if it causes problems, it is just for updating records that may not be used.
 	else:
 		print(student.name + " did not grade any calibration assignments on " + assignment.name)
 		return

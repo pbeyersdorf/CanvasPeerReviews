@@ -110,13 +110,19 @@ class GradedAssignment:
 		# is meant to account for 50 points as set by setPoints(), 
 		# then the raw score recorded from canvas would be divided
 		#by 5 and multiplied by 50.  
+		total=0
+		cnt=0
 		for criteria in self.rubric:
 			if "id" in criteria:
+				total+=criteria['points']
+				cnt+=1
 				if criteria['id'] == cid:
 					return criteria['points']
 			else:
 				if cid == None:
 					return criteria['points']
+		if cid==0:
+			return 1.0*total/cnt
 		return 0
 
 	#points that the score should be scaled to for grading
