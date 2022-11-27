@@ -1524,8 +1524,11 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					student.rmsByAssignment[assignment.id][0]=None
 					student.relativeRmsByAssignment[assignment.id][0]=None
 					student.weightsByAssignment[assignment.id][0]=0	
-
-		rms=student.relativeRmsByAssignment[assignment.id][0]
+		if 0 in student.relativeRmsByAssignment[assignment.id]:
+			rms=student.relativeRmsByAssignment[assignment.id][0]
+		else:
+			print("Unable to get rms for "+ student.name)
+			rms=2
 		if rms != None:
 			reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 			reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
