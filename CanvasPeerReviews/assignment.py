@@ -22,6 +22,7 @@ class GradedAssignment:
 		self.pointsByCidOverride=dict()
 		self.reviewScoreMethod="calibrated grading"
 		self.includeInCalibrations=True
+		self.solutionsUrl=None
 
 	def sync(self, updatedAssignment):
 		# if the due date has changed on canvas this updates that

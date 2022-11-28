@@ -1283,10 +1283,12 @@ which brings your
 #########################################################################
 # 					reminder about peer reviews							#
 #########################################################################
-
-
 I noticed you haven't yet completed any of your assigned peer reivews.  Remember to complete these on time to get credit for them.  Here are instructions on how to submit a peer review in case you need them: 
 https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293
+#########################################################################
+# 					message about posted solutions						#
+#########################################################################
+Peer reviews have been assigned and <a href='{solutionsUrl}'>solutions to {assignmentName}</a> have been posted.  Please review the solutions and then complete your peer reviews before the next class meeting."
 '''
 		f.write(msg)
 		f.close()
@@ -1339,40 +1341,47 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 				templateText=templateText.replace(line.split("=")[0],line.split("=")[1])
 		return templateText
 	templateText=getTemplate(fileName, name)
-	# preprocess conditional keywords	
-	if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
-		templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
-	elif student.grades[assignment.id]['review']>90:
-		templateText=templateText.replace("{comment on review}","{comment on review: high grade}")
-	elif student.grades[assignment.id]['review']<=70:
-		templateText=templateText.replace("{comment on review}","{comment on review: low grade}")
-	else:
-		templateText=templateText.replace("\n{comment on review}","")
-		templateText=templateText.replace("{comment on review}","")
-	if student.grades[assignment.id]['total']==student.grades[assignment.id]['curvedTotal']:
-		templateText=templateText.replace("{comment if grades are curved}","")
-	templateText=processUserDefinedKeywords(templateText, fileName)
-	template_lines=templateText.split("\n")
-	processed_lines=[]
-	cids=assignment.criteria_ids()
-	# fill in all predefined substitutions
-	for line in template_lines:
-		if "by_criteria" in line or "by criteria" in line:
-			for cid in cids:
-				if  student.deviationByAssignment[assignment.id][cid] > 0.05:
-					tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
-				elif student.deviationByAssignment[assignment.id][cid] < -0.05:
-					tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
-				else:
-					tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
-				tempLine=processUserDefinedKeywords(tempLine, fileName)
-				if student.pointsByCriteria[assignment.id][cid]!='':
-					points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
-				else:
-					points=0
-				processed_lines+=tempLine.format(points_by_criteria=points, description_by_criteria=criteriaDescription[cid], keywordCreation="regrade", keywordReview="recalculate", review_rms_by_criteria=round(student.rmsByAssignment[assignment.id][cid],1), absolute_value_of_deviation=round(abs(student.deviationByAssignment[assignment.id][cid]),1))	+"\n"
+	if student != None:
+		# preprocess conditional keywords	
+		if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
+			templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
+		elif student.grades[assignment.id]['review']>90:
+			templateText=templateText.replace("{comment on review}","{comment on review: high grade}")
+		elif student.grades[assignment.id]['review']<=70:
+			templateText=templateText.replace("{comment on review}","{comment on review: low grade}")
 		else:
-			processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']))+"\n"
+			templateText=templateText.replace("\n{comment on review}","")
+			templateText=templateText.replace("{comment on review}","")
+		if student.grades[assignment.id]['total']==student.grades[assignment.id]['curvedTotal']:
+			templateText=templateText.replace("{comment if grades are curved}","")
+		templateText=processUserDefinedKeywords(templateText, fileName)
+		template_lines=templateText.split("\n")
+		processed_lines=[]
+		cids=assignment.criteria_ids()
+		# fill in all predefined substitutions
+		for line in template_lines:
+			if "by_criteria" in line or "by criteria" in line:
+				for cid in cids:
+					if  student.deviationByAssignment[assignment.id][cid] > 0.05:
+						tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
+					elif student.deviationByAssignment[assignment.id][cid] < -0.05:
+						tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
+					else:
+						tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
+					tempLine=processUserDefinedKeywords(tempLine, fileName)
+					if student.pointsByCriteria[assignment.id][cid]!='':
+						points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
+					else:
+						points=0
+					processed_lines+=tempLine.format(points_by_criteria=points, description_by_criteria=criteriaDescription[cid], keywordCreation="regrade", keywordReview="recalculate", review_rms_by_criteria=round(student.rmsByAssignment[assignment.id][cid],1), absolute_value_of_deviation=round(abs(student.deviationByAssignment[assignment.id][cid]),1))	+"\n"
+			else:
+				processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
+	else:
+		templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
+		template_lines=templateText.split("\n")
+		processed_lines=[]
+		for line in template_lines:
+			processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
 	returnVal="".join(processed_lines)
 	return returnVal
 
