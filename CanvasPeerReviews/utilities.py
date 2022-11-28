@@ -1280,6 +1280,13 @@ I've regraded your work.  My review of your work give the following scores:
 Based on the regrading you earned {creationGrade}% for your submission
 which brings your 
 
+#########################################################################
+# 					reminder about peer reviews							#
+#########################################################################
+
+
+I noticed you haven't yet completed any of your assigned peer reivews.  Remember to complete these on time to get credit for them.  Here are instructions on how to submit a peer review in case you need them: 
+https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293
 '''
 		f.write(msg)
 		f.close()
