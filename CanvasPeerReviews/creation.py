@@ -10,3 +10,8 @@ class Creation:
 		self.reviewCount=0
 		self.graderReviewCount=0
 		
+	def assignedPeerReviews(self):
+		returnList=[]
+		for peer_review in self.get_submission_peer_reviews():
+			returnList.append(peer_review)
+		return returnList

@@ -463,12 +463,29 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		if len(calibrations)==0 and confirm("There were no submissions reviewed by the professor, should a random submission be assigned as the calibration review?"):
 			calibrations=="random"
 	if calibrations=="random":
-		calibrations=random.choice(studentsWithSubmissions)
-		msg=f"{calibrations.name} has  been chosen as the calibration review for {assignment.name}"
-		print(msg)
-		log(msg)		
+		calibrations=[]
+		for sectionKey in sections:
+			creationsToConsider=randmoize([c for c in creations if studentsById[c.author_id].section == sectionKey and  c.author_id in studentsById and studentsById[c.author_id].role=='student'])
+			print("Looking for submissions with no peer reviews ... this may take some time...")
+			thisCalibration=None
+			for c in creationsToConsider:
+				if studentsById[c.author_id].role=='student':# and c.submitted_at != None:# and len(c.assignedPeerReviews())==0:
+					thisCalibration=c
+					break
+			if thisCalibration == None:
+				print(f"Unable to find a suitable creation to use as a calibration in {sections[sectionKey]}")
+			else:
+				calibrations.append(thisCalibration)
+				#unreviewedSubmissions=[c for c in creations if len(c.assignedPeerReviews())==0 and c.submitted_at != None and studentsById[c.author_id].role=='student']
+				#calibrations=random.choice(studentsWithSubmissions)
+				msg=f"{studentsById[thisCalibration.author_id].name} has  been chosen as the calibration review for {assignment.name} in {sections[sectionKey]}"
+				print(msg)
+				log(msg)		
 	reviewers=randmoize(studentsWithSubmissions) 
 	calibrations=makeList(calibrations)
+	if len(calibrations==0):
+		print("Unable to find a suitable creation to use as a calibration...none assigned")
+		return
 	print("Professor has already graded submissions by ", end="")
 	for c in calibrations:
 		if c!=calibrations[-1]:
