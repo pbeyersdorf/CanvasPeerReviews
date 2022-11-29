@@ -1239,7 +1239,7 @@ def writeTemplate(fileName="feedback_template.txt"):
 # one definition per line.  
 {comment on review: high grade}=Good job on the reviews.  Keep it up!
 {comment on review: low grade}=Your review grade will improve as it aligns more closely with other graders.
-{comment on review: no reviews complete}=You did not complete any of your peer reviews, so your review grade was 0.
+{comment on review: no reviews complete}=You didn't complete your peer reviews, so you review score is {reviewGrade}
 {comment if grades are curved}=This was curved to give an adjusted score of {curvedGrade}.
 {review feedback by criteria: higher scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average {absolute_value_of_deviation} higher than other reviewers)
 {review feedback by criteria: similar scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average about the same  as other reviewers)
@@ -1359,9 +1359,11 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 		processed_lines=[]
 		cids=assignment.criteria_ids()
 		# fill in all predefined substitutions
+		if assignment.id not in student.creations:
+			return None
 		for line in template_lines:
 			if "by_criteria" in line or "by criteria" in line:
-				for cid in cids:
+				for cid in student.deviationByAssignment[assignment.id]:
 					if  student.deviationByAssignment[assignment.id][cid] > 0.05:
 						tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
 					elif student.deviationByAssignment[assignment.id][cid] < -0.05:
