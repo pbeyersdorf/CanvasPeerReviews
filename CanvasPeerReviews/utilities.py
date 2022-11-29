@@ -271,7 +271,7 @@ def getStudentWork(thisAssignment='last'):
 			submission.reviewCount=0
 			submission.author_id=submission.user_id
 			author.submissionPlaceholders[thisAssignment.id]=submission
-			if not submission.missing:
+			if not submission.missing and submission.submitted_at!=None:
 				creations.append(Creation(submission))
 				author.creations[thisAssignment.id]=creations[-1]
 				creationsByAuthorId[submission.user_id]=creations[-1]
