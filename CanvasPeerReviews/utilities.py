@@ -1826,8 +1826,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		templateName="general feedback ignoring reviews"
 	elif reviewScoreGrading.lower()=="calibrated grading":
 		templateName="general feedback with calibrated review grading"
-	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
-		student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
+	if (assignment.id in student.regrade):
+		if (student.regrade[assignment.id]=="Started"):
+			student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
 	else:			
 		student.comments[assignment.id]=processTemplate(student,assignment,name=templateName)
 	if not assignment.id in student.creations:
@@ -2147,7 +2148,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 				creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
 			if postComments:
 				theComment=""
-				if useRegradeComments and assignment.id in student.regradeComments[assignment.id]:
+				if useRegradeComments and assignment.id in student.regradeComments:
 					theComment=student.regradeComments[assignment.id]
 				elif not useRegradeComments:
 					theComment=student.comments[assignment.id]
