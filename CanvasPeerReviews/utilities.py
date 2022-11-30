@@ -1826,13 +1826,13 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		templateName="general feedback ignoring reviews"
 	elif reviewScoreGrading.lower()=="calibrated grading":
 		templateName="general feedback with calibrated review grading"
-		
-	student.comments[assignment.id]=processTemplate(student,assignment,name=templateName)
+	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
+		student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
+	else:			
+		student.comments[assignment.id]=processTemplate(student,assignment,name=templateName)
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
 		student.comments[assignment.id]="No submission received"
-	if (assignment.id in student.regrade and student.regrade[assignment.id]=="Started"):
-		student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
 	student.recordAdjustments(assignment)
 
 
