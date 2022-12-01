@@ -541,16 +541,16 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 				msg=str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
-		while creation.reviewCount < numberOfReviewers: #this creation did not get enough reviewers assigned somehow
+		while creation.reviewCount < numberOfReviewers and creation.reviewCount<len(creationsToConsider)-1: #this creation did not get enough reviewers assigned somehow
 			#get the reviewer with the fewest reviews so far
 			sortedReviewers=sorted(reviewers, key=lambda r:r.numberOfReviewsAssignedOnAssignment(creation.assignment_id))
 			#reviewer=random.choice(reviewers)
 			k=0
 			reviewer=sortedReviewers[k]
 			tic=time.time()
-			while (reviewer.id == creation.user_id or reviewer.section != studentsById[creation.user_id].section) and (time.time()-tic < 1):
-				k+=1
+			while (reviewer.id == creation.user_id or reviewer.section != studentsById[creation.user_id].section) and k<len(sortedReviewers) and(time.time()-tic < 1):
 				reviewer=sortedReviewers[k]		
+				k+=1
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 				msg="additional assignment " + str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
@@ -558,7 +558,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	for reviewer in reviewers:
 		tic=time.time()
 		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)}")
-		while (reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)  < params.numberOfReviews and time.time()-tic < 1):
+		while (reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)  < params.numberOfReviews and reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id) < len(creationsToConsider)-1 and time.time()-tic < 1):
 			creation=random.choice(creationsToConsider)
 			if (reviewer.section == studentsById[creation.user_id].section):
 				msg="---"
