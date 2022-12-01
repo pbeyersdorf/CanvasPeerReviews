@@ -573,20 +573,21 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	for key in sections:
 		thisSectionsGraders=[x for x in students if (x.role=='grader' and x.section == key)]
 		thisSectionsCreations=[x for x in creationsToConsider if (studentsById[x.author_id].section == key)]
-		reviewsPerGrader=int(len(thisSectionsCreations)/len(thisSectionsGraders))
-		thisSectionsGraders=makeList(thisSectionsGraders)
-		#lol(list,sublistSize) takes a list and returns a list-of-lists with each sublist of size sublistSize
-		lol = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)] # see https://stackoverflow.com/questions/4119070/how-to-divide-a-list-into-n-equal-parts-python
-		creationsListofList=lol(thisSectionsCreations,reviewsPerGrader)
-		# if dividing up the list left a few extras, add them to the last element
-		if (len(creationsListofList) > len(thisSectionsGraders)):
-			creationsListofList[-2] += creationsListofList[-1]
-		print("Assigning reviews to graders of ", sections[key])
-		for i,reviewer in enumerate(thisSectionsGraders):
-			for j,creation in enumerate(creationsListofList[i]):
-				if (reviewer.id != creation.user_id ):
-					msg=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
-					peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
+		if len(thisSectionsCreations)>0:
+			reviewsPerGrader=int(len(thisSectionsCreations)/len(thisSectionsGraders))
+			thisSectionsGraders=makeList(thisSectionsGraders)
+			#lol(list,sublistSize) takes a list and returns a list-of-lists with each sublist of size sublistSize
+			lol = lambda lst, sz: [lst[i:i+sz] for i in range(0, len(lst), sz)] # see https://stackoverflow.com/questions/4119070/how-to-divide-a-list-into-n-equal-parts-python
+			creationsListofList=lol(thisSectionsCreations,reviewsPerGrader)
+			# if dividing up the list left a few extras, add them to the last element
+			if (len(creationsListofList) > len(thisSectionsGraders)):
+				creationsListofList[-2] += creationsListofList[-1]
+			print("Assigning reviews to graders of ", sections[key])
+			for i,reviewer in enumerate(thisSectionsGraders):
+				for j,creation in enumerate(creationsListofList[i]):
+					if (reviewer.id != creation.user_id ):
+						msg=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
+						peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 	dataToSave['students']=True
 				
 ######################################
