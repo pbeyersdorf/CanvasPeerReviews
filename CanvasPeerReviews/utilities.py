@@ -492,6 +492,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 			print(studentsById[c.author_id].name,end=",")
 		else:
 			print(" and " + studentsById[c.author_id].name)			
+
 	i=0
 	for j, reviewer in enumerate(reviewers):
 		tic=time.time()
@@ -516,7 +517,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 # review the submission.  It will select reviewers from the beginning of the list of
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
-def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=999999, AssignPeerReviewsToGraderSubmissions=False):
+def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=4, AssignPeerReviewsToGraderSubmissions=False):
 	startTime=time.time()
 	global status
 	if not status['initialized']:
@@ -529,7 +530,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		creationsToConsider=makeList(creationsToConsider) #set this to false if you want the graders submissions to be peer reviewed
 	else:
 		creationsToConsider=[c for c in makeList(creationsToConsider) if studentsById[c.author_id].role=='student']
-	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
+	studentsWithSubmissions=[studentsById[c.author_id] for c in creationsToConsider if studentsById[c.author_id].role=='student']
 	graders=[x for x in students if x.role=='grader']
 	graders=randomize(graders)
 	if reviewers=="randomize":
