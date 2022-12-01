@@ -483,7 +483,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 				log(msg)		
 	reviewers=randmoize(studentsWithSubmissions) 
 	calibrations=makeList(calibrations)
-	if len(calibrations==0):
+	if len(calibrations)==0:
 		print("Unable to find a suitable creation to use as a calibration...none assigned")
 		return
 	print("Professor has already graded submissions by ", end="")
