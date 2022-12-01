@@ -465,7 +465,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	if calibrations=="random":
 		calibrations=[]
 		for sectionKey in sections:
-			creationsToConsider=randmoize([c for c in creations if studentsById[c.author_id].section == sectionKey and  c.author_id in studentsById and studentsById[c.author_id].role=='student'])
+			creationsToConsider=randomize([c for c in creations if studentsById[c.author_id].section == sectionKey and  c.author_id in studentsById and studentsById[c.author_id].role=='student'])
 			print("Looking for submissions with no peer reviews ... this may take some time...")
 			thisCalibration=None
 			for c in creationsToConsider:
@@ -481,7 +481,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 				msg=f"{studentsById[thisCalibration.author_id].name} has  been chosen as the calibration review for {assignment.name} in {sections[sectionKey]}"
 				print(msg)
 				log(msg)		
-	reviewers=randmoize(studentsWithSubmissions) 
+	reviewers=randomize(studentsWithSubmissions) 
 	calibrations=makeList(calibrations)
 	if len(calibrations==0):
 		print("Unable to find a suitable creation to use as a calibration...none assigned")
@@ -531,9 +531,9 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		creationsToConsider=[c for c in makeList(creationsToConsider) if studentsById[c.author_id].role=='student']
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if studentsById[c.author_id].role=='student']
 	graders=[x for x in students if x.role=='grader']
-	graders=randmoize(graders)
+	graders=randomize(graders)
 	if reviewers=="randomize":
-		studentsWithSubmissions=randmoize(studentsWithSubmissions) 
+		studentsWithSubmissions=randomize(studentsWithSubmissions) 
 	reviewers=makeList(studentsWithSubmissions)
 	#assign params.numberOfReviews reviews per creation
 	for i, creation in enumerate(creationsToConsider):
@@ -2762,7 +2762,7 @@ def finish(saveBeforeExit=None):
 
 ######################################
 # Take an array and return a shuffled version of it 
-def randmoize(theArray):
+def randomize(theArray):
 	newArray=[]
 	for theElement in theArray:
 		newArray.append(theElement)
