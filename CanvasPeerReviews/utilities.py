@@ -84,6 +84,7 @@ status={'message': '',
 	'graded': False,
 	'regraded': False,
 	'posted': False,
+	'printedUndoInfo': False,
 	'dataDir': './'}
 dataToSave={
 	'students': False,
@@ -244,7 +245,7 @@ def assignSections(students):
 ######################################
 # Given an assignment object this will return all of the student submissions
 # to that assignment as an array of objects
-def getStudentWork(thisAssignment='last'):
+def getStudentWork(thisAssignment='last', includeReviews=True):
 	global creations, graded_assignments, status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'getStudentWork'")
@@ -278,14 +279,15 @@ def getStudentWork(thisAssignment='last'):
 				#printLine("Getting submission of " + studentsById[submission.user_id].name ,False)
 		except Exception:
 			status['err']="key error"
-	printLine("Getting reviews for " + thisAssignment.name,False)
-	getReviews(creations)
-	for c in creations:
-		c.reviewCount=len([s for s in students if s.assignedReviewOfCreation(c)])
-		creationsById[c.id]=c
-		#thisAssignment
-	printLine("",False)
-	print("\r",end="")
+	if includeReviews:
+		printLine("Getting reviews for " + thisAssignment.name,False)
+		getReviews(creations)
+		for c in creations:
+			c.reviewCount=len([s for s in students if s.assignedReviewOfCreation(c)])
+			creationsById[c.id]=c
+			#thisAssignment
+		printLine("",False)
+		print("\r",end="")
 	status["gotStudentsWork"]=True
 
 ######################################
@@ -432,14 +434,31 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 
 ######################################
 #This function assigns a peer review and records it
+recentlyAssignedPeerReviews=[]
 def assignAndRecordPeerReview(creation,reviewer, msg):
+	if not status['printedUndoInfo']:
+		print("To delete any assigned peer reviews run 'undoAssignedPeerReviews()'.  You will be prompted to delete each review that has been assigned in this session.")
+		status['printedUndoInfo']=True
 	peer_review=creation.create_submission_peer_review(reviewer.id)
-	#peer_review=DummyPeerReview()
+	recentlyAssignedPeerReviews.append(peer_review)
 	reviewer.recordAssignedReview(creation.assignment_id, peer_review)
 	creation.reviewCount+=1
 	printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation ", msg)	
 	return peer_review
 	
+def undoAssignedPeerReviews():
+	val="null"
+	for peer_review in recentlyAssignedPeerReviews:
+		reviewer=studentsById[peer_review.assessor_id]
+		creation=[creation for creation in creations if creation.id==peer_review.asset_id][0]
+		author=studentsById[creation.author_id]
+		assignment=graded_assignments[creation.assignment_id]
+		if val.upper() != val:
+			print(f"{reviewer.name}'s assigned review of {author.name}'s creation")
+			val = input("(y) to delete this one, (Y) to delete all?")
+		if val.lower()=="y":
+			deleteReview(peer_review)
+		
 ######################################
 #This takes a list of submissions which are to be used as calibration reviews
 # and assigns one to each student in the class, making sure to avoid assigning
@@ -546,7 +565,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		while creation.reviewCount < numberOfReviewers and reviewerAvaialble: #this creation did not get enough reviewers assigned somehow
 			#get the reviewer with the fewest reviews so far
 			sortedReviewers=sorted(reviewers, key=lambda r:r.numberOfReviewsAssignedOnAssignment(creation.assignment_id))
-			sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation.id)) and reviewer.id != creation.user_id and reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.section == studentsById[creation.user_id].section]
+			sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation)) and reviewer.id != creation.user_id and reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.section == studentsById[creation.user_id].section]
 			reviewerAvaialble=len(sortedAvailableReviewers)>0
 			if reviewerAvaialble:
 				reviewer=sortedAvailableReviewers[0]
