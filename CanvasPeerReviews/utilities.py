@@ -437,7 +437,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 recentlyAssignedPeerReviews=[]
 def assignAndRecordPeerReview(creation,reviewer, msg):
 	if not status['printedUndoInfo']:
-		print("To delete any assigned peer reviews run 'undoAssignedPeerReviews()'.  You will be prompted to delete each review that has been assigned in this session.")
+		print(Style.BRIGHT + "\nTo delete any assigned peer reviews run 'undoAssignedPeerReviews()'.  You will be prompted to delete each review that has been assigned in this session.\n" + Style.RESET_ALL)
 		status['printedUndoInfo']=True
 	peer_review=creation.create_submission_peer_review(reviewer.id)
 	recentlyAssignedPeerReviews.append(peer_review)
@@ -446,18 +446,19 @@ def assignAndRecordPeerReview(creation,reviewer, msg):
 	printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation ", msg)	
 	return peer_review
 	
-def undoAssignedPeerReviews():
+def undoAssignedPeerReviews(author=None, reviewer=None, assignment=None, peer_review=None):
 	val="null"
-	for peer_review in recentlyAssignedPeerReviews:
-		reviewer=studentsById[peer_review.assessor_id]
-		creation=[creation for creation in creations if creation.id==peer_review.asset_id][0]
-		author=studentsById[creation.author_id]
-		assignment=graded_assignments[creation.assignment_id]
-		if val.upper() != val:
-			print(f"{reviewer.name}'s assigned review of {author.name}'s creation")
-			val = input("(y) to delete this one, (Y) to delete all?")
-		if val.lower()=="y":
-			deleteReview(peer_review)
+	for thePeerReview in recentlyAssignedPeerReviews:
+		theReviewer=studentsById[thePeerReview.assessor_id]
+		theCreation=[creation for creation in creations if creation.id==thePeerReview.asset_id][0]
+		theAuthor=studentsById[theCreation.author_id]
+		theAssignment=graded_assignments[theCreation.assignment_id]
+		if (author==None or author==theAuthor) and (reviewer==None or reviewer==theReviewer) and (assignment==None or assignment==theAssignment) and (peer_review==None or peer_review==thePeerReview):
+			if val.upper() != val:
+				print(f"{theReviewer.name}'s assigned review of {theAuthor.name}'s creation on {theAssignment.name}")
+				val = input("(y) to delete this one, (Y) to delete all?")
+			if val.lower()=="y":
+				deleteReview(thePeerReview)
 		
 ######################################
 #This takes a list of submissions which are to be used as calibration reviews
