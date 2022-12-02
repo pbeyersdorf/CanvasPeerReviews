@@ -542,17 +542,14 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
 				msg=str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
-		while creation.reviewCount < numberOfReviewers and creation.reviewCount<len(creationsToConsider)-1: #this creation did not get enough reviewers assigned somehow
+		reviewerAvaialble=creation.reviewCount<len(creationsToConsider)-1
+		while creation.reviewCount < numberOfReviewers and reviewerAvaialble: #this creation did not get enough reviewers assigned somehow
 			#get the reviewer with the fewest reviews so far
 			sortedReviewers=sorted(reviewers, key=lambda r:r.numberOfReviewsAssignedOnAssignment(creation.assignment_id))
-			#reviewer=random.choice(reviewers)
-			k=0
-			reviewer=sortedReviewers[k]
-			tic=time.time()
-			while (reviewer.id == creation.user_id or reviewer.section != studentsById[creation.user_id].section) and k<len(sortedReviewers) and(time.time()-tic < 1):
-				reviewer=sortedReviewers[k]		
-				k+=1
-			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+			sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation.id)) and reviewer.id != creation.user_id and reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.section == studentsById[creation.user_id].section]
+			reviewerAvaialble=len(sortedAvailableReviewers)>0
+			if reviewerAvaialble:
+				reviewer=sortedAvailableReviewers[0]
 				msg="additional assignment " + str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
