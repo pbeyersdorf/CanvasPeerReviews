@@ -1396,7 +1396,10 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 						points=0
 					processed_lines+=tempLine.format(points_by_criteria=points, description_by_criteria=criteriaDescription[cid], keywordCreation="regrade", keywordReview="recalculate", review_rms_by_criteria=round(student.rmsByAssignment[assignment.id][cid],1), absolute_value_of_deviation=round(abs(student.deviationByAssignment[assignment.id][cid]),1))	+"\n"
 			else:
-				processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
+				if assignment.id in student.grades:
+					processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
+				else:
+					processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade="--", reviewGrade="--", rawGrade="--", curvedGrade="--",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"				
 	else:
 		templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
 		template_lines=templateText.split("\n")
