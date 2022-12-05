@@ -1371,7 +1371,7 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 		else:
 			templateText=templateText.replace("\n{comment on review}","")
 			templateText=templateText.replace("{comment on review}","")
-		if student.grades[assignment.id]['total']==student.grades[assignment.id]['curvedTotal']:
+		if [assignment.id] in student.grades and student.grades[assignment.id]['total']==student.grades[assignment.id]['curvedTotal']:
 			templateText=templateText.replace("{comment if grades are curved}","")
 		templateText=processUserDefinedKeywords(templateText, fileName)
 		template_lines=templateText.split("\n")
