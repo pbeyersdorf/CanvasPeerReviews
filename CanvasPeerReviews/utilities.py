@@ -97,7 +97,20 @@ keywordCreation="regrade" # if this keyword is in a student comments flag the su
 cachedAssignmentKey=None
 
 ######################################
+# time how long a function takes
+def timer(func):
+	def wrap(*args, **kwargs):
+		start = time.time()
+		result = func(*args, **kwargs)
+		end = time.time()
+		#print(func.__name__, end-start)
+		return result
+	return wrap
+
+
+######################################
 # Try loading any cached data
+@timer
 def loadCache():
 	global course, status, params, dataDir, students, graded_assignments, reviewsById, reviewsByCreationId
 	status['prefix']="course_" + str(course.id) + "_"
@@ -155,6 +168,7 @@ def reset():
 ######################################
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
+@timer
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
 	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread
 	status['dataDir']=dataDirectory
@@ -245,6 +259,7 @@ def assignSections(students):
 ######################################
 # Given an assignment object this will return all of the student submissions
 # to that assignment as an array of objects
+@timer
 def getStudentWork(thisAssignment='last', includeReviews=True):
 	global creations, graded_assignments, status
 	if not status['initialized']:
@@ -294,6 +309,7 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 # Go through all of the assignments for the course and return an array of objects
 # from only those assignments that are set up to require peer reviews and
 # already have student submissions. 
+@timer
 def getGradedAssignments(course):
 	global graded_assignments, assignments
 	assignments = course.get_assignments()
@@ -315,6 +331,7 @@ def getGradedAssignments(course):
 
 ######################################
 # Return the most recently due assignment of all the assignments that have peer reviews
+@timer
 def getMostRecentAssignment(nearest=False):
 	#if nearest=True it will get the assignment with a due date closest to now, regardless of whether it is past due or not yet due
 	global lastAssignment
@@ -610,6 +627,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				
 ######################################
 # Get a list of all students enrolled in the course.  Return an array of Student objects
+@timer
 def getStudents(course):
 	users = course.get_users(enrollment_type=['student'])
 	global students
@@ -751,6 +769,7 @@ def reviewSummary(assessment, display=False):
 # Process a given student submission finding all of the peer reviews of that submissions
 # those peer reviews get attached to the student objects for both the author of the 
 # submission and the students performing the reviews.  Nothing is returned. 
+@timer
 def getReviews(creations):
 	global course, reviewsById, allReviews
 	rubrics=course.get_rubrics()
@@ -2939,3 +2958,4 @@ def allowPrinting(allow):
 		 sys.stdout = sys.__stdout__
 	else:
 	    sys.stdout = open(os.devnull, 'w')
+	    
