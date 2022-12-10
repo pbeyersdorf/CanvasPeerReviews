@@ -14,6 +14,7 @@ from CanvasPeerReviews.parameters import Parameters
 from CanvasPeerReviews.review import Review
 try:
 	from dill.source import getsource	
+	import dill
 except Exception: 
 	errormsg+="Missing dill module.  Run 'pip install dill' to intall\n"
 try:
@@ -109,7 +110,7 @@ def loadCache():
 		loadedData.append("student data")
 	except Exception:
 		status['students']="not loaded"
-		status['message']+="Unable to find 'students.pkl'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
+		status['message']+="Unable to find '" +status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl' +"'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'assignments.pkl', 'rb') as handle:
 			_graded_assignments=pickle.load(handle)
@@ -156,8 +157,9 @@ def reset():
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
-	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread
+	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread, initReturnVals
 	status['dataDir']=dataDirectory
+	status['prefix']=str(COURSE_ID)
 	initReturnVals=dict()
 	def initialCommunicationWithCanvas(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
 		global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread					
@@ -191,7 +193,8 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 				)
 				f.close()
 		loadCache()
-		#print(status['message'],end="")
+		#val=inputWithTimeout("(o) to overwrite update cached student and assignment lists: ",2)
+		#if val.lower()=="o":
 		printLine(status['message'],False)
 		printLine("Getting students",False)
 		getStudents(course)
@@ -221,13 +224,14 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
 	else:
 		print("Using production environment - set TEST_ENVIRONMENT=True to change")
+
 	initThread = threading.Thread(target=initialCommunicationWithCanvas, args=(CANVAS_URL, TOKEN, COURSE_ID, dataDirectory, chooseAssignment,))
 	initThread.start()
 	if chooseAssignment and COURSE_ID!=None:
-		status['prefix']="course_" + str(COURSE_ID) + "_"
 		#keyboardThread = KeyboardThread(setCachedAsssignmentKey)
 		cachedAssignmentKey=getCachedAssignment(status['dataDir'])
 	initThread.join()
+
 	return initReturnVals['students'], initReturnVals['graded_assignments'], initReturnVals['lastAssignment']
 
 ######################################
@@ -435,7 +439,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 ######################################
 #This function assigns a peer review and records it
 recentlyAssignedPeerReviews=[]
-def assignAndRecordPeerReview(creation,reviewer, msg):
+def assignAndRecordPeerReview(creation,reviewer, msg=""):
 	if not status['printedUndoInfo']:
 		print(Style.BRIGHT + "\nTo delete any assigned peer reviews run 'undoAssignedPeerReviews()'.  You will be prompted to delete each review that has been assigned in this session.\n" + Style.RESET_ALL)
 		status['printedUndoInfo']=True
@@ -2353,15 +2357,13 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 	zeros=[]
 	for student in students:
 		if assignment.id in student.creations:
-			try:
+			if assignment.id in student.grades and assignment.id in student.points
 				points=student.points[assignment.id]
 				grades=student.grades[assignment.id]
 				creationGrade.append(grades['creation'])
 				reviewGrade.append(grades['review'])
 				rawTotal.append(grades['total'])
 				curvedTotal.append(points['curvedTotal'])
-			except KeyboardInterrupt:
-				exit()
 		else:
 			zeros.append(0)
 	if len(curvedTotal)==0 or not assignment.graded:

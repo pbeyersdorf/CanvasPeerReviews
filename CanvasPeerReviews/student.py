@@ -65,6 +65,7 @@ class Student:
 		self.reviewData=dict()
 		#self.givenReviewData=dict()
 		self.regradeComments=dict()
+		self.reviewGradeExplanation = None
 		self.assignmentsGradedByInstructor=dict()
 		self.pointsByCriteria=dict()
 		self.role="student"
@@ -126,7 +127,9 @@ class Student:
 		assigned=self.numberOfReviewsAssignedOnAssignment(assignmentID)
 		if assigned>0:
 			return min(1.0,completed*1.0/assigned)
-		return 0
+		if completed>assigned:
+			print(f"{self.name} has more reviews completed than were assigned.  Resync the reviews and try again")
+		return 1
 
 	def recordAdjustments(self, assignment):
 		# when grading an assignment, take the adjustments being used defined by 
