@@ -2376,7 +2376,7 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 	zeros=[]
 	for student in students:
 		if assignment.id in student.creations:
-			if assignment.id in student.grades and assignment.id in student.points
+			if assignment.id in student.grades and assignment.id in student.points:
 				points=student.points[assignment.id]
 				grades=student.grades[assignment.id]
 				creationGrade.append(grades['creation'])
