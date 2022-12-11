@@ -382,7 +382,7 @@ def getCachedAssignment(DATADIRECTORY, getInput=True):
 	
 ######################################
 # Choose an assignment to work on
-def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None, key=None):
+def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None, key=None, filter=None):
 	global graded_assignments, lastAssignment, activeAssignment, cachedAssignmentKey
 	if key!=None and key in graded_assignments:
 		return graded_assignments[key]
@@ -392,6 +392,12 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		return returnVal
 	if defaultAssignment==None:
 		defaultAssignment=graded_assignments['last']
+	if filter==None:
+		filteredAssignments=graded_assignments
+	else:
+		filteredAssignments={key: graded_assignments[key] for key in graded_assignments if filter in graded_assignments[key].name}
+		
+		
 	confirmed=False
 	defaultChoice=None
 	msg=""
@@ -406,7 +412,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		assignmentIDswithNumbers=[assignmentByNumber[i].id for i in assignmentByNumber]
 		if allowAll:
 			print("\t0) All" )
-		for key in graded_assignments:
+		for key in filteredAssignments:
 			if  key in assignmentIDswithNumbers:
 				iStr=str([num for num in assignmentByNumber if assignmentByNumber[num]==graded_assignments[key] ][0]) +")"
 			else:
