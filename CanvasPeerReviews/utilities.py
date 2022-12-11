@@ -395,7 +395,10 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 	if filter==None:
 		filteredAssignments=graded_assignments
 	else:
-		filteredAssignments={key: graded_assignments[key] for key in graded_assignments if filter in graded_assignments[key].name}
+		filter+="!"
+		# filter of the form "include!exclude"
+		
+		filteredAssignments={key: graded_assignments[key] for key in graded_assignments if filter.split("!")[0] in graded_assignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in graded_assignments[key].name)}
 		
 		
 	confirmed=False
@@ -816,7 +819,8 @@ def getReviews(creations):
 							reviewsByCreationId[creation.id]={review.id: review}
 						if assessment['assessment_type']=='grading':
 							if creation.assignment_id in professorsReviews:
-								professorsReviews[creation.assignment_id].append(review)
+								if review.fingerprint() not in [pr.fingerprint() for pr in professorsReviews[creation.assignment_id]]:
+									professorsReviews[creation.assignment_id].append(review)
 							else:
 								professorsReviews[creation.assignment_id]=[review]
 						elif review.reviewer_id in studentsById:
