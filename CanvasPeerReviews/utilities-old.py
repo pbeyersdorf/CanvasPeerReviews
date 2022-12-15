@@ -95,6 +95,7 @@ dataToSave={
 }
 keywordReview="recalculate" # if this keyword is in a student comments flag the submission for a regrade
 keywordCreation="regrade" # if this keyword is in a student comments flag the submission for a regrade
+cachedAssignmentKey=None
 
 ######################################
 # time how long a function takes
@@ -123,8 +124,6 @@ def loadCache():
 	except Exception:
 		status['students']="not loaded"
 		status['message']+="Unable to find '" +status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl' +"'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
-	for student in students:
-		studentsById[student.id]=student
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'assignments.pkl', 'rb') as handle:
 			_graded_assignments=pickle.load(handle)
@@ -132,7 +131,6 @@ def loadCache():
 		loadedData.append("assginment data")
 	except Exception:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
-	makeAssignmentByNumberDict()
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
 			[_reviewsById,_reviewsByCreationId, _professorsReviews]=pickle.load(handle)
@@ -172,58 +170,64 @@ def reset():
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
 @timer
-def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", update=False):
-	global course, canvas, students, graded_assignments, status, nearestAssignment, keyboardThread
+def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
+	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread, initReturnVals
 	status['dataDir']=dataDirectory
 	status['prefix']=str(COURSE_ID)
-	if not os.path.exists(dataDirectory):
-		os.makedirs(dataDirectory)
-	printCommand=False
-	if (CANVAS_URL==None or COURSE_ID==None):
-		response=input("Enter the full URL for the homepage of your course: ")
-		parts=response.split('/courses/')
-		CANVAS_URL=parts[0]
-		COURSE_ID=int(parts[1].split('/')[0])
-		printCommand=True
-	if (TOKEN==None):
-		print("Go to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
-		print("More info at https://community.canvaslms.com/t5/Admin-Guide/How-do-I-manage-API-access-tokens-as-an-admin/ta-p/89")
-		print("")
-		TOKEN=input("Enter the token here: ")
-		printCommand=True
-	canvas = Canvas(CANVAS_URL, TOKEN)
-	course = canvas.get_course(COURSE_ID)
-	if printCommand:
-		print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
-		if 	writeCredentials==True:
-			print("Generating a credentials template file to use in the future")
-			f = open("credentials.py", "a")
-			f.write("# credentials automatically generated ["+str(datetime.now())+"] for the canvas course to be used by the other python scripts int his folder\n"
-				+ "COURSE_ID = " +str(COURSE_ID) +" #6 digit code that appears in the URL of your canvas course\n"
-				+ "CANVAS_URL = '" + CANVAS_URL + "'\n"
-				+ "TOKEN = '" + TOKEN+  "' # the canvas token for accessing your course.  See https://community.canvaslms.com/t5/Admin-Guide/How-do-I-obtain-an-API-access-token-in-the-Canvas-Data-Portal/ta-p/157\n"
-				+ "RELATIVE_DATA_PATH='" + os.path.abspath(dataDirectory).replace(homeFolder,"")+"/" + "' # location of data directory relative to home directory.  Example '/Nextcloud/Phys 51/Grades/CanvasPeerReviews/Data/'\n"
-			)
-			f.close()
-	loadCache()
-	printLine(status['message'],False)
-	
-	if update or "assginment data" not in status['message'] or "student data" not in status['message']:
-		updateAssignmentsAndStudents()
-	else:
-		initThread = threading.Thread(target=updateAssignmentsAndStudents, args=(True,))
-		initThread.start()
-		#initThread.join()
-	
-	lastAssignment =getMostRecentAssignment()
-	nearestAssignment =getMostRecentAssignment(nearest=True)
-	if lastAssignment != nearestAssignment:
-		print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
-	for student in students:
-		sections[student.section]=student.sectionName
-		for key in student.creations:
-			creationsById[student.creations[key].id]=student.creations[key]
-	status["initialized"]=True
+	initReturnVals=dict()
+	def initialCommunicationWithCanvas(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
+		global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread					
+		if not os.path.exists(dataDirectory):
+			os.makedirs(dataDirectory)
+		printCommand=False
+		if (CANVAS_URL==None or COURSE_ID==None):
+			response=input("Enter the full URL for the homepage of your course: ")
+			parts=response.split('/courses/')
+			CANVAS_URL=parts[0]
+			COURSE_ID=int(parts[1].split('/')[0])
+			printCommand=True
+		if (TOKEN==None):
+			print("Go to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
+			print("More info at https://community.canvaslms.com/t5/Admin-Guide/How-do-I-manage-API-access-tokens-as-an-admin/ta-p/89")
+			print("")
+			TOKEN=input("Enter the token here: ")
+			printCommand=True
+		canvas = Canvas(CANVAS_URL, TOKEN)
+		course = canvas.get_course(COURSE_ID)
+		if printCommand:
+			print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
+			if 	writeCredentials==True:
+				print("Generating a credentials template file to use in the future")
+				f = open("credentials.py", "a")
+				f.write("# credentials automatically generated ["+str(datetime.now())+"] for the canvas course to be used by the other python scripts int his folder\n"
+					+ "COURSE_ID = " +str(COURSE_ID) +" #6 digit code that appears in the URL of your canvas course\n"
+					+ "CANVAS_URL = '" + CANVAS_URL + "'\n"
+					+ "TOKEN = '" + TOKEN+  "' # the canvas token for accessing your course.  See https://community.canvaslms.com/t5/Admin-Guide/How-do-I-obtain-an-API-access-token-in-the-Canvas-Data-Portal/ta-p/157\n"
+					+ "RELATIVE_DATA_PATH='" + os.path.abspath(dataDirectory).replace(homeFolder,"")+"/" + "' # location of data directory relative to home directory.  Example '/Nextcloud/Phys 51/Grades/CanvasPeerReviews/Data/'\n"
+				)
+				f.close()
+		loadCache()
+		#val=inputWithTimeout("(o) to overwrite update cached student and assignment lists: ",2)
+		#if val.lower()=="o":
+		printLine(status['message'],False)
+		printLine("Getting students",False)
+		getStudents(course)
+		printLine("Getting assignments",False)
+		getGradedAssignments(course)
+		lastAssignment =getMostRecentAssignment()
+		nearestAssignment =getMostRecentAssignment(nearest=True)
+		if lastAssignment != nearestAssignment:
+			print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
+		for student in students:
+			sections[student.section]=student.sectionName
+			for key in student.creations:
+				creationsById[student.creations[key].id]=student.creations[key]
+		status["initialized"]=True
+		initReturnVals['students']= students
+		initReturnVals['graded_assignments']= graded_assignments
+		initReturnVals['lastAssignment']= lastAssignment
+		return students, graded_assignments, lastAssignment
+	#end of initialCommunicationWithCanvas function
 	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
 		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
 		print(Fore.RED +  Style.BRIGHT +  "Using test environment - set TEST_ENVIRONMENT=False to change" + Style.RESET_ALL)
@@ -234,24 +238,15 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
 	else:
 		print("Using production environment - set TEST_ENVIRONMENT=True to change")
-		
-	return students, graded_assignments, lastAssignment
 
-def updateAssignmentsAndStudents(quiet=False):
-	global status, nearestAssignment, lastAssignment					
-	print("updateAssignmentsAndStudents called")
-	if not quiet:
-		printLine("Getting students",False)
-	getStudents(course)
-	if not quiet:
-		printLine("Getting assignments",False)
-	getGradedAssignments(course)
-	lastAssignment =getMostRecentAssignment()
-	nearestAssignment =getMostRecentAssignment(nearest=True)
-	if lastAssignment != nearestAssignment and not quiet:
-			print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
+	initThread = threading.Thread(target=initialCommunicationWithCanvas, args=(CANVAS_URL, TOKEN, COURSE_ID, dataDirectory, chooseAssignment,))
+	initThread.start()
+	if chooseAssignment and COURSE_ID!=None:
+		#keyboardThread = KeyboardThread(setCachedAsssignmentKey)
+		cachedAssignmentKey=getCachedAssignment(status['dataDir'])
+	initThread.join()
 
-
+	return initReturnVals['students'], initReturnVals['graded_assignments'], initReturnVals['lastAssignment']
 
 ######################################
 # Record what section a student is in
@@ -323,27 +318,20 @@ def getGradedAssignments(course):
 	global graded_assignments, assignments
 	assignments = course.get_assignments()
 	for i,assignment in enumerate(assignments):
+		#if (assignment.peer_reviews and assignment.has_submitted_submissions): #xxx is it ok to remove the requirement that there are submissions already?
 		if (assignment.peer_reviews):
 			assignment.courseid=course.id
 			if not assignment.id in graded_assignments: # no need to recreate if it was already loaded from the cache
 				graded_assignments[assignment.id]=GradedAssignment(assignment)
 			else:
 				graded_assignments[assignment.id].sync(assignment)
-	makeAssignmentByNumberDict()
-	dataToSave['assignments'] = True 
-	status["gotGradedAssignments"]=True
-
-######################################
-# make a dictionary object of graded assignments indexed by the number
-def makeAssignmentByNumberDict():
-	global graded_assignments
 	for key in graded_assignments:
 		try:
 			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
 				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
 		except Exception:
-			status['message']+="\nUnable to add '" + graded_assignments[key].name + "' to assignmentByNumber"
-
+			print("Unable to add '" + assignment.name + "' to assignmentByNumber")	
+	status["gotGradedAssignments"]=True
 
 ######################################
 # Return the most recently due assignment of all the assignments that have peer reviews
@@ -369,13 +357,39 @@ def getMostRecentAssignment(nearest=False):
 	status["gotMostRecentAssignment"]=True
 	return theAssignment	
 
+######################################
+# Choose an assignment from a cache file and return the key for that assignment
+def getCachedAssignment(DATADIRECTORY, getInput=True):
+	global keyByStr
+	try:
+		with open( DATADIRECTORY +"PickleJar/"+ status['prefix'] + "assignmentList.pkl", 'rb') as handle:
+			cacheData=pickle.load(handle)
+	except Exception:
+		return
+	keyByStr=dict()
+	for line in cacheData:
+		#{'str':iStr, 'name': graded_assignments[key].name, 'key': key}	
+		print(f"\t{line['str']:<4}{line['name']}")
+		keyByStr[line['str'].split(")")[0].strip()]=line['key']
+	if not getInput:
+		return
+	print("Select an assignment or hit <enter> if it isn't listed: ", end="", flush=True)
+	allowPrinting(False)
+	val=input("Select an assignment or hit <enter> if it isn't listed: ")
+	allowPrinting(True)
+	if val in keyByStr:
+		return keyByStr[val]
 	
 ######################################
 # Choose an assignment to work on
 def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None, key=None, filter=None):
-	global graded_assignments, lastAssignment, activeAssignment
+	global graded_assignments, lastAssignment, activeAssignment, cachedAssignmentKey
 	if key!=None and key in graded_assignments:
 		return graded_assignments[key]
+	if cachedAssignmentKey!=None and cachedAssignmentKey in graded_assignments:
+		returnVal=graded_assignments[cachedAssignmentKey]
+		cachedAssignmentKey=None
+		return returnVal
 	if defaultAssignment==None:
 		defaultAssignment=graded_assignments['last']
 	if filter==None:
@@ -396,7 +410,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 			codes+=[chr(j+65)+chr(i+65) for i in range(26)]
 		i=0
 		assignmentKeyByNumber=dict()
-		print("\nAssignments with peer reviews enabled\n(update) to update assignments and students lists: ")
+		print("\nAssignments with peer reviews enabled: ")
 		cacheData=[]
 		assignmentIDswithNumbers=[assignmentByNumber[i].id for i in assignmentByNumber]
 		if allowAll:
@@ -430,11 +444,6 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				val=inputWithTimeout(prompt, default=defaultChoice, timeout=timeout).upper()					
 			if val=="":
 				val=defaultChoice
-			elif val.lower()=='update':
-				updateAssignmentsAndStudents()
-				key=None
-				activeAssignment=chooseAssignment(requireConfirmation, allowAll, timeout, defaultAssignment, defaultPrompt, prompt, key, filter)
-				return activeAssignment
 		if requireConfirmation:
 			if allowAll and val=='0':
 				confirmed=confirm("You have chosen all assignments")
@@ -447,7 +456,10 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				activeAssignment="all"
 			else:
 				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
+	#print("using key " + str(assignmentKeyByNumber[val]))
 	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
+	with open(status['dataDir'] + "PickleJar/" + status['prefix'] + 'assignmentList.pkl', 'wb') as handle:
+		pickle.dump(cacheData, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	return activeAssignment
 
 ######################################
@@ -654,7 +666,6 @@ def getStudents(course):
 	if 	needToGetSections:	
 		printLine("Looking up which section each student is in", False)
 		assignSections(students)
-	dataToSave['students'] = True
 	return students
 		
 ######################################
@@ -824,10 +835,7 @@ def getReviews(creations):
 				student.criteriaDescription[cid]=criteriaDescription[cid]
 			if not blankCreation: 
 				if not thisGivenReview.submission_id in reviewsByCreationId:
-					print(thisGivenReview.fingerprint() + " was not in  reviewsByCreationId.  Adding.")
-					reviewsByCreationId[thisGivenReview.submission_id]=dict()
-					reviewsByCreationId[thisGivenReview.submission_id][thisGivenReview.id]=thisGivenReview
-				
+					print("error for " + thisGivenReview.fingerprint())
 				for otherReview in reviewsByCreationId[thisGivenReview.submission_id].values():
 					alreadyCalibratedAgainst=otherReview.id in student.comparisons
 					if (otherReview.reviewer_id != student.id and not alreadyCalibratedAgainst): #don't compare this review to itself and dont repeat a calibration	
