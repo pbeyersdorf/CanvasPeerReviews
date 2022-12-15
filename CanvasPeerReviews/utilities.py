@@ -835,7 +835,10 @@ def getReviews(creations):
 				student.criteriaDescription[cid]=criteriaDescription[cid]
 			if not blankCreation: 
 				if not thisGivenReview.submission_id in reviewsByCreationId:
-					print("error for " + thisGivenReview.fingerprint())
+					print(thisGivenReview.fingerprint() + " was not in  reviewsByCreationId.  Adding.")
+					reviewsByCreationId[thisGivenReview.submission_id]=dict()
+					reviewsByCreationId[thisGivenReview.submission_id][thisGivenReview.id]=thisGivenReview
+				
 				for otherReview in reviewsByCreationId[thisGivenReview.submission_id].values():
 					alreadyCalibratedAgainst=otherReview.id in student.comparisons
 					if (otherReview.reviewer_id != student.id and not alreadyCalibratedAgainst): #don't compare this review to itself and dont repeat a calibration	
