@@ -124,6 +124,8 @@ def loadCache():
 	except Exception:
 		status['students']="not loaded"
 		status['message']+="Unable to find '" +status['dataDir'] +"PickleJar/"+ status['prefix']+'students.pkl' +"'.\nThis file contains student peer review calibation data from \nany past calibrations. If you have done previous calibrations,\nyou should launch python from the directory containing the file\n"
+	for student in students:
+		studentsById[student.id]=student
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'assignments.pkl', 'rb') as handle:
 			_graded_assignments=pickle.load(handle)
@@ -131,6 +133,7 @@ def loadCache():
 		loadedData.append("assginment data")
 	except Exception:
 		status['message']+="Unable to find 'assignments.pkl'.\nThis file contains grading status of any previously graded assignments.\n  You should launch python from the directory containing the file\n"
+	makeAssignmentByNumberDict()
 	try:
 		with open( status['dataDir'] +"PickleJar/"+status['prefix']+'reviews.pkl', 'rb') as handle:
 			[_reviewsById,_reviewsByCreationId, _professorsReviews]=pickle.load(handle)
@@ -170,7 +173,7 @@ def reset():
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
 @timer
-def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False):
+def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", chooseAssignment=False, update=False):
 	global course, canvas, students, graded_assignments, status, nearestAssignment, cachedAssignmentKey, keyboardThread, initReturnVals
 	status['dataDir']=dataDirectory
 	status['prefix']=str(COURSE_ID)
@@ -207,13 +210,11 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 				)
 				f.close()
 		loadCache()
-		#val=inputWithTimeout("(o) to overwrite update cached student and assignment lists: ",2)
-		#if val.lower()=="o":
 		printLine(status['message'],False)
-		printLine("Getting students",False)
-		getStudents(course)
-		printLine("Getting assignments",False)
-		getGradedAssignments(course)
+		
+		if update or "assginment data" not in status['message'] or "student data" not in status['message']:
+			updateAssignmentsAndStudents()
+		
 		lastAssignment =getMostRecentAssignment()
 		nearestAssignment =getMostRecentAssignment(nearest=True)
 		if lastAssignment != nearestAssignment:
@@ -247,6 +248,19 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	initThread.join()
 
 	return initReturnVals['students'], initReturnVals['graded_assignments'], initReturnVals['lastAssignment']
+
+def updateAssignmentsAndStudents():
+	global status, nearestAssignment, lastAssignment					
+	print("updateAssignmentsAndStudents called")
+	printLine("Getting students",False)
+	getStudents(course)
+	printLine("Getting assignments",False)
+	getGradedAssignments(course)
+	lastAssignment =getMostRecentAssignment()
+	nearestAssignment =getMostRecentAssignment(nearest=True)
+	if lastAssignment != nearestAssignment:
+		print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
+
 
 ######################################
 # Record what section a student is in
@@ -318,20 +332,27 @@ def getGradedAssignments(course):
 	global graded_assignments, assignments
 	assignments = course.get_assignments()
 	for i,assignment in enumerate(assignments):
-		#if (assignment.peer_reviews and assignment.has_submitted_submissions): #xxx is it ok to remove the requirement that there are submissions already?
 		if (assignment.peer_reviews):
 			assignment.courseid=course.id
 			if not assignment.id in graded_assignments: # no need to recreate if it was already loaded from the cache
 				graded_assignments[assignment.id]=GradedAssignment(assignment)
 			else:
 				graded_assignments[assignment.id].sync(assignment)
+	makeAssignmentByNumberDict()
+	dataToSave['assignments'] = True 
+	status["gotGradedAssignments"]=True
+
+######################################
+# make a dictionary object of graded assignments indexed by the number
+def makeAssignmentByNumberDict():
+	global graded_assignments
 	for key in graded_assignments:
 		try:
 			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
 				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
 		except Exception:
-			print("Unable to add '" + assignment.name + "' to assignmentByNumber")	
-	status["gotGradedAssignments"]=True
+			print("Unable to add '" + graded_assignments[key].name + "' to assignmentByNumber")	
+
 
 ######################################
 # Return the most recently due assignment of all the assignments that have peer reviews
@@ -410,7 +431,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 			codes+=[chr(j+65)+chr(i+65) for i in range(26)]
 		i=0
 		assignmentKeyByNumber=dict()
-		print("\nAssignments with peer reviews enabled: ")
+		print("\nAssignments with peer reviews enabled\n(update) to update assignments and students lists: ")
 		cacheData=[]
 		assignmentIDswithNumbers=[assignmentByNumber[i].id for i in assignmentByNumber]
 		if allowAll:
@@ -444,6 +465,11 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 				val=inputWithTimeout(prompt, default=defaultChoice, timeout=timeout).upper()					
 			if val=="":
 				val=defaultChoice
+			elif val.lower()=='update':
+				updateAssignmentsAndStudents()
+				key=None
+				activeAssignment=chooseAssignment(requireConfirmation, allowAll, timeout, defaultAssignment, defaultPrompt, prompt, key, filter)
+				return activeAssignment
 		if requireConfirmation:
 			if allowAll and val=='0':
 				confirmed=confirm("You have chosen all assignments")
@@ -666,6 +692,7 @@ def getStudents(course):
 	if 	needToGetSections:	
 		printLine("Looking up which section each student is in", False)
 		assignSections(students)
+	dataToSave['students'] = True
 	return students
 		
 ######################################
