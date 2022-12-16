@@ -149,7 +149,7 @@ def loadCache():
 	except Exception:
 		params=Parameters()
 		params.loadedFromFile=False 
-	status['message']+="loaded " + ", ".join(loadedData)
+	status['message']+="\nloaded " + ", ".join(loadedData)
 
 ######################################
 # delete the files that cache student data and parameters
@@ -342,7 +342,8 @@ def makeAssignmentByNumberDict():
 			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
 				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
 		except Exception:
-			status['message']+="\nUnable to add '" + graded_assignments[key].name + "' to assignmentByNumber"
+			pass
+			#status['message']+="\nUnable to add '" + graded_assignments[key].name + "' to assignmentByNumber"
 
 
 ######################################
@@ -1803,12 +1804,23 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 			student.deviationByAssignment[assignment.id]=dict()
 			student.relativeRmsByAssignment[assignment.id]=dict()
 			student.weightsByAssignment[assignment.id]=dict()
+			if student.reviewGradeExplanation == None:
+				student.reviewGradeExplanation=""
+				#print(f"setting up reviewGradeExplanation for {student.name} ")
 			for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
-				student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
-				student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
-				student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
-				student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
-				student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
+				if tempWeight[cid]!=0:
+					student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
+					student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
+					student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
+					student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
+					student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
+				else:
+					print(f"{student.name}")
+					print(f"{compsOnThisAssignment=}")
+					print(f"{tempDelta=}")
+					print(f"{tempWeight=}")
+					print(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
+					confirm("proceed?")
 			delta2=weight=0
 			for cid in [cid for cid in tempWeight if cid!=0]:
 				delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]

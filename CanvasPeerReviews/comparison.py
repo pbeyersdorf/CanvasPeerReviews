@@ -73,4 +73,5 @@ class Comparison:
 				return {'delta': self.delta[cid], 'delta2': self.delta2[cid], 'weight':weight*degredationFactor}
 			
 		except Exception:
+			#return {'delta': self.delta[cid], 'delta2': self.delta2[cid], 'weight':self.weight[cid]}
 			return {'delta': 0, 'delta2': 0, 'weight':0}

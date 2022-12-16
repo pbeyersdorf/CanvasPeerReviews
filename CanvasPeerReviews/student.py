@@ -90,7 +90,7 @@ class Student:
 		# be calculated and set from outside this class, since calculating it 
 		# requires access to ALL student data.
 		if cid not in self.gradingPowerNormalizationFactor:
-			print("no normalizatoin factor set")
+			print("no normalization factor set")
 			self.gradingPowerNormalizationFactor[cid]=1
 		normalizationFactor=self.gradingPowerNormalizationFactor[cid]	
 		try:
@@ -157,24 +157,25 @@ class Student:
 			totalWeight=0
 			pointsPossible=0
 			for key in self.comparisons:
-				adjustedData=self.comparisons[key].adjustedData(cid, relativeValues=False)
-				beforeEndDate=(endDate-self.comparisons[key].date).total_seconds()>=0
-				if cid ==0:
-					if len(list(self.comparisons[key].pointsPossible.values()))>0:
-						pointsPossible=np.average(list(self.comparisons[key].pointsPossible.values()))					
+				if cid in self.comparisons[key].weight:
+					adjustedData=self.comparisons[key].adjustedData(cid, relativeValues=False)
+					beforeEndDate=(endDate-self.comparisons[key].date).total_seconds()>=0
+					if cid ==0:
+						if len(list(self.comparisons[key].pointsPossible.values()))>0:
+							pointsPossible=np.average(list(self.comparisons[key].pointsPossible.values()))					
+						else:
+							pointsPossible=None
+						#pointsPossible=np.nanmean(list(self.comparisons[key].pointsPossible.values()))					
+					elif cid in self.comparisons[key].pointsPossible:
+						pointsPossible=self.comparisons[key].pointsPossible[cid]
 					else:
-						pointsPossible=None
-					#pointsPossible=np.nanmean(list(self.comparisons[key].pointsPossible.values()))					
-				elif cid in self.comparisons[key].pointsPossible:
-					pointsPossible=self.comparisons[key].pointsPossible[cid]
-				else:
-					pointsPossible=0
-				if beforeEndDate:
-					totalDelta+=adjustedData['delta']*adjustedData['weight']
-					totalDelta2+=adjustedData['delta2']*adjustedData['weight']
-					totalWeight+=adjustedData['weight']
-					#if self.id==4508048 and cid=='_2681': #debugging
-					#	print(f"update has delta2 {adjustedData['delta2']} with weight of {adjustedData['weight']}")
+						pointsPossible=0
+					if beforeEndDate:
+						totalDelta+=adjustedData['delta']*adjustedData['weight']
+						totalDelta2+=adjustedData['delta2']*adjustedData['weight']
+						totalWeight+=adjustedData['weight']
+						#if self.id==4508048 and cid=='_2681': #debugging
+						#	print(f"update has delta2 {adjustedData['delta2']} with weight of {adjustedData['weight']}")
 			self.adjustments[cid]=self.Adjustments(totalDelta, totalDelta2, totalWeight, self.maxGradingPower, pointsPossible)
 			if cid in self.gradingPowerNormalizationFactor:
 				self.adjustments[cid].gradingPowerNormalizationFactor=self.gradingPowerNormalizationFactor[cid]
