@@ -357,12 +357,13 @@ def getMostRecentAssignment(nearest=False):
 		getGradedAssignments(course)
 	minTimeDelta=3650*24*3600
 	for key, graded_assignment in graded_assignments.items():
-		delta=graded_assignment.secondsPastDue()
-		if nearest and delta<0:
-			delta*=-1
-		if (delta > 0  and delta < minTimeDelta and graded_assignment.published) :
-			minTimeDelta=delta
-			theAssignment=graded_assignment
+		if key!='last':
+			delta=graded_assignment.secondsPastDue()
+			if nearest and delta<0:
+				delta*=-1
+			if (delta > 0  and delta < minTimeDelta and graded_assignment.published) :
+				minTimeDelta=delta
+				theAssignment=graded_assignment
 	if not nearest:
 		graded_assignments['last']=theAssignment
 	if theAssignment==None:
@@ -384,8 +385,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 	else:
 		filter+="!"
 		# filter of the form "include!exclude"
-		
-		filteredAssignments={key: graded_assignments[key] for key in graded_assignments if filter.split("!")[0] in graded_assignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in graded_assignments[key].name)}
+		filteredAssignments={key: graded_assignments[key] for key in graded_assignments if key!='last' and filter.split("!")[0] in graded_assignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in graded_assignments[key].name)}
 		
 		
 	confirmed=False
@@ -1789,7 +1789,7 @@ def getParameters(ignoreFile=False):
 					if not criteria['id'] in params.multiplier:
 						needInput=True
 			except AttributeError:
-				print(f"{assignment.name} does not have a rubric attached")
+				print(f"graded_assignments[{key}] does not have a rubric attached")
 			if needInput:
 				if not headerWritten:
 					logFile.write("----" + str(datetime.now()) + "----\n")
@@ -2256,6 +2256,7 @@ def backup(ndays=0):
 		for file in files:
 			cretionTime = os.path.getctime(os.path.join(root,file)) # elapsed since EPOCH in float
 			existingBackupData.append({'fullpath': os.path.join(root,file), 'filename': file, 'originalfilename': " ".join(file.split(" ")[:-1]), 'creationTime':cretionTime })
+	newestBackup=time.time()-7*24*60*60
 	for source in sourceData:
 		newestBackup=int(time.time())+1
 		for target in existingBackupData:
