@@ -217,7 +217,7 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	
 	lastAssignment =getMostRecentAssignment()
 	nearestAssignment =getMostRecentAssignment(nearest=True)
-	if lastAssignment != nearestAssignment:
+	if lastAssignment != nearestAssignment and lastAssignment!=None:
 		print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
 	for student in students:
 		sections[student.section]=student.sectionName
@@ -248,8 +248,8 @@ def updateAssignmentsAndStudents(quiet=False):
 	getGradedAssignments(course)
 	lastAssignment =getMostRecentAssignment()
 	nearestAssignment =getMostRecentAssignment(nearest=True)
-	if lastAssignment != nearestAssignment and not quiet:
-			print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
+	if lastAssignment != nearestAssignment and not quiet and lastAssignment!=None:
+		print("last assignmetn was " + lastAssignment.name + " but " + nearestAssignment.name + " is closer to the due date")
 
 
 
@@ -375,7 +375,7 @@ def getMostRecentAssignment(nearest=False):
 ######################################
 # Choose an assignment to work on
 def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None, key=None, filter=None):
-	global graded_assignments, lastAssignment, activeAssignment
+	global graded_assignments, lastAssignment, activeAssignment, params
 	if key!=None and key in graded_assignments:
 		return graded_assignments[key]
 	if defaultAssignment==None:
@@ -386,6 +386,11 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		filter+="!"
 		# filter of the form "include!exclude"
 		filteredAssignments={key: graded_assignments[key] for key in graded_assignments if key!='last' and filter.split("!")[0] in graded_assignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in graded_assignments[key].name)}
+	if 'filter' in dir(params) and params.filter!=None:
+		print(f"Filtering assignment list based on {params.filter=} set to None to disable")
+		filter=params.filter+"!"		
+		filteredAssignments={key: filteredAssignments[key] for key in filteredAssignments if key!='last' and filter.split("!")[0] in filteredAssignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in filteredAssignments[key].name)}
+		
 		
 		
 	confirmed=False
