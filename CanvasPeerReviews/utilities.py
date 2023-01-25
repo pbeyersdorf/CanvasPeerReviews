@@ -180,21 +180,28 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 		os.makedirs(dataDirectory)
 	printCommand=False
 	if (CANVAS_URL==None or COURSE_ID==None):
-		response=input("Enter the full URL for the homepage of your course: ")
-		parts=response.split('/courses/')
-		CANVAS_URL=parts[0]
-		COURSE_ID=int(parts[1].split('/')[0])
-		printCommand=True
+		success=False
+		while not success:
+			try:
+				response=input("Enter the full URL for the homepage of your course: ")
+				parts=response.split('/courses/')
+				CANVAS_URL=parts[0]
+				COURSE_ID=int(parts[1].split('/')[0])
+				printCommand=True
+				success=True
+			except:
+				print("\nThat wasn't a valid URL for a canvas course.  It should look like https://sjsu.instructure.com/courses/314159")
 	if (TOKEN==None):
-		print("Go to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
+		print("\nGo to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
 		print("More info at https://community.canvaslms.com/t5/Admin-Guide/How-do-I-manage-API-access-tokens-as-an-admin/ta-p/89")
-		print("")
 		TOKEN=input("Enter the token here: ")
+		print()
 		printCommand=True
 	canvas = Canvas(CANVAS_URL, TOKEN)
 	course = canvas.get_course(COURSE_ID)
 	if printCommand:
-		print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
+		if  'setup' not in status:
+			print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
 		if 	writeCredentials==True:
 			print("Generating a credentials template file to use in the future")
 			f = open("credentials.py", "a")
@@ -206,7 +213,8 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 			)
 			f.close()
 	loadCache()
-	printLine(status['message'],False)
+	if 'setup' not in status:
+		printLine(status['message'],False)
 	
 	if update or "assginment data" not in status['message'] or "student data" not in status['message']:
 		updateAssignmentsAndStudents()
