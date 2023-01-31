@@ -247,7 +247,6 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 
 def updateAssignmentsAndStudents(quiet=False):
 	global status, nearestAssignment, lastAssignment					
-	print("updateAssignmentsAndStudents called")
 	if not quiet:
 		printLine("Getting students",False)
 	getStudents(course)
