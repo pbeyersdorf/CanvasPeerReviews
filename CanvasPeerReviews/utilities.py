@@ -507,9 +507,12 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		getStudentWork(assignment)
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if c.author_id in studentsById and studentsById[c.author_id].role=='student']
 	if calibrations=="auto":
-		print("professor reviews for ", assignment.name, assignment.id)
-		professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id]]
-		calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
+		try:
+			print("professor reviews for ", assignment.name, assignment.id)
+			professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id]]
+			calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
+		except:
+			print("It looks like the professor hasn't yet graded any submissions.  You should grade at least one to use as a calibration review.")
 		#return
 		if len(calibrations)==0 and confirm("There were no submissions reviewed by the professor, should a random submission be assigned as the calibration review?"):
 			calibrations=="random"
