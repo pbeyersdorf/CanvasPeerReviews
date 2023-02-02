@@ -1320,7 +1320,11 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					print(f"{tempDelta=}")
 					print(f"{tempWeight=}")
 					print(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
-					confirm("proceed?")
+					#confirm("proceed?")
+					student.rmsByAssignment[assignment.id][cid]=0
+					student.deviationByAssignment[assignment.id][cid]=0
+					student.relativeRmsByAssignment[assignment.id][cid]=0
+					student.weightsByAssignment[assignment.id][cid]=0
 			delta2=weight=0
 			for cid in [cid for cid in tempWeight if cid!=0]:
 				delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
