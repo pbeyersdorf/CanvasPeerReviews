@@ -1912,7 +1912,8 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 		# A dataset of 10 students
 		marks = curvedTotal + zeros
 		fig, axis = plt.subplots(figsize =(10, 5))
-		axis.hist(marks, bins = [0, 10, 20, 30, 40,50, 60, 70, 80, 90, 100])
+		#axis.hist(marks, bins = [0, 10, 20, 30, 40,50, 60, 70, 80, 90, 100])
+		axis.hist(marks, bins = [i*assignment.points_possible/10 for i in range(11)])
 		plt.title('Curved grades\n\n',
 				  fontweight ="bold")
 		# Displaying the graph

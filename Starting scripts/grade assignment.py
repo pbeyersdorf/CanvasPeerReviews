@@ -49,7 +49,7 @@ if val=='c':
 
 acceptedCurve=False
 while not acceptedCurve:
-	curve=input('Enter an expression that takes a raw score x (out of 100) and returns a curved score, for instance "round(50+x/2)": ')
+	curve=input(f'Enter an expression that takes a raw score x and returns a curved score (out of {int(activeAssignment.points_possible)}), for instance "round({activeAssignment.points_possible/2}+x/2)": ')
 	if curve=="":
 		curve="x"
 	activeAssignment.curve=curve
