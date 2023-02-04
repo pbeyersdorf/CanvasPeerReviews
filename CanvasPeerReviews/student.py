@@ -139,8 +139,11 @@ class Student:
 		if not assignmentID in self.adjustmentsByAssignment:
 			self.adjustmentsByAssignment[assignmentID]=dict()
 		for cid in list(self.criteriaDescription) + [0]:
-			self.adjustmentsByAssignment[assignmentID][cid]=copy.deepcopy(self.adjustments[cid]) 
-			self.adjustmentsByAssignment[assignmentID][cid].gradingPowerNormalizationFactor = self.gradingPowerNormalizationFactor[cid]
+			try:
+				self.adjustmentsByAssignment[assignmentID][cid]=copy.deepcopy(self.adjustments[cid]) 
+				self.adjustmentsByAssignment[assignmentID][cid].gradingPowerNormalizationFactor = self.gradingPowerNormalizationFactor[cid]
+			except:
+				print("Unable to record adjustment for " + self.name + " cid=" + str(cid))
 
 	def updateAdjustments(self, normalize=True, weeklyDegradationFactor=1, cidsToIncludeInSummary="All",  endDate=datetime.utcnow().replace(tzinfo=pytz.UTC)):
 		# go through all of the comparisons on all prior assignments in order accumulating the data
