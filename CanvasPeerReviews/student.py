@@ -90,7 +90,7 @@ class Student:
 		# be calculated and set from outside this class, since calculating it 
 		# requires access to ALL student data.
 		if cid not in self.gradingPowerNormalizationFactor:
-			print("no normalization factor set")
+			#print("no normalization factor set")
 			self.gradingPowerNormalizationFactor[cid]=1
 		normalizationFactor=self.gradingPowerNormalizationFactor[cid]	
 		try:

@@ -1230,7 +1230,10 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 						if assignment.id in reviewer.adjustmentsByAssignment:
 							weight=reviewer.adjustmentsByAssignment[assignment.id][cid].gradingPower()
 						else:
-							weight=reviewer.adjustments[cid].gradingPower()
+							try:
+								weight=reviewer.adjustments[cid].gradingPower()
+							except KeyError:
+								weight=1
 						gradingExplanationLine="Review [P"+ str(review.reviewer_id)+"_" + str(cid) +"] "
 				elif review.review_type == "grading":
 					gradingExplanationLine="Review [I"+ str(review.reviewer_id)+"_" + str(cid) +"] "
