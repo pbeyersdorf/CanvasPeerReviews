@@ -9,9 +9,8 @@ class Student:
 	class Adjustments:
 		# this class defines how much the scores the student awards on a peer
 		# review should be adjusted (the compensation value gets added to the score 
-		# they gave) and how strongly they should count relative to tother 
+		# they gave) and how strongly they should count relative to other 
 		# students (gradingPower)
-		#def __init__(self, dd=None, maxGradingPower=10):
 		def __init__(self, delta, delta2, weight, maxGradingPower=10, pointsPossible=1):
 			if weight!=0:
 				self.deviation=delta/weight
@@ -63,17 +62,14 @@ class Student:
 		self.regrade=dict()
 		self.comments=dict()
 		self.reviewData=dict()
-		#self.givenReviewData=dict()
 		self.regradeComments=dict()
 		self.reviewGradeExplanation = None
 		self.assignmentsGradedByInstructor=dict()
 		self.pointsByCriteria=dict()
 		self.role="student"
-		#self.baseGradingPower=1
 		self.section=0
 		self.sectionName="unknown"
 		self.maxGradingPower=5
-		#._dueDateByAssignment=dict()
 		self.rmsByAssignment=dict() # this is the raw rms for reviews given, so for a 10 point assignment it could be up to 10
 		self.deviationByAssignment=dict() # this is the raw deviation for reviews given compared to average scores for each cid
 		self.relativeRmsByAssignment=dict() # this is the rms out of 1 (relative to the points available on the assignment) for reviews given.  This is what is used for calculating grades.
