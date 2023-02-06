@@ -37,9 +37,9 @@ print(activeAssignment.name + " is done with peer reviewing \nlet's make it the 
 val=inputWithTimeout("Will look for regrades from previous weeks.  (s) to skip",5)
 if val!='s':
 	regrade()
-val=inputWithTimeout("Will calibrate student graders.  (s) to skip",5)
-if val!='s':
-	calibrate()
+#val=inputWithTimeout("Will calibrate student graders.  (s) to skip",5)
+#if val!='s':
+calibrate()
 
 #overrideDefaultPoints(activeAssignment)
 

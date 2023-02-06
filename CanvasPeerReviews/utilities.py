@@ -1195,6 +1195,7 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 # explaining the grade		
 def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	global params
+	missingSubmission=False
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
 	# get a list of the criteria ids assessed on this assignment
@@ -1227,13 +1228,13 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 						gradingExplanationLine="Review [G"+ str(review.reviewer_id) +"_" + str(cid) +"] "
 					elif role== 'student':
 						#weight=studentsById[review.reviewer_id].getGradingPower(cid); 
-						if assignment.id in reviewer.adjustmentsByAssignment:
-							weight=reviewer.adjustmentsByAssignment[assignment.id][cid].gradingPower()
-						else:
-							try:
+						try:
+							if assignment.id in reviewer.adjustmentsByAssignment:
+								weight=reviewer.adjustmentsByAssignment[assignment.id][cid].gradingPower()
+							else:
 								weight=reviewer.adjustments[cid].gradingPower()
-							except KeyError:
-								weight=1
+						except KeyError:
+							weight=1 
 						gradingExplanationLine="Review [P"+ str(review.reviewer_id)+"_" + str(cid) +"] "
 				elif review.review_type == "grading":
 					gradingExplanationLine="Review [I"+ str(review.reviewer_id)+"_" + str(cid) +"] "
@@ -1278,6 +1279,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 			creationGrade=0
 			student.gradingExplanation+="No submission received"
 			print("No submission for",student.name,"on assignment",assignment.name, "assigning grade of", creationGrade)
+			missingSubmission=True
 		else:
 			if student.creations[assignment.id].submitted_at != None:
 				creationGrade=100 # Change this
@@ -1310,6 +1312,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 			if student.reviewGradeExplanation == None:
 				student.reviewGradeExplanation=""
 				#print(f"setting up reviewGradeExplanation for {student.name} ")
+			errorMessage=None
 			for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
 				if tempWeight[cid]!=0:
 					student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
@@ -1318,16 +1321,19 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
 					student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
 				else:
-					print(f"{student.name}")
-					print(f"{compsOnThisAssignment=}")
-					print(f"{tempDelta=}")
-					print(f"{tempWeight=}")
-					print(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
+					#print(f"{student.name}")
+					#print(f"{compsOnThisAssignment=}")
+					#print(f"{tempDelta=}")
+					#print(f"{tempWeight=}")
+					if not missingSubmission:
+						errorMessage=(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
 					#confirm("proceed?")
 					student.rmsByAssignment[assignment.id][cid]=0
 					student.deviationByAssignment[assignment.id][cid]=0
 					student.relativeRmsByAssignment[assignment.id][cid]=0
 					student.weightsByAssignment[assignment.id][cid]=0
+			if errorMessage!=None:
+				print(errorMessage)
 			delta2=weight=0
 			for cid in [cid for cid in tempWeight if cid!=0]:
 				delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
@@ -1345,7 +1351,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		if 0 in student.relativeRmsByAssignment[assignment.id]:
 			rms=student.relativeRmsByAssignment[assignment.id][0]
 		else:
-			print("Unable to get rms for "+ student.name)
+			if not missingSubmission:
+				print("Unable to get rms for "+ student.name)
 			rms=2
 		if rms != None:
 			reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))

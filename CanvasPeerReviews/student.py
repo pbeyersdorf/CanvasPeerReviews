@@ -134,12 +134,17 @@ class Student:
 		assignmentID=self.idOfAssignment(assignment)
 		if not assignmentID in self.adjustmentsByAssignment:
 			self.adjustmentsByAssignment[assignmentID]=dict()
+		errorMessage=None
 		for cid in list(self.criteriaDescription) + [0]:
 			try:
 				self.adjustmentsByAssignment[assignmentID][cid]=copy.deepcopy(self.adjustments[cid]) 
 				self.adjustmentsByAssignment[assignmentID][cid].gradingPowerNormalizationFactor = self.gradingPowerNormalizationFactor[cid]
 			except:
-				print("Unable to record adjustment for " + self.name + " cid=" + str(cid))
+				nullAdjustments=self.Adjustments(0, 0, 0)
+				errorMessage="Unable to record adjustment for " + self.name + ", raw reviews will be used with a weight of 1.\n"
+				errorMessage+=("This could happen if you did not calibrate the students first.")
+		if errorMessage!=None:
+			print(errorMessage)
 
 	def updateAdjustments(self, normalize=True, weeklyDegradationFactor=1, cidsToIncludeInSummary="All",  endDate=datetime.utcnow().replace(tzinfo=pytz.UTC)):
 		# go through all of the comparisons on all prior assignments in order accumulating the data
