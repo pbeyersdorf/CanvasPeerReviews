@@ -543,20 +543,20 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	print("Professor has already graded submissions by ", end="")
 	for c in calibrations:
 		if c!=calibrations[-1]:
-			print(studentsById[c.author_id].name,end=",")
+			print(" " + studentsById[c.author_id].name,end=",")
 		else:
 			print(" and " + studentsById[c.author_id].name)			
 
 	i=0
 	for j, reviewer in enumerate(reviewers):
 		tic=time.time()
+		i+=1
 		while (	time.time()-tic < 1 and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
 			i+=1
 		if not time.time()-tic  <1:
 			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
 			return
 		calibration = calibrations[i%len(calibrations)]
-		i+=1
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
 			msg=str(j+1) + "/" + str(len(reviewers))
