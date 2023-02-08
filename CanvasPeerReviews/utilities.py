@@ -1071,7 +1071,7 @@ If you believe your review grade does not correspond to the quality of your peer
 I've regraded your work.  My review of your work give the following scores:
     {points_by_criteria} for '{description_by_criteria}'
 Based on the regrading you earned {creationGrade}% for your submission
-which brings your 
+which brings your final curved score to {curvedGrade}.
 
 #########################################################################
 # 					reminder about peer reviews							#
@@ -1401,7 +1401,11 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		templateName="general feedback with calibrated review grading"
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
-			student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
+			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
+				print("using template to craft regrade comments")
+				student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
+			else:
+				print("not using template to craft regrade comments")
 	else:			
 		student.comments[assignment.id]=processTemplate(student,assignment,name=templateName)
 	if not assignment.id in student.creations:
