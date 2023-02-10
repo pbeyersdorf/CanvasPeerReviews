@@ -1155,7 +1155,6 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 			return None
 		for line in template_lines:
 			if "by_criteria" in line or "by criteria" in line:
-				#for cid in student.deviationByAssignment[assignment.id]:
 				for cid in student.pointsByCriteria[assignment.id]:
 					if  student.deviationByAssignment[assignment.id][cid] > 0.05:
 						tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
@@ -1305,7 +1304,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					tempDelta[cid]+=adjustedData['delta']*adjustedData['weight']
 					tempDelta2[cid]+=adjustedData['delta2']*adjustedData['weight']
 					tempWeight[cid]+=adjustedData['weight']
-		if assignment.id not in student.relativeRmsByAssignment: # i.e. if we haven't already graded this students reviews
+		if assignment.id not in student.relativeRmsByAssignment or student.relativeRmsByAssignment[assignment.id]=={}: # i.e. if we haven't already graded this students reviews
 			student.rmsByAssignment[assignment.id]=dict()
 			student.deviationByAssignment[assignment.id]=dict()
 			student.relativeRmsByAssignment[assignment.id]=dict()
