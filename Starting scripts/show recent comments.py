@@ -8,11 +8,39 @@ students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COU
 #################  Get relevant parameters assignment  #################
 params=getParameters()
 activeAssignment=lastAssignment
-activeAssignment=chooseAssignment(requireConfirmation=False, timeout=3)
+assignments = utilities.course.get_assignments()
+now=datetime.utcnow().replace(tzinfo=pytz.UTC)
+assignmentsToCheck=[]
+daysToConsider=None
+while daysToConsider==None:
+	try:
+		print("")
+		print("Search for comments on assignments due in the last how many days? ")
+		val=inputWithTimeout("or 's' to select a single assingment ", 10,7)
+		daysToConsider=float(val)
+		print(f"Will look for comments on assignments due in last {val} days")
+	except ValueError:
+		if val.lower()=='s':
+			daysToConsider=0
+			activeAssignment=chooseAssignment()
+			print(f"Will look for comments on {activeAssignment.name}")
+			assignmentsToCheck.append(activeAssignment)
+for i,assignment in enumerate(assignments):
+	try:
+		if (now-assignment.due_at_date).total_seconds() >0:
+			if daysToConsider!=0 and (now-assignment.due_at_date).total_seconds() <daysToConsider*24*3600:
+				assignmentsToCheck.append(assignment)
+				#print(i,assignment.name)
+	except:
+		pass
+
+#if daysToConsider==0:
+#	val=int(input("Choose assignment: "))
+#	activeAssignment=assignments[val]
 
 def getRecentCommentOnAssignment(assignment):
 	# Get creations and reviews
-	getStudentWork(assignment)
+	submissions=assignment.get_submissions()
 
 	print("\033[1m" + "Author comments on creations for " + assignment.name + "\033[0m")
 	fileName=status['dataDir'] + assignment.name + "_comments.html"
@@ -24,7 +52,7 @@ def getRecentCommentOnAssignment(assignment):
 
 	from html import escape
 	commentsToProcess=[]
-	for i,c in enumerate(creations):
+	for i,c in enumerate(submissions):
 		print("\rChecking creation " + str(i+1) + "/" + str(len(creations)), end="", flush=True)
 		hideCursor()
 		allCreationComments=c.edit().submission_comments
@@ -34,6 +62,7 @@ def getRecentCommentOnAssignment(assignment):
 			delta=thisDelta.total_seconds() #age of comment in seconds
 			previewUrl=c.preview_url.split("?")[0]
 			speedGraderURL=previewUrl.replace("assignments/","gradebook/speed_grader?assignment_id=").replace("/submissions/", "&student_id=").replace("?version=1","")
+			c.author_id=c.user_id
 			if (comment['author']['id'] == c.author_id):
 				replied=False
 				for otherComment in allCreationComments:
@@ -52,7 +81,8 @@ def getRecentCommentOnAssignment(assignment):
 	f.close()
 	if len(commentsToProcess)>0:
 		subprocess.call(('open', fileName))
-
+	else:
+		os.remove(fileName)
 	showCursor()
 	printLine(msg="", newLine=False)
 	val=""
@@ -84,7 +114,7 @@ def getRecentCommentOnAssignment(assignment):
 				print("Posting comment...")
 				c.edit(comment={'text_comment':val})
 				proceed=True
-printLine(line=True)
-getRecentCommentOnAssignment(activeAssignment)
-print("\nactiveAssignment=chooseAssignment()\ngetRecentCommentOnAssignment(activeAssignment)\n\nto get comments on an earlier assignment")
 
+for activeAssignment in assignmentsToCheck:
+	print(f"Checking {activeAssignment.name} for comments:" )
+	getRecentCommentOnAssignment(activeAssignment)
