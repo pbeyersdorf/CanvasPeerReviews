@@ -2402,7 +2402,11 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 			while (elapsedTime-n < 0) and self._running:
 				elapsedTime=time.time()-startTime
 				timeLeftString=str(int(1+n-elapsedTime))
-				msg1=Fore.YELLOW  + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
+				msg1=Fore.GREEN  + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
+				if int(timeLeftString) <= 3:
+					msg1=Fore.RED  + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
+				elif int(timeLeftString) <= 10:
+					msg1=Fore.YELLOW  + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
 				print("\r"+msg1 + self.inp, end="")
 				time.sleep(0.01)
 				printLine("",False)
