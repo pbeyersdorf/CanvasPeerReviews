@@ -15,20 +15,25 @@ from CanvasPeerReviews.review import Review
 try:
 	from dill.source import getsource	
 	import dill
-except Exception: 
-	errormsg+="Missing dill module.  Run 'pip install dill' to intall\n"
+except ImportError: 
+	errormsg+="Missing dill module.  Run 'pip3 install dill' to intall\n"
 try:
 	import pickle
-except Exception:
-	errormsg+="Missing pickle module.  Run 'pip install pickle5' to intall\n"
+except ImportError:
+	errormsg+="Missing pickle module.  Run 'pip3 install pickle5' to intall\n"
 try:
 	import numpy as np
-except Exception:
-	errormsg+="Missing numpy module.  Run 'pip install numpy' to intall\n"
+except ImportError:
+	errormsg+="Missing numpy module.  Run 'pip3 install numpy' to intall\n"
 try:
 	from colorama import Fore, Back, Style
-except Exception:
-	errormsg+="Missing colorama module.  Run 'pip install colorama' to intall\n"
+except ImportError:
+	errormsg+="Missing colorama module.  Run 'pip3 install colorama' to intall\n"
+try:
+	import readchar
+except ImportError:
+	errormsg+="Missing readchar module.  Run 'pip3 install readchar' to intall\n"
+
 import webbrowser
 import copy
 import random
@@ -2374,6 +2379,7 @@ def reverseText(msg):
 	
 ######################################
 # Prompt for user input, but give up after a timeout
+	
 def inputWithTimeout(prompt, timeout=10, default=None):
 	import signal, threading
 	prompt=formatWithBoldOptions(prompt)
@@ -2381,36 +2387,44 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 	class Countdown:
 		def __init__(self):
 			self._running=True
+			self.inp=""
 		
 		def terminate(self):
-			self._running = False
+			self._running = False			
 	
 		def run(self,n, prompt):
 			msg=" "*len(str(n)) + " " + prompt 
 			if default!=None:
 				msg+=" [" +str(default) +"]"
 			msg+= ": "
-			for i in range(n,0,-1):
-				if self._running:
-					#msg1= reverseText(str(i))  +msg[len(str(i)):]
-					msg1=Fore.YELLOW  + str(i) + Style.RESET_ALL +msg[len(str(i)):] 
-					print("\r"+msg1, end="")
-					for j in range(100):
-						if self._running:
-							time.sleep(0.01)
+			startTime=time.time()
+			elapsedTime=0
+			while (elapsedTime-n < 0) and self._running:
+				elapsedTime=time.time()-startTime
+				timeLeftString=str(int(1+n-elapsedTime))
+				msg1=Fore.YELLOW  + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
+				print("\r"+msg1 + self.inp, end="")
+				time.sleep(0.01)
 				printLine("",False)
 			print("\r",end="")
 			
 	def alarm_handler(signum, frame):
 		raise TimeoutExpired
-	msg=" "*len(str(timeout)) + " " + prompt + ": "
+	
+	msg=" "*len(str(timeout)) + " " + prompt + ": " #+ inparr
 	cnt=Countdown()
 	new_thread = threading.Thread(target=cnt.run, args=(timeout,prompt))
 	new_thread.start()	
 	signal.signal(signal.SIGALRM, alarm_handler)
 	signal.alarm(timeout) # produce SIGALRM in `timeout` seconds
 	try:
-		val= input()
+		#val= input()
+		cnt.inp=""
+		key=""
+		while key!="\n":
+			cnt.inp+=key
+			key=readchar.readkey()
+		val=cnt.inp
 		if default!=None and val=="":
 			val=default
 		cnt.terminate()
@@ -2426,6 +2440,7 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 	cnt.terminate()
 	time.sleep(0.1)
 	return str(default)
+		
 	
 ######################################
 # print a line by printing white space
