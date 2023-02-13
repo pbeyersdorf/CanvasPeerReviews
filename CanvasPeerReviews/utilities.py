@@ -2418,11 +2418,13 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 	signal.signal(signal.SIGALRM, alarm_handler)
 	signal.alarm(timeout) # produce SIGALRM in `timeout` seconds
 	try:
-		#val= input()
 		cnt.inp=""
 		key=""
 		while key!="\n":
-			cnt.inp+=key
+			if key!="\x7f":  #append last character as long as it isn't the backspace keu
+				cnt.inp+=key
+			else: #if backspace key is hit, delete last character
+				cnt.inp=cnt.inp[:-1]
 			key=readchar.readkey()
 		val=cnt.inp
 		if default!=None and val=="":
@@ -2430,7 +2432,7 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 		cnt.terminate()
 		printLine("",False)
 		print("\r", end="")
-		time.sleep(0.1)
+		time.sleep(0.02)
 		signal.alarm(0)
 		return str(val)
 	except Exception:
@@ -2438,7 +2440,7 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 		print("\r", end="")
 	signal.alarm(0)
 	cnt.terminate()
-	time.sleep(0.1)
+	time.sleep(0.02)
 	return str(default)
 		
 	
