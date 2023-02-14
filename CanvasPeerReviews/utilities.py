@@ -714,7 +714,7 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 		if success:
 			return solutionURLs[assignment.id]
 	except Exception:
-		f = open(fileName.replace("csv","-template.csv"), "w")
+		f = open(fileName, "w")
 		f.write("Assignment Name, Solution URL\n")
 		lines=[]
 		for key, assignment in graded_assignments.items():
