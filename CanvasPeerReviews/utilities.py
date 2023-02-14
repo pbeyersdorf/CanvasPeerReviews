@@ -1944,9 +1944,9 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 		# Displaying the graph
 		plt.show(block=False)
 	if text:
-		print("Creation average is %.1f with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
-		print("Review average is %.1f with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
-		print("Raw total average is %.1f with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
+		print("Creation average is %.1f%% with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
+		print("Review average is %.1f%% with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
+		print("Raw total average is %.1f%% with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
 		print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
 	assignment.creationAverage=np.average(creationGrade)
 	assignment.creationStd=np.std(creationGrade)
