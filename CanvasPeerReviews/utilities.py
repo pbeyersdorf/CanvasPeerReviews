@@ -1161,12 +1161,15 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 		for line in template_lines:
 			if "by_criteria" in line or "by criteria" in line:
 				for cid in student.pointsByCriteria[assignment.id]:
-					if  student.deviationByAssignment[assignment.id][cid] > 0.05:
-						tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
-					elif student.deviationByAssignment[assignment.id][cid] < -0.05:
-						tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
-					else:
-						tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
+					try:
+						if  student.deviationByAssignment[assignment.id][cid] > 0.05:
+							tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
+						elif student.deviationByAssignment[assignment.id][cid] < -0.05:
+							tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
+						else:
+							tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
+					except:
+						pass
 					tempLine=processUserDefinedKeywords(tempLine, fileName)
 					if student.pointsByCriteria[assignment.id][cid]!='':
 						points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
