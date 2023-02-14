@@ -1161,6 +1161,7 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 		for line in template_lines:
 			if "by_criteria" in line or "by criteria" in line:
 				for cid in student.pointsByCriteria[assignment.id]:
+					tempLine=""
 					try:
 						if  student.deviationByAssignment[assignment.id][cid] > 0.05:
 							tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
