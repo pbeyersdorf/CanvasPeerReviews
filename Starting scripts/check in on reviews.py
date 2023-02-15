@@ -91,14 +91,6 @@ def showDelinquentStudents():
 	else:
 		print("OK, no messages sent")
 
-#offer to message students who haven't yet started their reviews
-val=inputWithTimeout("(s) show students who haven't done any reviews", 5)
-#if confirm("\nShow students who haven't done any reviews? "):
-if val=='s':
-	showDelinquentStudents()
-	endMessage="Done!"
-else:
-	endMessage="type 'showDelinquentStudents()' to show and/or message students who haven't yet completed any reviews"
 
 #offer to reset any incomplete reviews and message the reviewers to let them know to redo them
 ReviewCount=0
@@ -136,6 +128,15 @@ elif ReviewCount>0:
 else:
 	print("Ignored " + str(len(incompleteReviews)) + " incomplete reviews")
 unreviewedCreations=checkForUnreviewed(activeAssignment, openPage=True)  #open a web page with links to all of the incomplete reviews.
+#offer to message students who haven't yet started their reviews
+
+#val=inputWithTimeout("(s) show students who haven't done any reviews", 60)
+#if confirm("\nShow students who haven't done any reviews? "):
+if confirm("Show students who haven't yet done a review?"):
+	showDelinquentStudents()
+	endMessage="Done!"
+else:
+	endMessage="type 'showDelinquentStudents()' to show and/or message students who haven't yet completed any reviews"
 print(endMessage)
 finish(True)
 	
