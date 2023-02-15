@@ -27,7 +27,7 @@ while daysToConsider==None:
 			assignmentsToCheck.append(activeAssignment)
 for i,assignment in enumerate(assignments):
 	try:
-		if (now-assignment.due_at_date).total_seconds() >0:
+		if assignment.published and (now-assignment.due_at_date).total_seconds() >0:
 			if daysToConsider!=0 and (now-assignment.due_at_date).total_seconds() <daysToConsider*24*3600:
 				assignmentsToCheck.append(assignment)
 				#print(i,assignment.name)
@@ -39,6 +39,9 @@ for i,assignment in enumerate(assignments):
 #	activeAssignment=assignments[val]
 
 def getRecentCommentOnAssignment(assignment):
+	if not assignment.published:
+		print(f"{assignment.name} is not published - not looking for comments")
+		return
 	# Get creations and reviews
 	submissions=assignment.get_submissions()
 
