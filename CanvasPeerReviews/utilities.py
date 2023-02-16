@@ -300,6 +300,11 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 	submissions=thisAssignment.get_submissions()
 	clearList(creations)
 	i=0
+	try:
+		temp=submissions[0]
+	except:
+		print("Error getting submissions.  See https://stackoverflow.com/questions/31708519/request-returns-bytes-and-im-failing-to-decode-them")
+		print("It may be fixed by running 'pip install brotlipy'")
 	for submission in submissions:
 		i+=1
 		try:
