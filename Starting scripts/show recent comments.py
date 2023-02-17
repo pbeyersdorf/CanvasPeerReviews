@@ -11,6 +11,21 @@ activeAssignment=lastAssignment
 assignments = utilities.course.get_assignments()
 now=datetime.utcnow().replace(tzinfo=pytz.UTC)
 assignmentsToCheck=[]
+
+namesAndDays=[]
+for assignment in assignments:
+	try:
+		if assignment.published and (now-assignment.due_at_date).total_seconds() > 0:
+			daysSinceDue=(now-assignment.due_at_date).total_seconds()/(24*3600)
+			namesAndDays.append([daysSinceDue, assignment.name])
+	except:
+		pass
+sortedNamesAndDays=sorted(namesAndDays,key=lambda x: -x[0])
+for nameAndDays in sortedNamesAndDays:
+	print(f"{int(round(nameAndDays[0],0))}: {nameAndDays[1]}")
+	
+
+
 daysToConsider=None
 while daysToConsider==None:
 	try:
@@ -44,19 +59,18 @@ def getRecentCommentOnAssignment(assignment):
 		return
 	# Get creations and reviews
 	submissions=assignment.get_submissions()
-
-	print("\033[1m" + "Author comments on creations for " + assignment.name + "\033[0m")
 	fileName=status['dataDir'] + assignment.name + "_comments.html"
 	f = open(fileName, "w")
 	f.write("<html><head><title>Author comments on " + assignment.name + " </title><style>\n")
 	f.write("a {text-decoration:none}\n")
 	f.write("</style><meta http-equiv='Content-Type' content='text/html; charset=utf-16'></head><body>\n")
 	f.write("<h3>Author comments on "+assignment.name+"</h3>\n<table>\n")
-
+	printedResult=False
+	
 	from html import escape
 	commentsToProcess=[]
 	for i,c in enumerate(submissions):
-		print("\rChecking creation " + str(i+1) + "/" + str(len(creations)), end="", flush=True)
+		print("\r" +assignment.name + ": Checking creation " + str(i) + "/" + str(len(students)), end="", flush=True)
 		hideCursor()
 		allCreationComments=c.edit().submission_comments
 		for comment in allCreationComments:
@@ -75,6 +89,9 @@ def getRecentCommentOnAssignment(assignment):
 					if (delta>0 and otherComment['author']['id'] not in studentsById ):
 						replied = True
 				if not replied:
+					if not printedResult:
+						print("\033[1m" + "Author comments for " + assignment.name + "\033[0m")
+						printedResult=True
 					printLine(msg="", newLine=False)
 					print("\r"+comment['author']['display_name'] + " said: \n" + Fore.GREEN +  Style.BRIGHT + comment['comment'] +  Style.RESET_ALL + "\n")
 					commentsToProcess.append({'creation': c, 'comment': comment})
@@ -82,6 +99,8 @@ def getRecentCommentOnAssignment(assignment):
 					f.write("<td> " + comment['author']['display_name'].split(" ")[0] + " said: <a href='"+ speedGraderURL +"'>" + escape(comment['comment']).replace("’","'") + "</a></td></tr>")
 	f.write("</table></body></html>\n")
 	f.close()
+	if not printedResult:
+		print("\r\033[1m" + "No new author comments for " + assignment.name + "\033[0m")
 	if len(commentsToProcess)>0:
 		subprocess.call(('open', fileName))
 	else:
@@ -119,5 +138,5 @@ def getRecentCommentOnAssignment(assignment):
 				proceed=True
 
 for activeAssignment in assignmentsToCheck:
-	print(f"Checking {activeAssignment.name} for comments:" )
+	#print(f"Checking {activeAssignment.name} for comments:" )
 	getRecentCommentOnAssignment(activeAssignment)
