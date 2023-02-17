@@ -15,7 +15,7 @@ assignmentsToCheck=[]
 namesAndDays=[]
 for assignment in assignments:
 	try:
-		if assignment.published and (now-assignment.due_at_date).total_seconds() > 0:
+		if assignment.published and (now-assignment.due_at_date).total_seconds() > 0 and assignment.has_submitted_submissions:
 			daysSinceDue=(now-assignment.due_at_date).total_seconds()/(24*3600)
 			namesAndDays.append([daysSinceDue, assignment.name])
 	except:
