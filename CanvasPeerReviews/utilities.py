@@ -2462,8 +2462,11 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 ######################################
 # print a line by printing white space
 def printLine(msg="", newLine=True, line=False):
-	size=os.get_terminal_size()
-	cols=size.columns
+	try:
+		size=os.get_terminal_size()
+		cols=size.columns
+	except:
+		cols=80
 	hideCursor()
 	if (line):
 		print("-"*cols)
