@@ -50,6 +50,27 @@ print()
 
 #################  Get relevant parameters assignment  #################
 params=getParameters()
+
+#################	Generate a class roster  #################
+print("Let's get a roster complete with images of the students")
+users = utilities.course.get_users(enrollment_type=['student'])
+from html import escape
+fileName=status['dataDir'] +  "roster.html"
+f = open(fileName, "w")
+f.write("<html><head><title>Roster for " + utilities.course.name + " </title><style>\n")
+f.write("a {text-decoration:none}\n")
+f.write("</style><meta http-equiv='Content-Type' content='text/html; charset=utf-16'></head><body>\n")
+f.write("<h3>Roster for  "+utilities.course.name +"</h3>\n<table>\n")
+
+for u in users:
+	name=u.name
+	url= u.get_profile()['avatar_url']
+	email=u.email
+	printLine("getting avatar for " + name, False)
+	f.write("<tr><td><img src='" +url+ "'>\n<a href='mailto:" + email + "'>" + name +"</a></td></tr>")
+f.write("</table></body></html>\n")
+f.close()
+subprocess.call(('open', fileName))
 finish(True)
 
 print()
