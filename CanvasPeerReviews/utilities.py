@@ -1463,8 +1463,8 @@ def reviewGradeOnCalibrations(assignment, student):
 						tempWeight[cid]=1						
 						delta2+=((thisGivenReview.scores[cid] - otherReview.scores[cid] )/ assignment.criteria_points(cid))**2
 						numberOfComparisons+=1 
-	averagePointsPerCriteria=totalCriteriaPoints/numberOfCriteria
 	if numberOfComparisons!=0:
+		averagePointsPerCriteria=totalCriteriaPoints/numberOfCriteria
 		rms=(delta2/numberOfComparisons)**0.5
 		student.relativeRmsByAssignment[assignment.id][0]=rms # this is new...untested.  Can delete if it causes problems, it is just for updating records that may not be used.
 	else:
