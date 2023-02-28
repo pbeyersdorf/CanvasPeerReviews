@@ -1165,21 +1165,22 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 			return None
 		for line in template_lines:
 			if "by_criteria" in line or "by criteria" in line:
-				for cid in student.pointsByCriteria[assignment.id]:
+				#xxx for cid in student.pointsByCriteria[assignment.id]: #trying to fix bug Hilary found
+				for cid in assignment.criteria_ids(): 
 					tempLine=""
 					try:
-						if  student.deviationByAssignment[assignment.id][cid] > 0.05:
-							tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
-						elif student.deviationByAssignment[assignment.id][cid] < -0.05:
-							tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
-						else:
-							tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
-
+						if cid in student.deviationByAssignment[assignment.id]:
+							if  student.deviationByAssignment[assignment.id][cid] > 0.05:
+								tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
+							elif student.deviationByAssignment[assignment.id][cid] < -0.05:
+								tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
+							else:
+								tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
 						tempLine=processUserDefinedKeywords(tempLine, fileName)
-						if student.pointsByCriteria[assignment.id][cid]!='':
-							points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
-						else:
-							points=0
+						points=0
+						if cid in student.pointsByCriteria[assignment.id]:
+							if student.pointsByCriteria[assignment.id][cid]!='':
+								points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
 						processed_lines+=tempLine.format(points_by_criteria=points, description_by_criteria=criteriaDescription[cid], keywordCreation="regrade", keywordReview="recalculate", review_rms_by_criteria=round(student.rmsByAssignment[assignment.id][cid],1), absolute_value_of_deviation=round(abs(student.deviationByAssignment[assignment.id][cid]),1))	+"\n"
 					except:
 						points=0
