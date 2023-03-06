@@ -1599,7 +1599,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 							if not alreadyGradedByProfessor:
 								val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to rescore creation and review\n")
 							else:
-								val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(v) to view stueddnts work in a web browser\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to evaluate creation and review\n")						
+								val=input("\n\t(i) to ignore this request for now\n\t(f) to forget it forever\n\t(r) to get a grading report\n\t(v) to view student's work in a web browser\n\t(c) to rescore creation (only)\n\t(p) to recalculate peer review score (only)\n\t(cp) to evaluate creation and review\n")						
 						else:
 							val=input("enter choice: ")
 						if val=='e':
