@@ -699,7 +699,7 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 	placeholder="solution_URLs_go_here"
 	status["gotSolutionURLs"]=True
 	print("looking for solution urls in", fileName)
-	try
+	try:
 		success=False
 		f = open(fileName, "r")
 		lines = f.readlines()
