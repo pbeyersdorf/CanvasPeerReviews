@@ -1475,8 +1475,8 @@ def reviewGradeOnCalibrations(assignment, student):
 	reviewGrade=reviewGradeFunc(rms)
 	student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by me we differed on (rms) average by %.2f points per category, resulting in a regaded review score of %.f\n"%(rms*averagePointsPerCriteria,reviewGrade)		
 	curveFunc=eval('lambda x:' + assignment.curve)
-	totalGradeDetla= round(reviewGrade-oldReviewGrade)
-	totalPointsDelta= round(totalGradeDetla * params.weightingOfReviews)	
+	totalGradeDelta= round(reviewGrade-oldReviewGrade)
+	totalPointsDelta= round(totalGradeDelta * params.weightingOfReviews*assignment.points_possible/100.0)	
 	if not assignment.id in student.regradeComments:
 		student.regradeComments[assignment.id]= student.calibrationGradeExplanation[assignment.id]
 	else:
@@ -1491,15 +1491,15 @@ def reviewGradeOnCalibrations(assignment, student):
 			student.regradeComments[assignment.id]+="This would actually lower your review grade, but I chose to leave it as is.  "
 	if (totalPointsDelta) > 0 or useReducedScore:
 		student.grades[assignment.id]['review']=reviewGrade
-		student.points[assignment.id]['review']=round(reviewGrade * params.weightingOfReviews)
+		student.points[assignment.id]['review']=round(reviewGrade * assignment.points_possible/100.0 * params.weightingOfReviews)
 		student.grades[assignment.id]['total']=student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation
-		student.points[assignment.id]['total']=round(student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation)
+		student.points[assignment.id]['total']=round((student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation)*assignment.points_possible/100.0)
 		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
-		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total']))
+		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total'])*assignment.points_possible/100.0)
 		if (totalPointsDelta) > 0:
-			student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDetla) + " points, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal']) + ".  "
+			student.regradeComments[assignment.id]+="This increased your review grade by " + str(totalGradeDelta) + " percent, increasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal']) + ".  "
 		else:
-			student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDetla) + " points, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])+ ".  "
+			student.regradeComments[assignment.id]+="This decreased your review grade by " + str(-totalGradeDelta) + " percent, decreasing your total (curved) score for the assignment to " + str(student.points[assignment.id]['curvedTotal'])+ ".  "
 	elif totalPointsDelta==0:
 		student.regradeComments[assignment.id]+="This did not change your review grade."
 	return student.points[assignment.id]['curvedTotal']
