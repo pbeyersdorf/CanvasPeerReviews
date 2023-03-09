@@ -711,14 +711,15 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 				success=True
 		#append any new assignments
 		f = open(fileName, "a")
-		for key, assignment in graded_assignments.items():
-			line=assignment.name + ", " + placeholder +"\n"
-			if assignment.name not in "".join(lines):
+		for key, newAssignment in graded_assignments.items():
+			line=newAssignment.name + ", " + placeholder +"\n"
+			if newAssignment.name not in "".join(lines):
 				f.write(line)
 		f.close()
 		if success:
 			return solutionURLs[assignment.id]
-	except Exception:
+	except Exception as e: 
+		print("Exception - look on lines 702-720 in utilities.py")
 		f = open(fileName, "w")
 		f.write("Assignment Name, Solution URL\n")
 		lines=[]
