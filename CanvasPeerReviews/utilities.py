@@ -239,14 +239,14 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	status["initialized"]=True
 	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
 		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
-		print(Fore.RED +  Style.BRIGHT +  "Using test environment - set TEST_ENVIRONMENT=False to change" + Style.RESET_ALL)
+		print(Fore.RED +  Style.BRIGHT +  "\nUsing test environment\nset TEST_ENVIRONMENT=False in 'credentials.py' to change" + Style.RESET_ALL)
 		testDir=status['dataDir'][:-1]+"-test/"
 		cmd="cp -r '" + status['dataDir'] + "' '" + testDir + "'"
 		os.system(cmd)
 		status['dataDir'] = testDir
 		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
 	else:
-		print("Using production environment - set TEST_ENVIRONMENT=True to change")
+		print("\nUsing production environment\nset TEST_ENVIRONMENT=True in 'credentials.py' to change")
 		
 	return students, graded_assignments, lastAssignment
 
@@ -388,6 +388,14 @@ def getMostRecentAssignment(nearest=False):
 	status["gotMostRecentAssignment"]=True
 	return theAssignment	
 
+######################################
+# Delte an assignment to work on
+def removeAssignment(a=None): 
+	if a==None:
+		print("This will remove an assignment from the list of graded assignments with peer reviews.  It will NOT delete it from canvas.  ")
+		a=chooseAssignment(prompt="choose an assignmetn to remove: ")
+	graded_assignments.pop(a.id)
+	saveData(['assignments'])
 	
 ######################################
 # Choose an assignment to work on
@@ -1641,9 +1649,10 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 		studentsNeedingRegrade=studentsNeedingCreationRegrade.copy()
 		studentsNeedingRegrade.update(studentsNeedingReviewRegrade)
 		if len(studentsNeedingRegrade)>0:
+			print("Getting updated submissions")			
+			getStudentWork(assignment)
 			if (recalibrate):
-				getStudentWork(assignment)
-				print("Before posting the regrade results, lets get student work so we can recalibrate the graders")
+				print("Before posting the regrade results, lets recalibrate the graders")
 				calibrate()
 			print("OK, now lets go through each regraded student to post their scores and comments")
 			originalGrades=dict()
@@ -1840,7 +1849,7 @@ def getParameters(ignoreFile=False):
 					if not criteria['id'] in params.multiplier:
 						needInput=True
 			except AttributeError:
-				print(f"graded_assignments[{key}] does not have a rubric attached")
+				print(f"'{graded_assignments[key].name}' does not have a rubric attached")
 			if needInput:
 				if not headerWritten:
 					logFile.write("----" + str(datetime.now()) + "----\n")
