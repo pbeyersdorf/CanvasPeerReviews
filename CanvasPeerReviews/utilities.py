@@ -309,7 +309,7 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 		i+=1
 		try:
 			author=studentsById[submission.user_id]
-			submission.courseid=thisAssignment.courseid
+			submission.courseid=thisAssignment.course_id # this had been .courseid
 			submission.reviewCount=0
 			submission.author_id=submission.user_id
 			author.submissionPlaceholders[thisAssignment.id]=submission
@@ -1109,7 +1109,12 @@ Peer reviews have been assigned and <a href='{solutionsUrl}'>solutions to {assig
 ######################################
 # read a template file and extract and return the part identified by 'name'
 def getTemplate(fileName="feedback_template.txt", name=None):
-	global status	
+	global status
+	if ("alternativeFeedbackTemplate" in dir(params) and "feedback_template.txt" in fileName):
+		fileName=fileName.replace("feedback_template.txt",params.alternativeFeedbackTemplate)
+		if "alternativeFeedbackTemplateWarningGiven" not in status:
+			print("Using " + fileName + " as an altenrative feedback template")
+		status["alternativeFeedbackTemplateWarningGiven"]=True
 	try:
 		f = open(fileName, "r")
 		raw_lines = f.readlines()
