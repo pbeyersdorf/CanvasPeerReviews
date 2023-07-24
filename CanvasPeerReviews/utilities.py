@@ -629,7 +629,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
-		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)}")
+		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)} reviews")
 		while (reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)  < params.numberOfReviews and reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id) < len(creationsToConsider)-1 and time.time()-tic < 1):
 			creation=random.choice(creationsToConsider)
 			if (reviewer.section == studentsById[creation.user_id].section):
@@ -1758,7 +1758,10 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 			if postGrades:
 				creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
 			if postComments:
-				theComment=""
+				try:
+					theComment=additionalGradingComment + "\n\n"
+				except:
+					theComment=""
 				if useRegradeComments and assignment.id in student.regradeComments:
 					theComment=student.regradeComments[assignment.id]
 				elif not useRegradeComments:
