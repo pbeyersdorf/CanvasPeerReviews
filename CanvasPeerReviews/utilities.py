@@ -515,6 +515,7 @@ def undoAssignedPeerReviews(author=None, reviewer=None, assignment=None, peer_re
 # a calibration to its own author if possible
 def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	global status, creations
+	returnVal=""
 	if assignment=="last":
 		assignment=graded_assignments['last']
 	if not status['initialized']:
@@ -557,7 +558,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	calibrations=makeList(calibrations)
 	if len(calibrations)==0:
 		print("Unable to find a suitable creation to use as a calibration...none assigned")
-		return
+		return []
 	print("Professor has already graded submissions by ", end="")
 	for c in calibrations:
 		if c!=calibrations[-1]:
@@ -572,8 +573,8 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		while (	time.time()-tic < 1 and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
 			i+=1
 		if not time.time()-tic  <1:
-			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment frmo each section?")
-			return
+			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment from each section?")
+			return []
 		calibration = calibrations[i%len(calibrations)]
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
@@ -582,6 +583,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		else:
 			printLine("skipping self review", newLine=False)
 	dataToSave['students']=True
+	return calibrations
 	
 ######################################
 # Takes a student submission and a list of potential reviewers, and the number of reviews 
