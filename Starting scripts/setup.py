@@ -1,26 +1,54 @@
 import os, subprocess
-
+homeFolder = os.path.expanduser('~')
 loadedPathInfo=False
-while not loadedPathInfo:
-	try:
-		from path_info import * 			# Set up where to find the relevant files
-		loadedPathInfo=True
-	except:
-		cwd = os.getcwd()
-		# Opening a file
-		file1 = open('path_info.py', 'w')
-		msg= '''import sys, os
+def getPath(prompt):
+	thePath=input(prompt).strip().replace("\\","")
+	if thePath[-1]!="/":
+		thePath+="/"
+	return thePath
+
+
+try:
+	from path_info import * 			# Set up where to find the relevant files
+except:
+	loadedPathInfo=False
+if not loadedPathInfo:
+	cwd = os.getcwd()
+	# Opening a file
+	file1 = open('path_info.py', 'w')
+	cprLocation=getPath("Enter the absolute path of the 'CanvasPeerReviews' folder, for instance '/Documents/GitHub/CanvasPeerReviews': ").strip()
+	while not os.path.isdir(cprLocation):
+		print(f"Unable to find '{cprLocation}'")
+		cprLocation=getPath("Enter the absolute path of the 'CanvasPeerReviews' folder, for instance '/Documents/GitHub/CanvasPeerReviews': ").strip()
+	cprLocation=cprLocation[:-1]
+
+	dataLocation=getPath("Enter the absolute path where the data should go.  A 'Data' directory will be created here if it doesn't exist: ").strip()
+	while not os.path.isdir(cprLocation):
+		print(f"Unable to find '{cprLocation}'")
+		dataLocation=getPath("Enter the absolute path of the 'CanvasPeerReviews' folder, for instance '/Documents/GitHub/CanvasPeerReviews': ").strip()
+
+	if not os.path.exists(dataLocation + "Data"):
+		print("Making Data directory")
+		os.mkdir(dataLocation + "Data")
+	else:
+		print("Found data directrory")
+	dataDirectory=dataLocation + "Data/"
+	relDataDirectory=os.path.abspath(dataDirectory).replace(homeFolder,"")
+	relCprLocation=os.path.abspath(cprLocation).replace(homeFolder,"")
+
+	msg= f'''import sys, os
 os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
 homeFolder = os.path.expanduser('~')				  # get the home folder 
-sys.path.insert(0, homeFolder + '/Documents/GitHub/CanvasPeerReviews')	# location of the module files.  Only necessary if they are stored somewhere other than the scripts
-RELATIVE_DATA_PATH='/Nextcloud/Phys 51/CanvasPeerReviews/Data/' #data directory relative to the home folder where your class data will be stored
-DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH'''
-		file1.write(msg)
-		file1.close()
-		subprocess.call(('open', 'path_info.py'))
-		print(f"wrote file {cwd}/path_info.py, please edit with the location of files on your machine and then run setup.py again.")
-		exit()
-
+sys.path.insert(0, homeFolder + '{relCprLocation}')	# Use this if you are running on multiple machines with different absolute paths
+RELATIVE_DATA_PATH='{relDataDirectory}' #data directory relative to the home folder where your class data will be stored
+DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH
+loadedPathInfo=True
+'''
+	file1.write(msg)
+	file1.close()
+	subprocess.call(('open', 'path_info.py'))
+	print(f"wrote file {cwd}/path_info.py, please edit with the location of files on your machine and then run setup.py again.")
+	exit()
 print()
 print("The path_info.py file was read in with the following values: ")
 print(f"	{homeFolder=}")
@@ -33,9 +61,11 @@ try:
 	from CanvasPeerReviews import *		# the main module for managing peer reviews
 	importedCanvasPeerReviews=True
 	sys.stdout = sys.__stdout__ #turn output back on
-except:
+except ModuleNotFoundError as err:
 	sys.stdout = sys.__stdout__ #turn output back on
-	input("Unable to import CanvasPeerReviews.  Make sure the path is set correclty in path_info.py then run setup.py again.")
+	print(err)
+	if 'CanvasPeerReviews' in str(err):
+	    print(" Make sure the path is set correclty in path_info.py then run setup.py again.")
 	exit()
 print()
 print("The CanvasPeerReviews module was imported correctly")
@@ -74,5 +104,5 @@ subprocess.call(('open', fileName))
 finish(True)
 
 print()
-print("Congratulations - you are all set up.  You can now run any of the canvas peer review scritps")
+print("Congratulations - you are all set up.  You can now run any of the canvas peer review scripts")
 print()

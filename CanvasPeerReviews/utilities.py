@@ -1851,7 +1851,7 @@ def getParameters(ignoreFile=False):
 	logFile = open(status['dataDir'] +status['prefix'] + 'parameters.log', "a") 	
 	headerWritten=False
 	for key, assignment in graded_assignments.items():
-		if assignment != []:
+		if assignment != [] and assignment!=None:
 			needInput=False
 			try:
 				for criteria in assignment.rubric:
