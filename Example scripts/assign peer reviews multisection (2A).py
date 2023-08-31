@@ -52,6 +52,8 @@ for sectionName in sorted(list(sections.values())):
 			undoAssignedPeerReviews(assignment=activeAssignment)
 		print(f"Done assigning reviews for {activeAssignment.name}.")
 
+		#get the section instructor and message them about the calibration assignment
+		sec=[sec for sec in course.get_sections() if sec.name==sectionName][0]
 		sectionInstructors=[enr.user for enr in sec.get_enrollments() if enr.user['name'] in classInstructors]
 		for instructor in sectionInstructors:
 			if confirm(f"Send a message to {instructor['name']} about the calibration review?")
