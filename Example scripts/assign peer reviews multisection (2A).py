@@ -27,6 +27,8 @@ getStudentWork(activeAssignment, includeReviews=True)
 
 #Choose what section to work on
 secByNum=dict()
+calibrationMessages=[]
+classInstructors=[user.name for user in course.get_users(enrollment_type=['Teacher'])]
 for sectionName in sorted(list(sections.values())):
 	secNum=int(sectionName[-1:])
 	secByNum[secNum]=sectionName
@@ -38,17 +40,10 @@ for sectionName in sorted(list(sections.values())):
 		print(f"Not enough submissions to assign peer reviews for {activeAssignment.name} in {sectionName}")
 		log(f"Not enough submissions to assign peer reviews for {activeAssignment.name} in {sectionName}")
 	else:
-# 		studentsWithSubmissionsInThisSection=[studentsById[c.author_id] for c in creationsToConsider]
-# 		reviewers=studentsWithSubmissionsInThisSection
-# 		reviewers.pop(0)
-# 		calibration=creationsToConsider[0]
-# 		log(studentsById[calibration.author_id].name + " chosen as the calibration review for " + activeAssignment.name + " in " + sectionName)
-# 		for j,reviewer in enumerate(reviewers):
-# 			msg=str(j+1) + "/" + str(len(reviewers))
-# 			peer_review=assignAndRecordPeerReview(calibration,reviewer, msg)
-
 		calibrations=assignCalibrationReviews(calibrations="auto", assignment=activeAssignment)
-		log(f'{" ,".join([studentsById[calibration.author_id].name for calibration in calibrations])} work has been assigned as calibrations for section {secNum}', display=True)
+		message=f'{" ,".join([studentsById[calibration.author_id].name for calibration in calibrations])} work has been assigned as calibrations for section {secNum}'
+		calibrationMessages.append(message)
+		log(message, display=True)
 		print("Now assigning remaining reviews")
 		# Assign remaining reviews  
 		assignPeerReviews(creationsToConsider, numberOfReviewers=params.numberOfReviews, AssignPeerReviewsToGraderSubmissions=False)
@@ -56,6 +51,12 @@ for sectionName in sorted(list(sections.values())):
 		if not confirm("The peer review assignmetn have been opened in a web browser.  Verify they look correct."):
 			undoAssignedPeerReviews(assignment=activeAssignment)
 		print(f"Done assigning reviews for {activeAssignment.name}.")
+
+		sectionInstructors=[enr.user for enr in sec.get_enrollments() if enr.user['name'] in classInstructors]
+		for instructor in sectionInstructors:
+			if confirm(f"Send a message to {instructor['name']} about the calibration review?")
+			message+="\nPlease make sure to review this submission."
+			utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
 
 	url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
 	if (url==""):
@@ -79,6 +80,7 @@ if confirm("If you assigned or deleted any peer reviews manually, the data needs
 	resyncReviews(activeAssignment, creations)
 	utilities.dataToSave['students']=True
 
+print("\n".join(calibrationMessages))
 	
 dataToSave['students']=True
 finish()
