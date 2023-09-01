@@ -526,6 +526,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		getStudentWork(assignment)
 	studentsWithSubmissions=[studentsById[c.author_id] for c in creations if c.author_id in studentsById and studentsById[c.author_id].role=='student']
 	if calibrations=="auto":
+		calibrations=[]
 		try:
 			print("professor reviews for ", assignment.name, assignment.id)
 			professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id]]
