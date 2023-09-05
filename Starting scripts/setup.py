@@ -1,8 +1,13 @@
 import os, subprocess
 homeFolder = os.path.expanduser('~')
 loadedPathInfo=False
-def getPath(prompt):
-	thePath=input(prompt).strip().replace("\\","")
+def getPath(prompt, defaultPath=None):
+	if defaultPath!=None:
+		thePath=input(f"{prompt} [{defaultPath}]: ").strip().replace("\\","")
+		if thePath=="":
+			thePath=defaultPath
+	else:
+		thePath=input(f"{prompt}: ").strip().replace("\\","")
 	if thePath[-1]!="/":
 		thePath+="/"
 	return thePath
@@ -12,21 +17,44 @@ try:
 	from path_info import * 			# Set up where to find the relevant files
 except:
 	loadedPathInfo=False
-if not loadedPathInfo:
+while not loadedPathInfo:
 	cwd = os.getcwd()
 	# Opening a file
 	file1 = open('path_info.py', 'w')
-	cprLocation=getPath("Enter the absolute path of the 'CanvasPeerReviews' folder, for instance '/Documents/GitHub/CanvasPeerReviews': ").strip()
-	cprLocation=cprLocation.replace("CanvasPeerReviews/CanvasPeerReviews","CanvasPeerReviews")
-	while not os.path.isdir(cprLocation):
-		print(f"Unable to find '{cprLocation}'")
-		cprLocation=getPath("Enter the absolute path of the 'CanvasPeerReviews' folder, for instance '/Documents/GitHub/CanvasPeerReviews': ").strip()
+	msg=f"import sys, os\n"
+	msg+=f"os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from\n"
+	msg+=f"homeFolder = os.path.expanduser('~')				  # get the home folder\n"
+	
+	reUseCPRPath=True
+	try:
+		from CanvasPeerReviews import *		
+	except Exception as error:
+		if "CanvasPeerReviews" in str(error):
+			reUseCPRPath=False
+			cprLocation=getPath("Enter the absolute path of the 'CanvasPeerReviews' folder, for instance '/Documents/GitHub/CanvasPeerReviews'").strip()
+			cprLocation=cprLocation.replace("CanvasPeerReviews/CanvasPeerReviews","CanvasPeerReviews")
+			while not os.path.isdir(cprLocation):
+				print(f"Unable to find '{cprLocation}'")
+				cprLocation=getPath("Enter the absolute path of the 'CanvasPeerReviews' folder, for instance '/Documents/GitHub/CanvasPeerReviews'").strip()
+	if reUseCPRPath:
+		for itm in sys.path:
+			if "CanvasPeerReviews" in itm:
+				cprLocation=itm +"/"
+			
 	cprLocation=cprLocation[:-1]
+	relCprLocation=os.path.abspath(cprLocation).replace(homeFolder,"")
+	if homeFolder in cprLocation:
+		msg+=f"sys.path.insert(0, homeFolder + '{relCprLocation}')	# Use this if you are running on multiple machines with different absolute paths\n"
+	else:
+		msg+=f"sys.path.insert(0, '{cprLocation}')	# Use this if you are running on multiple machines with different absolute paths\n"
 
-	dataLocation=getPath("Enter the absolute path where the data should go.  A 'Data' directory will be created here if it doesn't exist: ").strip()
+	defaultLocation=os.path.dirname(os.path.realpath(__file__))
+	dataLocation=getPath(f"Enter the absolute path where the data should go.  A 'Data' directory will be created here if it doesn't exist", defaultLocation).strip()
+	if dataLocation=="":
+		dataLocation=defaultLocation
 	while not os.path.isdir(dataLocation):
 		print(f"Unable to find '{dataLocation}'")
-		dataLocation=getPath("Enter the absolute path of the 'Data' folder, for instance '/Documents/MyCourse/PeerReviews': ").strip()
+		dataLocation=getPath("Enter the absolute path of the 'Data' folder, for instance '/Documents/MyCourse/PeerReviews'").strip()
 
 	if not os.path.exists(dataLocation + "Data"):
 		print("Making Data directory")
@@ -35,32 +63,31 @@ if not loadedPathInfo:
 		print("Found data directrory")
 	dataDirectory=dataLocation + "Data/"
 	relDataDirectory=os.path.abspath(dataDirectory).replace(homeFolder,"")
-	relCprLocation=os.path.abspath(cprLocation).replace(homeFolder,"")
 
-	msg=f"import sys, os\n"
-	msg+=f"os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from\n"
-	msg+=f"homeFolder = os.path.expanduser('~')				  # get the home folder\n"
-	if homeFolder in cprLocation:
-		msg+=f"sys.path.insert(0, homeFolder + '{relCprLocation}')	# Use this if you are running on multiple machines with different absolute paths\n"
-	else:
-		msg+=f"sys.path.insert(0, '{cprLocation}')	# Use this if you are running on multiple machines with different absolute paths\n"
 	if homeFolder in dataDirectory:
 		msg+=f"RELATIVE_DATA_PATH='{relDataDirectory}' #data directory relative to the home folder where your class data will be stored\n"
 		msg+="DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH\n"
 	else:
 		msg+=f"DATADIRECTORY='{dataDirectory}' #data directory relative to the home folder where your class data will be stored\n"
 	msg+="loadedPathInfo=True\n"
-	
+	print(msg)
 	file1.write(msg)
 	file1.close()
 	subprocess.call(('open', 'path_info.py'))
-	print(f"wrote file {cwd}/path_info.py, please edit with the location of files on your machine and then run setup.py again.")
-	exit()
+	input(f"wrote file {cwd}/path_info.py, please edit with the location of files on your machine and then hit enter to continue: ")
+	from importlib import reload
+	import path_info
+	reload(path_info)
+	from path_info import *
+	#exit()
 print()
-print("The path_info.py file was read in with the following values: ")
-print(f"	{homeFolder=}")
-print(f"	{RELATIVE_DATA_PATH=}")
-print(f"	{DATADIRECTORY=}")
+try:
+	print("The path_info.py file was read in with the following values: ")
+	print(f"	{homeFolder=}")
+	print(f"	{RELATIVE_DATA_PATH=}")
+	print(f"	{DATADIRECTORY=}")
+except:
+	pass
 
 importedCanvasPeerReviews=False
 try:
@@ -110,6 +137,21 @@ f.close()
 subprocess.call(('open', fileName))
 finish(True)
 
+aliasExists=False
+try:
+	f = open(homeFolder +"/.profile","r")
+	lines = f.readlines()
+	f.close()
+	aliasExists = "cpr=" in str(lines)
+except:
+	pass
+if not aliasExists:
+	f = open(homeFolder +"/.profile","a")
+	f.write(f"alias cpr='cd \"{os.path.dirname(os.path.realpath(__file__))}\"; python3 menu.py'")
+	f.close()
+	print("Added an alias 'cpr' to .profile")
+	
 print()
-print("Congratulations - you are all set up.  You can now run any of the canvas peer review scripts")
+print("Congratulations - you are all set up.  You can now run any of the canvas peer review scripts: ")
 print()
+returnVal=os.system("python3 -i 'menu.py'")

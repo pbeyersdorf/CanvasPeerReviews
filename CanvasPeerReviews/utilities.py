@@ -1888,7 +1888,7 @@ def getParameters(ignoreFile=False):
 		params.weightingOfCreation=weightingOfCreation/total
 		params.weightingOfReviews=weightingOfReviews/total
 		params.numberOfReviews=getNum("How many reviewers should review each creation? (some students will be assigned one more than this number of reviews)",3, fileDescriptor=logFile)	
-		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews?",3, fileDescriptor=logFile)
+		#params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews?",3, fileDescriptor=logFile)
 		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10, fileDescriptor=logFile)
 		params.gradingPowerForGraders=getNum("How many times greater than a student should  student graders grading be weighted?",5, fileDescriptor=logFile)
 		params.halfLife=getNum("How many assignments is the half life for grading power calculations?",4, fileDescriptor=logFile)
