@@ -38,18 +38,18 @@ if not loadedPathInfo:
 	relCprLocation=os.path.abspath(cprLocation).replace(homeFolder,"")
 
 	msg=f"import sys, os\n"
-	msg+=f"os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from"
-	msg+=f"homeFolder = os.path.expanduser('~')				  # get the home folder"
+	msg+=f"os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from\n"
+	msg+=f"homeFolder = os.path.expanduser('~')				  # get the home folder\n"
 	if homeFolder in cprLocation:
-		msg+=f"sys.path.insert(0, homeFolder + '{relCprLocation}')	# Use this if you are running on multiple machines with different absolute paths"
+		msg+=f"sys.path.insert(0, homeFolder + '{relCprLocation}')	# Use this if you are running on multiple machines with different absolute paths\n"
 	else:
-		msg+=f"sys.path.insert(0, '{cprLocation}')	# Use this if you are running on multiple machines with different absolute paths"
+		msg+=f"sys.path.insert(0, '{cprLocation}')	# Use this if you are running on multiple machines with different absolute paths\n"
 	if homeFolder in dataDirectory:
-		msg+=f"RELATIVE_DATA_PATH='{relDataDirectory}' #data directory relative to the home folder where your class data will be stored"
-		msg+="DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH"
+		msg+=f"RELATIVE_DATA_PATH='{relDataDirectory}' #data directory relative to the home folder where your class data will be stored\n"
+		msg+="DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH\n"
 	else:
-		msg+=f"DATADIRECTORY='{dataDirectory}' #data directory relative to the home folder where your class data will be stored"
-	msg+="loadedPathInfo=True"
+		msg+=f"DATADIRECTORY='{dataDirectory}' #data directory relative to the home folder where your class data will be stored\n"
+	msg+="loadedPathInfo=True\n"
 	
 	file1.write(msg)
 	file1.close()
