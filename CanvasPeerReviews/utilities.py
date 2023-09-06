@@ -55,7 +55,9 @@ try:
 	writeCredentials=False
 except Exception:
 	writeCredentials=True
-
+if 'verificationKey' not in locals():
+	verificationKey=""
+	
 ######################################
 # Define some global variables to be used in this module
 studentsById=dict()
@@ -91,7 +93,11 @@ status={'message': '',
 	'regraded': False,
 	'posted': False,
 	'printedUndoInfo': False,
+	'verificationKey': verificationKey,
 	'dataDir': './'}
+
+		
+	
 dataToSave={
 	'students': False,
 	'assignments': False,
@@ -183,12 +189,12 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	status['prefix']=str(COURSE_ID)
 	if not os.path.exists(dataDirectory):
 		os.makedirs(dataDirectory)
-	if 'verificationKey' in locals():
-		keyFromFile=""
-		while keyFromUser!=keyFromFile:
-			keyFromUser=input("Enter your verification key: ").replace("'",":")
-			if keyFromUser!=keyFromFile:
-				print("Incorrect.  Check your key and make sure that you are accessing the correct folder.\n")
+
+	keyFromUser=""
+	while keyFromUser!=status['verificationKey']:
+		keyFromUser=input("Enter your verification key: ").replace("'",":")
+		if keyFromUser!=status['verificationKey']:
+			print("Incorrect.  Check your key and make sure that you are accessing the correct folder.\n")
 	
 	printCommand=False
 	if (CANVAS_URL==None or COURSE_ID==None):
