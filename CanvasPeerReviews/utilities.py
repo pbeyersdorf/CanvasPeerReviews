@@ -189,12 +189,6 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 	status['prefix']=str(COURSE_ID)
 	if not os.path.exists(dataDirectory):
 		os.makedirs(dataDirectory)
-
-	keyFromUser=""
-	while keyFromUser!=status['verificationKey']:
-		keyFromUser=input("Enter your verification key: ").replace("'",":")
-		if keyFromUser!=status['verificationKey']:
-			print("Incorrect.  Check your key and make sure that you are accessing the correct folder.\n")
 	
 	printCommand=False
 	if (CANVAS_URL==None or COURSE_ID==None):
