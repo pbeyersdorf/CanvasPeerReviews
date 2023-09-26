@@ -548,8 +548,8 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		for sectionKey in sections:
 			print("professor reviews for ", assignment.name, assignment.id, "in section", sections[sectionKey])
 			professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id] if studentsById[r.author_id].section==sectionKey]
-			calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
-			if len(calibrations)==0:
+			calibrationsThisSection=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
+			if len(calibrationsThisSection)==0:
 				creationsToConsider=randomize([c for c in creations if studentsById[c.author_id].section == sectionKey and  c.author_id in studentsById and studentsById[c.author_id].role=='student'])
 				thisCalibration=None
 				for c in creationsToConsider:
@@ -564,7 +564,9 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 					#calibrations=random.choice(studentsWithSubmissions)
 					msg=f"{studentsById[thisCalibration.author_id].name} has  been chosen as the calibration review for {assignment.name} in {sections[sectionKey]}"
 					print(msg)
-					log(msg)		
+					log(msg)
+			else:
+				calibrations+=calibrationsThisSection	
 	if calibrations=="random":
 		calibrations=[]
 		for sectionKey in sections:

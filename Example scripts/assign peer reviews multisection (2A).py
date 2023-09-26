@@ -63,7 +63,7 @@ for sectionName in sorted(list(sections.values())):
 			if confirm(f"Send the above message to {instructor['name']} about the calibration review?")
 			utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
 
-	//url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
+	#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
 	if (url==""):
 		url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
 		webbrowser.open(url)
