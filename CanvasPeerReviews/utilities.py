@@ -1205,7 +1205,7 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 		else:
 			templateText=templateText.replace("\n{comment on review}","")
 			templateText=templateText.replace("{comment on review}","")
-		if assignment.id in student.grades and student.grades[assignment.id]['total']==student.grades[assignment.id]['curvedTotal']:
+		if assignment.id in student.grades and student.points[assignment.id]['total']==student.points[assignment.id]['curvedTotal']:
 			templateText=templateText.replace("{comment if grades are curved}","")
 		templateText=processUserDefinedKeywords(templateText, fileName)
 		template_lines=templateText.split("\n")
@@ -1723,10 +1723,10 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 				digits=int(2-math.log10(assignment.points_possible))
 				creationGrade=student.grades[assignment.id]['creation']
 				reviewGrade=student.grades[assignment.id]['review']
-				totalPoints=student.grades[assignment.id]['total']
+				totalPoints=student.grades[assignment.id]['total'] # xxx to see if a grade should be curved compare grades and points
 				curvedTotalPoints=student.grades[assignment.id]['curvedTotal']
 				totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
-				if (curvedTotalPoints!=totalPoints):
+				if (student.points[assignment.id]['curvedTotal']!=student.points[assignment.id]['total'] ):
 					totalScoringSummaryString+=(("  When curved this gives a final regraded score of %." + str(digits) +"f.") % (curvedTotalPoints) )
 				if assignment.id in student.regradeComments:
 					student.regradeComments[assignment.id] += totalScoringSummaryString
