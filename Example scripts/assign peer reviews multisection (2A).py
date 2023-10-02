@@ -33,45 +33,46 @@ calibrations=assignCalibrationReviews(calibrations="autobysection", assignment=a
 url=""
 for sectionName in sorted(list(sections.values())):
 	secNum=int(sectionName[-1:])
-	secByNum[secNum]=sectionName
-	secId=[s for s in sections if sections[s]==sectionName][0]
-	print (f"Working on section {secNum}: {sectionName}")
+	if secNum>1:
+		secByNum[secNum]=sectionName
+		secId=[s for s in sections if sections[s]==sectionName][0]
+		print (f"Working on section {secNum}: {sectionName}")
 
-	#assign calibration review to a random student in this section
-	creationsToConsider=randomize([c for c in creations if c.author_id in studentsById and studentsById[c.author_id].sectionName == sectionName and studentsById[c.author_id].role=='student'])
-	if len(creationsToConsider)<2:
-		print(f"Not enough submissions to assign peer reviews for {activeAssignment.name} in {sectionName}")
-		log(f"Not enough submissions to assign peer reviews for {activeAssignment.name} in {sectionName}")
-	else:
-		message=f'{" ,".join([studentsById[calibration.author_id].name for calibration in calibrations if studentsById[calibration.author_id].section == secId])} work has been assigned as calibrations for section {secNum}'
-		calibrationMessages.append(message)
-		log(message, display=True)
-		print("Now assigning remaining reviews")
-		# Assign remaining reviews  
-		assignPeerReviews(creationsToConsider, numberOfReviewers=params.numberOfReviews, AssignPeerReviewsToGraderSubmissions=False)
-		webbrowser.open(activeAssignment.html_url + "/peer_reviews")	 
-		if not confirm("The peer review assignment has been opened in a web browser.  Verify they look correct."):
-			undoAssignedPeerReviews(assignment=activeAssignment)
-		print(f"Done assigning reviews for {activeAssignment.name} section {sectionName}.")
+		#assign calibration review to a random student in this section
+		creationsToConsider=randomize([c for c in creations if c.author_id in studentsById and studentsById[c.author_id].sectionName == sectionName and studentsById[c.author_id].role=='student'])
+		if len(creationsToConsider)<2:
+			print(f"Not enough submissions to assign peer reviews for {activeAssignment.name} in {sectionName}")
+			log(f"Not enough submissions to assign peer reviews for {activeAssignment.name} in {sectionName}")
+		else:
+			message=f'{" ,".join([studentsById[calibration.author_id].name for calibration in calibrations if studentsById[calibration.author_id].section == secId])} work has been assigned as calibrations for section {secNum}'
+			calibrationMessages.append(message)
+			log(message, display=True)
+			print("Now assigning remaining reviews")
+			# Assign remaining reviews  
+			assignPeerReviews(creationsToConsider, numberOfReviewers=params.numberOfReviews, AssignPeerReviewsToGraderSubmissions=False)
+			webbrowser.open(activeAssignment.html_url + "/peer_reviews")	 
+			if not confirm("The peer review assignment has been opened in a web browser.  Verify they look correct."):
+				undoAssignedPeerReviews(assignment=activeAssignment)
+			print(f"Done assigning reviews for {activeAssignment.name} section {sectionName}.")
 
-		#get the section instructor and message them about the calibration assignment
-		sec=[sec for sec in utilities.course.get_sections() if sec.name==sectionName][0]
-		sectionInstructors=[enr.user for enr in sec.get_enrollments() if enr.user['name'] in classInstructors]
-		for instructor in sectionInstructors:
-			message+="\nPlease make sure to review this submission."
-			print("\n" + message)
-			if confirm(f"Send the above message to {instructor['name']} about the calibration review?")
-			utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
+			#get the section instructor and message them about the calibration assignment
+			sec=[sec for sec in utilities.course.get_sections() if sec.name==sectionName][0]
+			sectionInstructors=[enr.user for enr in sec.get_enrollments() if enr.user['name'] in classInstructors]
+			for instructor in sectionInstructors:
+				message+="\nPlease make sure to review this submission."
+				print("\n" + message)
+				if confirm(f"Send the above message to {instructor['name']} about the calibration review?")
+				utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
 
-	#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
-	if (url==""):
-		url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
-		webbrowser.open(url)
-		while not confirm("Verify the correct solutions opened in a web browser. "):
-			url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
-	# Post announcement telling students the peer reviews have been assigned
-	subject=("Peer reviews and solutions for " + activeAssignment.name)
-	activeAssignment.solutionsUrl = url
+		#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
+		if (url==""):
+			url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
+			webbrowser.open(url)
+			while not confirm("Verify the correct solutions opened in a web browser. "):
+				url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
+		# Post announcement telling students the peer reviews have been assigned
+		subject=("Peer reviews and solutions for " + activeAssignment.name)
+		activeAssignment.solutionsUrl = url
 body=processTemplate(student=None,assignment=activeAssignment,name="message about posted solutions")
 print(subject +"\n"+body+"\n\n")
 body=confirmText(body, prompt="Is this announcement acceptable?")

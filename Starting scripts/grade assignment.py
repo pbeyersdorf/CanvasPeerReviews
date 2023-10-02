@@ -15,16 +15,16 @@ else:
 	val=inputWithTimeout("(g) update grader list",3)
 	if (val=='g'):
 		assignGraders()
-activeAssignment=lastAssignment
-if activeAssignment.graded:
-	activeAssignment=chooseAssignment(requireConfirmation=False)
+#activeAssignment=lastAssignment
+#if activeAssignment.graded:
+activeAssignment=chooseAssignment(requireConfirmation=False)
 
 print("The following point distribution will be used for "+activeAssignment.name+":")
 for cid in activeAssignment.criteria_ids():
 	multiplier=params.pointsForCid(cid, activeAssignment)
 	print("\t" + str(multiplier)+ " points for '"+   criteriaDescription[cid] + "'")
 if not confirm():
-	setPoints(lastAssignment)
+	setPoints(activeAssignment)
 	val=input("Enter any additional comments to post with the grades: ").strip()
 	if val!="":
 		utilities.additionalGradingComment=val+"\n\n"
