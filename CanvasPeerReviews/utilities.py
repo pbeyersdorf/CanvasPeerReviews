@@ -1455,10 +1455,11 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
 	if reviewScoreGrading=="ignore":
-		student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+		
+		student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible}
 		student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}	
 	else:
-		student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal': curvedTotalPoints}
+		student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible}
 		student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
 	percentileRanking=gradingPowerRanking(student, percentile=True)	
 	#make a summary of their points
@@ -1697,18 +1698,18 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 				print("Before posting the regrade results, lets recalibrate the graders")
 				calibrate()
 			print("OK, now lets go through each regraded student to post their scores and comments")
-			originalGrades=dict()
+			originalPoints=dict()
 			for student_key in studentsNeedingRegrade:
 				try:
-					originalGrades[student_key]=studentsNeedingRegrade[student_key].grades[assignment.id]
+					originalPoints[student_key]=studentsNeedingRegrade[student_key].grades[assignment.id]
 				except KeyError:
 					print("unable to get original grade for " + studentsNeedingRegrade[student_key].name)
-					originalGrades[student_key]=0				
+					originalPoints[student_key]=0				
 			grade(assignment, studentsToGrade=list(studentsNeedingCreationRegrade.values()), reviewScoreGrading='keep')			
 			for student_key in studentsNeedingRegrade:
 				student=studentsNeedingRegrade[student_key]
 				#get the grade from saved data for the student
-				originalCurvedTotalPoints=originalGrades[student_key]['curvedTotal'] 
+				originalCurvedTotalPoints=originalPoints[student_key]['curvedTotal'] 
 				#if possible, read the grade from canvas
 				submission=[c for c in creations if c.assignment_id == assignment.id and c.author_id == student.id]
 				if len(submission)>0:
@@ -1723,10 +1724,10 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 				digits=int(2-math.log10(assignment.points_possible))
 				creationGrade=student.grades[assignment.id]['creation']
 				reviewGrade=student.grades[assignment.id]['review']
-				totalPoints=student.grades[assignment.id]['total'] # xxx to see if a grade should be curved compare grades and points
-				curvedTotalPoints=student.grades[assignment.id]['curvedTotal']
+				totalPoints=student.points[assignment.id]['total'] # xxx to see if a grade should be curved compare grades and points
+				curvedTotalPoints=student.points[assignment.id]['curvedTotal']
 				totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
-				if (student.points[assignment.id]['curvedTotal']!=student.points[assignment.id]['total'] ):
+				if (curvedTotalPoints!=totalPoints):
 					totalScoringSummaryString+=(("  When curved this gives a final regraded score of %." + str(digits) +"f.") % (curvedTotalPoints) )
 				if assignment.id in student.regradeComments:
 					student.regradeComments[assignment.id] += totalScoringSummaryString
