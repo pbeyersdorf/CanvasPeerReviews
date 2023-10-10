@@ -543,7 +543,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		#return
 		if len(calibrations)==0 and confirm("There were no submissions reviewed by the professor, should a random submission be assigned as the calibration review?"):
 			calibrations=="random"
-	if calibrations.lower()=="autobysection": #for each section find professor reviewed submissions to use as calibration, but randomly pick one if none is found
+	if calibrations=="autobysection": #for each section find professor reviewed submissions to use as calibration, but randomly pick one if none is found
 		calibrations=[]
 		for sectionKey in sections:
 			print("professor reviews for ", assignment.name, assignment.id, "in section", sections[sectionKey])
@@ -602,11 +602,13 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 	for j, reviewer in enumerate(reviewers):
 		tic=time.time()
 		i+=1
-		while (	time.time()-tic < 1 and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
+		iStart=i
+		#while (	time.time()-tic < 1 and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
+		while (	(i < iStart +len(students) + 1) and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
 			i+=1
-		if not time.time()-tic  <1:
-			raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment from each section?")
-			return []
+		#if not time.time()-tic  <1:
+		#	raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment from each section?")
+		#	return []
 		calibration = calibrations[i%len(calibrations)]
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
@@ -1879,7 +1881,7 @@ def postFromCSV(fileName=None, thisAssignment=None):
 # various rubric criteria, and the weighting of the submission score versus the 
 # review score.	 The results get saved to a file so they don't need to be 
 # reentered everytime the script is run
-def getParameters(ignoreFile=False):
+def getParameters(ignoreFile=False, selectedAssignment="all"):
 	global status, criteriaDescription, params
 	if ignoreFile:
 		params=Parameters()
@@ -1896,7 +1898,7 @@ def getParameters(ignoreFile=False):
 						needInput=True
 			except AttributeError:
 				print(f"'{graded_assignments[key].name}' does not have a rubric attached")
-			if needInput:
+			if needInput or (selectedAssignment==assignment):
 				if not headerWritten:
 					logFile.write("----" + str(datetime.now()) + "----\n")
 					headerWritten=True
@@ -1908,7 +1910,7 @@ def getParameters(ignoreFile=False):
 						print("\t" + criteria['description'] + " (" + str(params.multiplier[criteria['id']]) +")")
 				for criteria in assignment.rubric:
 					criteriaDescription[criteria['id']]=criteria['description']
-					if not criteria['id'] in params.multiplier:
+					if not criteria['id'] in params.multiplier or (selectedAssignment==assignment):
 						params.multiplier[criteria['id']]=getNum("How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? ",limits=[0,100], fileDescriptor=logFile)
 						#val=float(input("\nHow many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? "))
 						#params.multiplier[criteria['id']]=val

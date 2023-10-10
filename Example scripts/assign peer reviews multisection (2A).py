@@ -6,7 +6,7 @@ from CanvasPeerReviews import *		# the main module for managing peer reviews
 students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COURSE_ID, DATADIRECTORY)
 
 #################  Get relevant parameters assignment  #################
-params=getParameters()
+#params=getParameters()
 # if no assignments have yet been graded then prompt for graders
 if len([g for g in graded_assignments.values() if g.graded])==0: 
 	assignGraders()
@@ -22,6 +22,7 @@ else:
 activeAssignment=utilities.nearestAssignment
 if not confirm("Assign peer reviews for " + activeAssignment.name + "? "):
 	activeAssignment=chooseAssignment(requireConfirmation=False)
+params=getParameters(selectedAssignment=selectedAssignment)
 getStudentWork(activeAssignment, includeReviews=True)
 #assignCalibrationReviews(assignment=activeAssignment)
 
