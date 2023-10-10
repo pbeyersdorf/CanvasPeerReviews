@@ -33,7 +33,7 @@ classInstructors=[user.name for user in utilities.course.get_users(enrollment_ty
 calibrations=assignCalibrationReviews(calibrations="autobysection", assignment=activeAssignment)
 url=""
 for sectionName in sorted(list(sections.values())):
-	secNum=int(sectionName[-1:])
+	secNum=int(sectionName.split(" ")[-1:][0])
 	if secNum>1:
 		secByNum[secNum]=sectionName
 		secId=[s for s in sections if sections[s]==sectionName][0]
@@ -52,8 +52,8 @@ for sectionName in sorted(list(sections.values())):
 			# Assign remaining reviews  
 			assignPeerReviews(creationsToConsider, numberOfReviewers=params.numberOfReviews, AssignPeerReviewsToGraderSubmissions=False)
 			webbrowser.open(activeAssignment.html_url + "/peer_reviews")	 
-			if not confirm("The peer review assignment has been opened in a web browser.  Verify they look correct."):
-				undoAssignedPeerReviews(assignment=activeAssignment)
+			#if not confirm("The peer review assignment has been opened in a web browser.  Verify they look correct."):
+			#	undoAssignedPeerReviews(assignment=activeAssignment)
 			print(f"Done assigning reviews for {activeAssignment.name} section {sectionName}.")
 
 			#get the section instructor and message them about the calibration assignment
