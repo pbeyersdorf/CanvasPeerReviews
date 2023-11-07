@@ -1,0 +1,2 @@
+assignment.rubric  id is not unique
+
