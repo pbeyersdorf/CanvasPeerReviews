@@ -32,6 +32,8 @@ calibrationMessages=[]
 classInstructors=[user.name for user in utilities.course.get_users(enrollment_type=['Teacher'])]
 calibrations=assignCalibrationReviews(calibrations="autobysection", assignment=activeAssignment)
 url=""
+val =input("Do you want to send messages to instructors about the calibration reviews? ").lower()
+sendMessagesToInstructors = "y" in val or "ok" in val
 for sectionName in sorted(list(sections.values())):
 	secNum=int(sectionName.split(" ")[-1:][0])
 	if secNum>1:
@@ -59,11 +61,12 @@ for sectionName in sorted(list(sections.values())):
 			#get the section instructor and message them about the calibration assignment
 			sec=[sec for sec in utilities.course.get_sections() if sec.name==sectionName][0]
 			sectionInstructors=[enr.user for enr in sec.get_enrollments() if enr.user['name'] in classInstructors]
-			for instructor in sectionInstructors:
-				message+="\nPlease make sure to review this submission."
-				print("\n" + message)
-				if confirm(f"Send the above message to {instructor['name']} about the calibration review?")
-				utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
+			if sendMessagesToInstructors:
+				for instructor in sectionInstructors:
+					message+="\nPlease make sure to review this submission."
+					print("\n" + message)
+					if confirm(f"Send the above message to {instructor['name']} about the calibration review?"):
+						utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
 
 		#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
 		if (url==""):
