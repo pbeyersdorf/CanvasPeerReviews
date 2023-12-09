@@ -21,7 +21,7 @@ activeAssignment=utilities.nearestAssignment
 
 if not confirm("Assign peer reviews for " + activeAssignment.name + "? "):
 	activeAssignment=chooseAssignment(requireConfirmation=False)
-params=getParameters(selectedAssignment=selectedAssignment) 
+params=getParameters(selectedAssignment=activeAssignment) 
 getStudentWork(activeAssignment, includeReviews=True)
 assignCalibrationReviews(assignment=activeAssignment)
 	
