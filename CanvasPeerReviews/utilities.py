@@ -363,8 +363,12 @@ def makeAssignmentByNumberDict():
 	global graded_assignments
 	for key in graded_assignments:
 		try:
-			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
-				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
+			thisNum=int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))
+			if thisNum not in assignmentByNumber:
+				assignmentByNumber[thisNum]=graded_assignments[key]
+			else:
+				if graded_assignments[key] != assignmentByNumber[thisNum]:
+					assignmentByNumber[thisNum+100]=graded_assignments[key]
 		except Exception:
 			pass
 			#status['message']+="\nUnable to add '" + graded_assignments[key].name + "' to assignmentByNumber"
