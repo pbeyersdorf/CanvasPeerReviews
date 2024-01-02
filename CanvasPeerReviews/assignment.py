@@ -114,10 +114,10 @@ class GradedAssignment:
 		total=0
 		cnt=0
 		for criteria in self.rubric:
-			if "id" in criteria:
+			if "description" in criteria:
 				total+=criteria['points']
 				cnt+=1
-				if criteria['id'] == cid:
+				if criteria['description'] == cid:
 					return criteria['points']
 			else:
 				if cid == None:
@@ -133,7 +133,7 @@ class GradedAssignment:
 		# parameters object will be used when grading this assignment
 		print("Set an override to the defaul points on " + self.name + ":\n")
 		for criteria in self.rubric:
-			cid=criteria['id']
+			cid=criteria['description']
 			defaultVal=self.criteria_points(cid)
 			if cid in self.multiplier:
 				defaultVal=self.multiplier[cid]
@@ -160,7 +160,7 @@ class GradedAssignment:
 		cids=[]
 		for criteria in self.rubric:
 			try:
-				cids.append(criteria['id'])
+				cids.append(criteria['description'])
 			except:
 				cids.append(None)
 		return cids
@@ -169,7 +169,7 @@ class GradedAssignment:
 		# return the name of a grading criteria associated with the id passed as an argument
 		for criteria in self.rubric:
 			try:
-				if criteria['id'] == cid:
+				if criteria['description'] == cid:
 					return criteria['description']
 			except:
 			 pass

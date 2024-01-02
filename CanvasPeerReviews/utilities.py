@@ -363,12 +363,8 @@ def makeAssignmentByNumberDict():
 	global graded_assignments
 	for key in graded_assignments:
 		try:
-			thisNum=int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))
-			if thisNum not in assignmentByNumber:
-				assignmentByNumber[thisNum]=graded_assignments[key]
-			else:
-				if graded_assignments[key] != assignmentByNumber[thisNum]:
-					assignmentByNumber[thisNum+100]=graded_assignments[key]
+			if int(''.join(list(filter(str.isdigit,graded_assignments[key].name)))) not in assignmentByNumber:
+				assignmentByNumber[int(''.join(list(filter(str.isdigit,graded_assignments[key].name))))]=graded_assignments[key]
 		except Exception:
 			pass
 			#status['message']+="\nUnable to add '" + graded_assignments[key].name + "' to assignmentByNumber"
@@ -1897,8 +1893,8 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 			needInput=False
 			try:
 				for criteria in assignment.rubric:
-					criteriaDescription[criteria['id']]=criteria['description']
-					if not criteria['id'] in params.multiplier:
+					criteriaDescription[criteria['description']]=criteria['description']
+					if not criteria['description'] in params.multiplier:
 						needInput=True
 			except AttributeError:
 				print(f"'{graded_assignments[key].name}' does not have a rubric attached")
@@ -1908,16 +1904,16 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 					headerWritten=True
 				print("Need to assign criteria weightings for the rubric assigned to " + assignment.name + ": ")
 				for criteria in assignment.rubric:
-					if not criteria['id'] in params.multiplier: 
+					if not criteria['description'] in params.multiplier: 
 						print("\t" + criteria['description'])
 					else:
-						print("\t" + criteria['description'] + " (" + str(params.multiplier[criteria['id']]) +")")
+						print("\t" + criteria['description'] + " (" + str(params.multiplier[criteria['description']]) +")")
 				for criteria in assignment.rubric:
-					criteriaDescription[criteria['id']]=criteria['description']
-					if not criteria['id'] in params.multiplier or (selectedAssignment==assignment):
-						params.multiplier[criteria['id']]=getNum("How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? ",limits=[0,100], fileDescriptor=logFile)
+					criteriaDescription[criteria['description']]=criteria['description']
+					if not criteria['description'] in params.multiplier or (selectedAssignment==assignment):
+						params.multiplier[criteria['description']]=getNum("How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? ",limits=[0,100], fileDescriptor=logFile)
 						#val=float(input("\nHow many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? "))
-						#params.multiplier[criteria['id']]=val
+						#params.multiplier[criteria['description']]=val
 						#logFile.write(How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth?: " + str(val))
 	if not params.loadedFromFile or ignoreFile:
 		weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)
