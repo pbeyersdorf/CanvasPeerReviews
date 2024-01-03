@@ -854,7 +854,7 @@ def getReviews(creations):
 				for creation in creations:
 					for assessment in rubric.assessments:
 						if ((assessment['assessment_type']=='grading' or assessment['assessment_type']=='peer_review') and creation.id == assessment['artifact_id'] ):
-							review=Review(assessment, creation)
+							review=Review(assessment, creation, graded_assignments[creation.assignment_id].rubric)
 							reviewsById[review.id]=review
 							try:
 								reviewer=studentsById[assessment['assessor_id']]						
@@ -1908,6 +1908,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 						print("\t" + criteria['description'])
 					else:
 						print("\t" + criteria['description'] + " (" + str(params.multiplier[criteria['description']]) +")")
+				print("")
 				for criteria in assignment.rubric:
 					criteriaDescription[criteria['description']]=criteria['description']
 					if not criteria['description'] in params.multiplier or (selectedAssignment==assignment):

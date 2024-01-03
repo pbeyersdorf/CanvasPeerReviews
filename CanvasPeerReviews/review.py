@@ -3,7 +3,7 @@ class Review:
 	# by the canvasapi.  It includes (among other things) the creation being reviewed, information about
 	# which assignment it was submitted to, who the reviewer was, and who the author
 	# of the creation was.  
-	def __init__(self, assessment, creation):
+	def __init__(self, assessment, creation, rubric_outcomes):
 		self.creation=creation
 		self.assessment=assessment
 		self.review_type=assessment['assessment_type']
@@ -14,6 +14,13 @@ class Review:
 		self.id=assessment['id']
 		self.excused = False		
 		self.data = assessment['data']
+		for outcome in range(len(self.data)):
+			self.data[outcome]['cid']=None
+			self.data[outcome]['cid']=None
+			for rubric_outcome in rubric_outcomes:
+				if self.data[outcome]['criterion_id'] == rubric_outcome['id']:
+					self.data[outcome]['cid']=rubric_outcome['description']
+			#self.data[outcome]['cid']=graded_assignments[creation.assignment_id].rubric[outcome]['description']
 		self.scores=dict()
 		self.comments=dict()
 		self.minimumRequiredCommentLength=2
@@ -29,8 +36,10 @@ class Review:
 		self.url=self.urls[0]
 		for s in self.data:
 			try:
-				self.scores[s['criterion_id']]=s['points']
-				self.comments[s['criterion_id']]=s['comments']
+				#self.scores[s['criterion_id']]=s['points']
+				#self.comments[s['criterion_id']]=s['comments']
+				self.scores[s['cid']]=s['points']
+				self.comments[s['cid']]=s['comments']
 			except:
 				err="Unscored criteria"
 

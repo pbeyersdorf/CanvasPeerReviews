@@ -7,6 +7,8 @@ class GradedAssignment:
 			for outcome in assignment.rubric:
 				if not 'id' in outcome:
 					outcome['id']=None
+				if not 'title' in outcome:
+					outcome['title']=None
 		self.__dict__ = assignment.__dict__.copy() 
 		self.graded = False 
 		self.gradesPosted = False 
@@ -156,7 +158,7 @@ class GradedAssignment:
 		return "default"	
 			
 	def criteria_ids(self):
-		# return a list of ids for the various grading criteria for this assignment
+		# return a list of ids for the various grading criteria for this assignment	
 		cids=[]
 		for criteria in self.rubric:
 			try:
