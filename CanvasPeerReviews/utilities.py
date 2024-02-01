@@ -1964,9 +1964,12 @@ def findInLog(serchText, fileName=None):
 		#fileName=status['prefix']+"log.txt"
 		fileName=status['prefix']+"log.txt"
 	theFile=status['dataDir'] + fileName
-	f = open(theFile, "r")
-	lines = f.readlines()
-	f.close()
+	try:
+		f = open(theFile, "r")
+		lines = f.readlines()
+		f.close()
+	except:
+		return False
 	print("Previously known peer reviewed assignments: ")
 	for line in lines:
 		if serchText in line:
