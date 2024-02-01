@@ -1958,8 +1958,8 @@ def log(msg, display=True, fileName=None):
 	f.close()
 
 ######################################
-# look in the log to see if the serchText esists
-def findInLog(serchText, fileName=None):
+# look in the log to see if the searchText esists
+def findInLog(searchText, fileName=None):
 	if fileName==None:
 		#fileName=status['prefix']+"log.txt"
 		fileName=status['prefix']+"log.txt"
@@ -1972,7 +1972,7 @@ def findInLog(serchText, fileName=None):
 		return False
 	print("Previously known peer reviewed assignments: ")
 	for line in lines:
-		if serchText in line:
+		if searchText in line:
 			return True
 	print("Select an assignment or hit <enter> to refresh the list: ")
 
