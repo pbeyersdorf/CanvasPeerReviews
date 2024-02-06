@@ -46,13 +46,10 @@ class Review:
 			try:
 				#self.scores[s['criterion_id']]=s['points']
 				#self.comments[s['criterion_id']]=s['comments']
-<<<<<<< Updated upstream
-				self.scores[s['cid']]=s['points']
-				self.comments[s['cid']]=s['comments']
-=======
+				#self.scores[s['cid']]=s['points']
+				#self.comments[s['cid']]=s['comments']
 				self.scores[self.descriptionFromId[s['description']]]=s['points']
 				self.comments[self.descriptionFromId[s['description']]]=s['comments']
->>>>>>> Stashed changes
 			except:
 				err="Unscored criteria"
 
