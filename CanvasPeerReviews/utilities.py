@@ -854,7 +854,7 @@ def getReviews(creations):
 				for creation in creations:
 					for assessment in rubric.assessments:
 						if ((assessment['assessment_type']=='grading' or assessment['assessment_type']=='peer_review') and creation.id == assessment['artifact_id'] ):
-							review=Review(assessment, creation, graded_assignments[creation.assignment_id].rubric)
+							review=Review(assessment, creation, graded_assignments[creation.assignment_id].rubric, graded_assignments[creation.assignment_id])
 							reviewsById[review.id]=review
 							try:
 								reviewer=studentsById[assessment['assessor_id']]						
