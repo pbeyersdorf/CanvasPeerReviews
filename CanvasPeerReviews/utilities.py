@@ -1912,20 +1912,31 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 				if not headerWritten:
 					logFile.write("----" + str(datetime.now()) + "----\n")
 					headerWritten=True
-				print("Need to assign criteria weightings for the rubric assigned to " + assignment.name + ": ")
+				print("\nNeed to assign criteria weightings for the rubric assigned to " + assignment.name + ": \n")
 				for criteria in assignment.rubric:
 					if not criteria['description'] in params.multiplier: 
-						print("\t" + criteria['description'])
+						print(criteria['description'])
 					else:
-						print("\t" + criteria['description'] + " (" + str(params.multiplier[criteria['description']]) +")")
+						print(criteria['description'] + " (" + str(params.multiplier[criteria['description']]) +")")
 				print("")
+				totalMultiplierPoints=0
 				for criteria in assignment.rubric:
 					criteriaDescription[criteria['description']]=criteria['description']
 					if not criteria['description'] in params.multiplier or (selectedAssignment==assignment):
-						params.multiplier[criteria['description']]=getNum("How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? ",limits=[0,100], fileDescriptor=logFile)
+						default=100/len(assignment.rubric)
+						params.multiplier[criteria['description']]=getNum(f"How many points (out of 100) should '{criteria['description']}' be worth? ",limits=[0,100], fileDescriptor=logFile, defaultVal=default)						
+						totalMultiplierPoints+=params.multiplier[criteria['description']]
 						#val=float(input("\nHow many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth? "))
 						#params.multiplier[criteria['description']]=val
 						#logFile.write(How many points (out of 100) should\n\t" +criteria['description'] + "\nbe worth?: " + str(val))
+				if (abs(totalMultiplierPoints-100)>0.1):
+					print(f"The points you assigned add up to {totalMultiplierPoints}")
+					val=input("Should these be normalized to add to 100? (y/n)")
+					if "y" in val.lower():
+						for criteria in assignment.rubric:
+							params.multiplier[criteria['description']]*=100.0/totalMultiplierPoints
+							print(f"{criteria['description']} will be worth {params.multiplier[criteria['description']]:0.1f} points")
+				print()		
 	if not params.loadedFromFile or ignoreFile:
 		weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)
 		weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3, fileDescriptor=logFile)

@@ -134,6 +134,7 @@ class GradedAssignment:
 		# should be worth.  If not defined the course defaults set in the
 		# parameters object will be used when grading this assignment
 		print("Set an override to the defaul points on " + self.name + ":\n")
+		totalMultiplierPoints=0
 		for criteria in self.rubric:
 			cid=criteria['description']
 			defaultVal=self.criteria_points(cid)
@@ -147,6 +148,15 @@ class GradedAssignment:
 			except:
 				val=defaultVal
 			self.multiplier[cid]=val
+			totalMultiplierPoints+=self.multiplier[cid]
+		if (abs(totalMultiplierPoints-100)>0.1):
+			print(f"The points you assigned add up to {totalMultiplierPoints}")
+			val=input("Should these be normalized to add to 100? (y/n)")
+			if "y" in val.lower():
+				for criteria in self.rubric:
+					self.multiplier[criteria['description']]*=100.0/totalMultiplierPoints
+					print(f"{criteria['description']} will be worth {self.multiplier[criteria['description']]:0.1f} points")
+		
 
 	def pointsForCid(self, cid):
 		# this returns how many points (typically out of 100) a given criteria 
