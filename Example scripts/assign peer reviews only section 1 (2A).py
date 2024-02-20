@@ -8,7 +8,7 @@ students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COU
 #################  Get relevant parameters assignment  #################
 #params=getParameters()
 # if no assignments have yet been graded then prompt for graders
-print("This script will assign peer reviews only to students in the same discussion section.  At least one submission from each discussion setion should be evaluated by the instructor of that section.  If it hasn't already been evalauted, one submission will be picked at random and used as the calibration review.  The instructor can be messaged and told to evalaute this submission later.")
+print("This script will assign peer reviews to students looking ONLY at section 1.  Students may be asked to review someone's work from a different discussion section.")
 if len([g for g in graded_assignments.values() if g.graded])==0: 
 	assignGraders()
 else:
@@ -37,10 +37,10 @@ val =input("Do you want to send messages to instructors about the calibration re
 sendMessagesToInstructors = "y" in val or "ok" in val
 for sectionName in sorted(list(sections.values())):
 	secNum=int(sectionName.split(" ")[-1:][0])
-	if secNum>1 && secNum%2=0: # only consider even sections (i.e. discussion sections)
+	if secNum==1:
 		secByNum[secNum]=sectionName
 		secId=[s for s in sections if sections[s]==sectionName][0]
-		print (f"Working on section {secNum}: {sectionName}")
+		print (f"Working only on section {secNum}: {sectionName}")
 
 		#assign calibration review to a random student in this section
 		creationsToConsider=randomize([c for c in creations if c.author_id in studentsById and studentsById[c.author_id].sectionName == sectionName and studentsById[c.author_id].role=='student'])
@@ -69,15 +69,15 @@ for sectionName in sorted(list(sections.values())):
 					if confirm(f"Send the above message to {instructor['name']} about the calibration review?"):
 						utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
 
-#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
-if (url==""):
-	url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
-	webbrowser.open(url)
-	while not confirm("Verify the correct solutions opened in a web browser. "):
-		url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
-# Post announcement telling students the peer reviews have been assigned
-subject=("Peer reviews and solutions for " + activeAssignment.name)
-activeAssignment.solutionsUrl = url
+		#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
+		if (url==""):
+			url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
+			webbrowser.open(url)
+			while not confirm("Verify the correct solutions opened in a web browser. "):
+				url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
+		# Post announcement telling students the peer reviews have been assigned
+		subject=("Peer reviews and solutions for " + activeAssignment.name)
+		activeAssignment.solutionsUrl = url
 body=processTemplate(student=None,assignment=activeAssignment,name="message about posted solutions")
 print(subject +"\n"+body+"\n\n")
 body=confirmText(body, prompt="Is this announcement acceptable?")
