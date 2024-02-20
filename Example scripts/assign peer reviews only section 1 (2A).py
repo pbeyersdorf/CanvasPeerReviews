@@ -17,8 +17,6 @@ else:
 	if (val=='g'):
 		assignGraders()
 
-
-
 # Get creations and reviews
 activeAssignment=utilities.nearestAssignment
 if not confirm("Assign peer reviews for " + activeAssignment.name + "? "):
@@ -31,10 +29,11 @@ getStudentWork(activeAssignment, includeReviews=True)
 secByNum=dict()
 calibrationMessages=[]
 classInstructors=[user.name for user in utilities.course.get_users(enrollment_type=['Teacher'])]
-calibrations=assignCalibrationReviews(calibrations="autobysection", assignment=activeAssignment)
+#calibrations=assignCalibrationReviews(calibrations="autobysection", assignment=activeAssignment)
+calibrations=assignCalibrationReviews(assignment=activeAssignment)
 url=""
-val =input("Do you want to send messages to instructors about the calibration reviews? ").lower()
-sendMessagesToInstructors = "y" in val or "ok" in val
+#val =input("Do you want to send messages to instructors about the calibration reviews? ").lower()
+#sendMessagesToInstructors = "y" in val or "ok" in val
 for sectionName in sorted(list(sections.values())):
 	secNum=int(sectionName.split(" ")[-1:][0])
 	if secNum==1:
@@ -60,24 +59,25 @@ for sectionName in sorted(list(sections.values())):
 			print(f"Done assigning reviews for {activeAssignment.name} section {sectionName}.")
 
 			#get the section instructor and message them about the calibration assignment
-			sec=[sec for sec in utilities.course.get_sections() if sec.name==sectionName][0]
-			sectionInstructors=[enr.user for enr in sec.get_enrollments() if enr.user['name'] in classInstructors]
-			if sendMessagesToInstructors:
-				for instructor in sectionInstructors:
-					message+="\nPlease make sure to review this submission."
-					print("\n" + message)
-					if confirm(f"Send the above message to {instructor['name']} about the calibration review?"):
-						utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
+#			sec=[sec for sec in utilities.course.get_sections() if sec.name==sectionName][0]
+#			sectionInstructors=[enr.user for enr in sec.get_enrollments() if enr.user['name'] in classInstructors]
+# 			if sendMessagesToInstructors:
+# 				for instructor in sectionInstructors:
+# 					message+="\nPlease make sure to review this submission."
+# 					print("\n" + message)
+# 					if confirm(f"Send the above message to {instructor['name']} about the calibration review?"):
+# 						utilities.canvas.create_conversation(instructor['id'], body=message, subject="calibration review")
 
-		#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
-		if (url==""):
-			url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
-			webbrowser.open(url)
-			while not confirm("Verify the correct solutions opened in a web browser. "):
-				url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
-		# Post announcement telling students the peer reviews have been assigned
-		subject=("Peer reviews and solutions for " + activeAssignment.name)
-		activeAssignment.solutionsUrl = url
+#url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
+if (url==""):
+	url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
+	webbrowser.open(url)
+	while not confirm("Verify the correct solutions opened in a web browser. "):
+		url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
+
+# Post announcement telling students the peer reviews have been assigned
+subject=("Peer reviews and solutions for " + activeAssignment.name)
+activeAssignment.solutionsUrl = url
 body=processTemplate(student=None,assignment=activeAssignment,name="message about posted solutions")
 print(subject +"\n"+body+"\n\n")
 body=confirmText(body, prompt="Is this announcement acceptable?")
