@@ -2564,8 +2564,11 @@ def printLine(msg="", newLine=True, line=False):
 ######################################
 # print a line with a left and right justified text
 def printLeftRight(left,right, end="\n"):
-	size=os.get_terminal_size()
-	cols=size.columns
+	try:
+		size=os.get_terminal_size()
+		cols=size.columns
+	except:
+		cols=80
 	rowsOfText=1+int((len(left+right))/cols)
 	hideCursor()
 	print("\r",end="")
@@ -2576,8 +2579,11 @@ def printLeftRight(left,right, end="\n"):
 # print a long line with auto word wrapping
 def printWithWrapping(msg):
 	import textwrap, os
-	size=os.get_terminal_size()
-	cols=size.columns
+	try:
+		size=os.get_terminal_size()
+		cols=size.columns
+	except:
+		cols=80
 	for line in msg.splitlines():
 		print('\n'.join(textwrap.wrap(line, width=cols, replace_whitespace=False)))
 
