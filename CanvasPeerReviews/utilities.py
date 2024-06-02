@@ -603,12 +603,9 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 		tic=time.time()
 		i+=1
 		iStart=i
-		#while (	time.time()-tic < 1 and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
-		while (	(i < iStart +len(students) + 1) and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  (studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
+		while (	(i < iStart +len(students) + 1) and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  ((not ignoreSections) and studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
 			i+=1
-		#if not time.time()-tic  <1:
-		#	raise Exception("Timeout error assigning calibration reviews - perhaps the professor hasn't yet graded an assignment from each section?")
-		#	return []
+			
 		calibration = calibrations[i%len(calibrations)]
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
@@ -625,7 +622,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last"):
 # review the submission.  It will select reviewers from the beginning of the list of
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
-def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=4, AssignPeerReviewsToGraderSubmissions=False):
+def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=4, AssignPeerReviewsToGraderSubmissions=False, ignoreSections=False):
 	startTime=time.time()
 	global status
 	if not status['initialized']:
@@ -647,14 +644,14 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	#assign params.numberOfReviews reviews per creation
 	for i, creation in enumerate(creationsToConsider):
 		for j,reviewer in enumerate(reviewers):
-			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and reviewer.section == studentsById[creation.user_id].section):
+			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and (reviewer.section == studentsById[creation.user_id].section or ignoreSections)):
 				msg=str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 		reviewerAvaialble=creation.reviewCount<len(creationsToConsider)-1
 		while creation.reviewCount < numberOfReviewers and reviewerAvaialble: #this creation did not get enough reviewers assigned somehow
 			#get the reviewer with the fewest reviews so far
 			sortedReviewers=sorted(reviewers, key=lambda r:r.numberOfReviewsAssignedOnAssignment(creation.assignment_id))
-			sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation)) and reviewer.id != creation.user_id and reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and reviewer.section == studentsById[creation.user_id].section]
+			sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation)) and reviewer.id != creation.user_id and reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and (reviewer.section == studentsById[creation.user_id].section or ignoreSections)]
 			reviewerAvaialble=len(sortedAvailableReviewers)>0
 			if reviewerAvaialble:
 				reviewer=sortedAvailableReviewers[0]
@@ -666,7 +663,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)} reviews")
 		while (reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)  < params.numberOfReviews and reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id) < len(creationsToConsider)-1 and time.time()-tic < 1):
 			creation=random.choice(creationsToConsider)
-			if (reviewer.section == studentsById[creation.user_id].section):
+			if (reviewer.section == studentsById[creation.user_id].section or ignoreSections):
 				msg="---"
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
 				#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
@@ -676,9 +673,11 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	sections=dict()
 	for grader in graders:
 		sections[grader.section] = grader.sectionName
+	if ignoreSections:
+		sections={"all","All Sections"}
 	for key in sections:
-		thisSectionsGraders=[x for x in students if (x.role=='grader' and x.section == key)]
-		thisSectionsCreations=[x for x in creationsToConsider if (studentsById[x.author_id].section == key)]
+		thisSectionsGraders=[x for x in students if (x.role=='grader' and (x.section == key or ignoreSections))]
+		thisSectionsCreations=[x for x in creationsToConsider if (studentsById[x.author_id].section == key or ignoreSections)]
 		if len(thisSectionsCreations)>0:
 			reviewsPerGrader=int(len(thisSectionsCreations)/len(thisSectionsGraders))
 			thisSectionsGraders=makeList(thisSectionsGraders)
