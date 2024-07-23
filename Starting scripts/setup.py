@@ -1,4 +1,4 @@
-import sys, os, subprocess
+import sys, os, subprocess, pathlib
 from tkinter import *
 from tkinter import filedialog
 
@@ -14,6 +14,17 @@ homeFolder = os.path.expanduser('~')
 # 		thePath+="/"
 # 	return thePath
 
+
+def clearOldContent():
+	contentToDelete=["Data", "Data-backups", "path_info.py", "credentials.py"]
+	itemsToDelete = [itm for itm in os.listdir() if itm in contentToDelete]
+	if len(itemsToDelete)==0:
+		return
+	print(f"Go to '{pathlib.Path().resolve()}'\nand delete the following items to clear out old data:\n")
+	for itm in 	itemsToDelete:
+		print(f"\t{itm}")	
+	input("\nWhen ready to proceed hit enter:")
+	return
 
 def getPath(prompt="Select directory", defaultPath="/"):
 	print(prompt)
@@ -34,8 +45,8 @@ def getRelativeDataPath():
 	relDataDirectory=os.path.abspath(dataDirectory).replace(homeFolder,"")
 	return relDataDirectory
 
-#from path_info import * 			# Set up where to find the relevant files
 os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
+clearOldContent()
 homeFolder = os.path.expanduser('~')				  # get the home folder 
 #sys.path.insert(0, homeFolder + '/Documents/GitHub/CanvasPeerReviews')	# location of the module files.  Only necessary if they are stored somewhere other than the scripts
 RELATIVE_DATA_PATH=getRelativeDataPath() #data directory relative to the home folder where your class data will be stored
