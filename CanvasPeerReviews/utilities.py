@@ -221,7 +221,7 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 				+ "COURSE_ID = " +str(COURSE_ID) +" #6 digit code that appears in the URL of your canvas course\n"
 				+ "CANVAS_URL = '" + CANVAS_URL + "'\n"
 				+ "TOKEN = '" + TOKEN+  "' # the canvas token for accessing your course.  See https://community.canvaslms.com/t5/Admin-Guide/How-do-I-obtain-an-API-access-token-in-the-Canvas-Data-Portal/ta-p/157\n"
-				+ "RELATIVE_DATA_PATH='" + os.path.abspath(dataDirectory).replace(homeFolder,"")+"/" + "' # location of data directory relative to home directory.  Example '/Nextcloud/Phys 51/Grades/CanvasPeerReviews/Data/'\n"
+				+ "#RELATIVE_DATA_PATH='" + os.path.abspath(dataDirectory).replace(homeFolder,"")+"/" + "' # location of data directory relative to home directory.  Example '/Nextcloud/Phys 51/Grades/CanvasPeerReviews/Data/' -- this shouldn't be necessary as it now lives in the path_info.py file\n"
 			)
 			f.close()
 	loadCache()
@@ -520,7 +520,7 @@ def undoAssignedPeerReviews(author=None, reviewer=None, assignment=None, peer_re
 #This takes a list of submissions which are to be used as calibration reviews
 # and assigns one to each student in the class, making sure to avoid assigning
 # a calibration to its own author if possible
-def assignCalibrationReviews(calibrations="auto", assignment="last"):
+def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSections=False):
 	global status, creations
 	returnVal=""
 	if assignment=="last":
@@ -1398,10 +1398,6 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 					student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
 					student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
 				else:
-					#print(f"{student.name}")
-					#print(f"{compsOnThisAssignment=}")
-					#print(f"{tempDelta=}")
-					#print(f"{tempWeight=}")
 					if not missingSubmission:
 						errorMessage=(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
 					#confirm("proceed?")
