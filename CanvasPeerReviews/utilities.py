@@ -491,7 +491,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 ######################################
 #This function assigns a peer review and records it
 recentlyAssignedPeerReviews=[]
-def assignAndRecordPeerReview(creation,reviewer, msg=""):
+def assignAndRecordPeerReview(creation,reviewer, msg="", secondPass=False):
 	if not status['printedUndoInfo']:
 		print(Style.BRIGHT + "\nTo delete any assigned peer reviews run 'undoAssignedPeerReviews()'.  You will be prompted to delete each review that has been assigned in this session.\n" + Style.RESET_ALL)
 		status['printedUndoInfo']=True
@@ -499,6 +499,8 @@ def assignAndRecordPeerReview(creation,reviewer, msg=""):
 	recentlyAssignedPeerReviews.append(peer_review)
 	reviewer.recordAssignedReview(creation.assignment_id, peer_review)
 	creation.reviewCount+=1
+	if secondPass:
+		creation.secondPassReviewerIds.append(reviewer.id)
 	printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation ", msg)	
 	return peer_review
 	
@@ -520,7 +522,7 @@ def undoAssignedPeerReviews(author=None, reviewer=None, assignment=None, peer_re
 #This takes a list of submissions which are to be used as calibration reviews
 # and assigns one to each student in the class, making sure to avoid assigning
 # a calibration to its own author if possible
-def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSections=False):
+def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSections=False, secondPass=False):
 	global status, creations
 	returnVal=""
 	if assignment=="last":
@@ -610,7 +612,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSecti
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
 			msg=str(j+1) + "/" + str(len(reviewers))
-			peer_review=assignAndRecordPeerReview(calibration,reviewer, msg)
+			peer_review=assignAndRecordPeerReview(calibration,reviewer, msg, secondPass)
 		else:
 			printLine("skipping self review", newLine=False)
 	dataToSave['students']=True
@@ -622,7 +624,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSecti
 # review the submission.  It will select reviewers from the beginning of the list of
 # potential reviewers skipping over anyone who has already been assigned at least the
 # target number of reviews.
-def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=4, AssignPeerReviewsToGraderSubmissions=False, ignoreSections=False):
+def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReviewers=4, AssignPeerReviewsToGraderSubmissions=False, ignoreSections=False, secondPass=False):
 	startTime=time.time()
 	global status
 	if not status['initialized']:
@@ -646,7 +648,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 		for j,reviewer in enumerate(reviewers):
 			if (reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id) < params.numberOfReviews and creation.reviewCount < numberOfReviewers and reviewer.id != creation.user_id and (reviewer.section == studentsById[creation.user_id].section or ignoreSections)):
 				msg=str(i+1) + "/" + str(len(creationsToConsider))
-				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
+				peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 		reviewerAvaialble=creation.reviewCount<len(creationsToConsider)-1
 		while creation.reviewCount < numberOfReviewers and reviewerAvaialble: #this creation did not get enough reviewers assigned somehow
 			#get the reviewer with the fewest reviews so far
@@ -656,7 +658,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 			if reviewerAvaialble:
 				reviewer=sortedAvailableReviewers[0]
 				msg="additional assignment " + str(i+1) + "/" + str(len(creationsToConsider))
-				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
+				peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	for reviewer in reviewers:
 		tic=time.time()
@@ -665,7 +667,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 			creation=random.choice(creationsToConsider)
 			if (reviewer.section == studentsById[creation.user_id].section or ignoreSections):
 				msg="---"
-				peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
+				peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 				#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
 	if len(graders)==0:
 		return
@@ -692,7 +694,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				for j,creation in enumerate(creationsListofList[i]):
 					if (reviewer.id != creation.user_id ):
 						msg=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
-						peer_review=assignAndRecordPeerReview(creation,reviewer, msg)
+						peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 	dataToSave['students']=True
 				
 ######################################
@@ -965,7 +967,7 @@ def overrideDefaultPoints(assignment):
 ######################################
 # Process a list of students (or all of the students, calling the
 # gradeStudent function for each
-def grade(assignment, studentsToGrade="All", reviewScoreGrading="default"):
+def grade(assignment, studentsToGrade="All", reviewScoreGrading="default", secondPass=False):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'grade'")
@@ -973,7 +975,7 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default"):
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		studentsToGrade=students
 	for student in makeList(studentsToGrade):
-		gradeStudent(assignment, student, reviewScoreGrading)
+		gradeStudent(assignment, student, reviewScoreGrading, secondPass)
 	if reviewScoreGrading=="default":
 		val=inputWithTimeout(f"Review grades will use '{assignment.reviewScoreMethod}' method.  (c) to change", 3)		
 		if val=='c':
@@ -1268,7 +1270,7 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 # finally combine these two grades to get a total grade, and record all three grades
 # into the student object, along with comments that can be shared with the student
 # explaining the grade		
-def gradeStudent(assignment, student, reviewScoreGrading="default"):
+def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent=False, secondPass=False):
 	global params
 	missingSubmission=False
 	if reviewScoreGrading=="default":
@@ -1277,7 +1279,11 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 	#calculate creation grades
 	curveFunc=eval('lambda x:' + assignment.curve)
 	student.gradingExplanation="Creation grade information for " +str(assignment.name) +"\n\n"
-	for review in student.reviewsReceived:
+	reviewsToGrade=student.reviewsReceived
+	if secondPass:
+		reviewsToGrade=[r for r in reviewsToGrade if r.reviewer_id in r.creation.secondPassReviewerIds]
+		
+	for review in reviewsToGrade:
 		if review.review_type == "grading" and review.assignment_id == assignment.id:
 			student.assignmentsGradedByInstructor[assignment.id]=True
 			student.gradingExplanation+="This submission was graded by the instructor.\n"
@@ -1288,9 +1294,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default"):
 		student.gradingExplanation+=str(criteriaDescription[cid]) + ":\n"
 		gradingExplanationLine=""
 		multiplier=params.pointsForCid(cid, assignment)
-		for i,review in enumerate(student.reviewsReceived):
+		for i,review in enumerate(reviewsToGrade):
 			review=reviewsById[review.id]
-			student.reviewsReceived[i]=reviewsById[review.id]
+			reviewsToGrade[i]=reviewsById[review.id]
 			if review.assignment_id == assignment.id:
 				weight=0
 				creationWasReviewed=True
@@ -1562,6 +1568,53 @@ def reviewGradeOnCalibrations(assignment, student):
 	return student.points[assignment.id]['curvedTotal']
 
 ######################################
+# get a list of students that have requested a regrade
+def getStudentsNeedingRegrade(studentsToGrade="All"):
+	studentsNeedingRegrade=dict()
+	#make list of students needing a regrade
+	if str(studentsToGrade)==studentsToGrade and studentsToGrade.lower()=="all":
+		for i,student in enumerate(makeList(students)):
+			if assignment.id not in student.regrade or (student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done"):
+				for key in student.creations:
+					c = student.creations[key]
+					#printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
+					printLeftRight("Checking for a regrade request from " + student.name ,str(i+1)+"/"+str(len(makeList(students))), end="")
+					try:
+						if c.assignment_id == assignment.id:
+							comments=c.edit().submission_comments
+							for comment in comments:
+								if comment['author']['id'] not in studentsById and "I've regraded your work" in comment['comment']:
+									print(student.name + " had a regrade processed alerady")
+								elif comment['author']['id'] == c.author_id and  (comment['comment'].lower().count(keywordCreation) ):
+									if not (assignment.id in student.regrade): 
+										if c.edit().id not in studentsNeedingRegrade:
+											studentsNeedingRegrade[c.edit().id]=student
+											printLine(student.name + " has a new regrade request pending")										
+								if comment['author']['id'] == c.author_id and  ( comment['comment'].lower().count(keywordReview) ):
+									if not (assignment.id in student.regrade): 
+										if c.edit().id not in studentsNeedingRegrade:
+											studentsNeedingRegrade[c.edit().id]=student
+											printLine(student.name + " has a new recalculation request pending")										
+					except KeyboardInterrupt:
+						exit()
+					except:
+						pass
+		printLine("",newLine=False)
+	else:
+		for student in makeList(studentsToGrade):
+			print("Looking for a regrade request from " + str(student.name))
+			for key in student.creations:
+				c = student.creations[key]
+				comments=c.edit().submission_comments
+				if c.assignment_id == assignment.id:
+					for comment in comments:
+						if comment['author']['id'] == c.author_id and (comment['comment'].lower().count(keywordCreation) or comment['comment'].lower().count(keywordReview) ):
+							if not (assignment.id in student.regrade):
+								studentsNeedingRegrade[c.edit().id]=student
+	return studentsNeedingRegrade
+	
+
+######################################
 # find submissions that need to be regraded as based on a keyword in the comments
 def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 	global status, activeAssignment
@@ -1579,48 +1632,9 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 	for assignment in assignmentList:
 		getStudentWork(assignment) # does this slow things down too much?
 		unresolvedRegrades=False
-		print("\nRegrading " + assignment.name + "...")				
-		studentsNeedingRegrade=dict()
-		#make list of students needing a regrade
-		if str(studentsToGrade)==studentsToGrade and studentsToGrade.lower()=="all":
-			for i,student in enumerate(makeList(students)):
-				if assignment.id not in student.regrade or (student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done"):
-					for key in student.creations:
-						c = student.creations[key]
-						#printLine("Checking for a regrade request from " + student.name + " " + str(i+1)+"/"+str(len(makeList(students))),newLine=False) 
-						printLeftRight("Checking for a regrade request from " + student.name ,str(i+1)+"/"+str(len(makeList(students))), end="")
-						try:
-							if c.assignment_id == assignment.id:
-								comments=c.edit().submission_comments
-								for comment in comments:
-									if comment['author']['id'] not in studentsById and "I've regraded your work" in comment['comment']:
-										print(student.name + " had a regrade processed alerady")
-									elif comment['author']['id'] == c.author_id and  (comment['comment'].lower().count(keywordCreation) ):
-										if not (assignment.id in student.regrade): 
-											if c.edit().id not in studentsNeedingRegrade:
-												studentsNeedingRegrade[c.edit().id]=student
-												printLine(student.name + " has a new regrade request pending")										
-									if comment['author']['id'] == c.author_id and  ( comment['comment'].lower().count(keywordReview) ):
-										if not (assignment.id in student.regrade): 
-											if c.edit().id not in studentsNeedingRegrade:
-												studentsNeedingRegrade[c.edit().id]=student
-												printLine(student.name + " has a new recalculation request pending")										
-						except KeyboardInterrupt:
-							exit()
-						except:
-							pass
-			printLine("",newLine=False)
-		else:
-			for student in makeList(studentsToGrade):
-				print("Looking for a regrade request from " + str(student.name))
-				for key in student.creations:
-					c = student.creations[key]
-					comments=c.edit().submission_comments
-					if c.assignment_id == assignment.id:
-						for comment in comments:
-							if comment['author']['id'] == c.author_id and (comment['comment'].lower().count(keywordCreation) or comment['comment'].lower().count(keywordReview) ):
-								if not (assignment.id in student.regrade):
-									studentsNeedingRegrade[c.edit().id]=student									
+		print("\nRegrading " + assignment.name + "...")	
+		studentsNeedingRegrade=getStudentsNeedingRegrade(studentsToGrade)			
+										
 		#process list of students needing a regrade
 		for i, student_key in enumerate(studentsNeedingRegrade):
 			student=studentsNeedingRegrade[student_key]
@@ -1642,7 +1656,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 						print(Fore.BLUE +  Style.BRIGHT  +"Already graded by professor"+Style.RESET_ALL)
 					else:
 						webbrowser.open(speedGraderURL)
-					val="unknwon"
+					val="unknown"
 					default="unknown"
 					while not val in ["i","f","v","r","c", "p","cp", "pc", "e"]:
 						if " ".join(comments).lower().count(keywordReview) and not " ".join(comments).lower().count(keywordCreation):
@@ -1670,11 +1684,11 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 						if val=='f':
 							student.regrade[assignment.id]="Forget"
 						if val=="v":
-							val="unknwon"
+							val="unknown"
 							print("Enter any regrade info and comments into the web browser")
 							webbrowser.open(speedGraderURL)
 						if val=="r":
-							val="unknwon"
+							val="unknown"
 							student.pointsOnAssignment(assignment)
 						if val=="cp" or val=="pc":
 							student.regrade[assignment.id]="Started creation and review"
@@ -1777,6 +1791,152 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 		assignment.regraded=True		
 	dataToSave['students']=True
 	dataToSave['assignments']=True
+	
+######################################
+# Assign regrade requests to other students requesting regrade requests, or process those regrade requests.
+def assignRegrades(assignment, studentsToGrade="All", recalibrate=False):
+	global status, activeAssignment
+	if not status['initialized']:
+		print("Error: You must first run 'initialize()' before calling 'regrade'")
+		return
+	getStudentWork(assignment) 
+	unresolvedRegrades=False
+	print("\nLooking for regrade request for " + assignment.name + "...")				
+	studentsNeedingRegrade=getStudentsNeedingRegrade(studentsToGrade)
+									
+	#process list of students needing a regrade
+	for i, student_key in enumerate(studentsNeedingRegrade):
+		student=studentsNeedingRegrade[student_key]
+		for key in student.creations:
+			c = student.creations[key]
+			if c.assignment_id == assignment.id:
+				comments=[com['comment'] for com in c.edit().submission_comments if com['author']['id'] == student.id]					
+				#print("regrade requested by " + student.name + "for assignment at: ")
+				printLeftRight("\n---------- " + student.name + " (Sec "+ str(int(student.sectionName[-2:])) +") says: ---------- " ,str(i+1)+"/" +str(len(studentsNeedingRegrade)))
+				print("\n" + Fore.GREEN +  Style.BRIGHT +"\n\n".join(comments)+Style.RESET_ALL + "\n")
+				
+				if not " ".join(comments).lower().count(keywordCreation):
+					continue
+	print("\n")
+	
+
+	msg=assignment.name +  " regrades are being assigned with the following point values:\n"
+	for cid in assignment.criteria_ids():
+		msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
+	log(msg,False)
+	#regenerate the dictionary with only students who need to be processed
+	studentsNeedingCreationRegradeList=[s for s in students if assignment.id in s.regrade and "creation" in s.regrade[assignment.id]]
+	studentsNeedingCreationRegrade=dict()
+	for rs in studentsNeedingCreationRegradeList:
+		studentsNeedingCreationRegrade[rs.id]=rs
+	studentsNeedingRegrade=studentsNeedingCreationRegrade.copy()
+	if len(studentsNeedingRegrade)>0:
+		val=""
+		print("What should we do")
+		print("  'a' - reassign peer reviews for regrade requests")
+		print("  'g' - grade the reassigned peer reviews")
+		while (val!='a' and val !='g'):
+			val= input("Your choice:")
+		if (val=='a'):
+			print("Getting updated submissions")			
+			getStudentWork(assignment)
+			if (recalibrate):
+				print("Before posting the regrade results, lets recalibrate the graders")
+				calibrate()
+			print("OK, now lets assign these creations to be peer reviewed")
+			originalPoints=dict()
+			creationsToRegrade=[]
+			for student_key in studentsNeedingRegrade:
+				studentsNeedingRegrade[student_key].regrade[assignment.id]="assigning creation regrade"
+				try:
+					originalPoints[student_key]=studentsNeedingRegrade[student_key].grades[assignment.id]
+				except KeyError:
+					print("unable to get original grade for " + studentsNeedingRegrade[student_key].name)
+					originalPoints[student_key]=0
+				creationsToRegrade.append(creationsByAuthorId[student_key])		
+			# reassign reviews  
+			assignPeerReviews(creationsToRegrade, numberOfReviewers=params.numberOfReviews, AssignPeerReviewsToGraderSubmissions=False, secondPass=True)
+			webbrowser.open(activeAssignment.html_url + "/peer_reviews")	 
+			if not confirm("The peer review assignment have been opened in a web browser.  Verify they look correct."):
+				undoAssignedPeerReviews()
+				finish()
+				exit()
+			body=f"Because of your request to have a regrade, additional peer reviews have been assigned to you for {assginment}.  Please complete the additional assigned reviews to have your work regraded."
+			print(subject +"\n"+body+"\n\n")
+			body=confirmText(body, prompt="Is this announcement acceptable?")
+			message(list(studentsNeedingCreationRegrade.values(), body, subject='', display=False):
+			dataToSave['students']=True
+			dataToSave['assignments']=True
+			return
+				
+		grade(assignment, studentsToGrade=list(studentsNeedingCreationRegrade.values()), reviewScoreGrading='keep', secondPass=True)			
+		for student_key in studentsNeedingRegrade:
+			student=studentsNeedingRegrade[student_key]
+			#get the grade from saved data for the student
+			originalCurvedTotalPoints=originalPoints[student_key]['curvedTotal'] 
+			#if possible, read the grade from canvas
+			submission=[c for c in creations if c.assignment_id == assignment.id and c.author_id == student.id]
+			if len(submission)>0:
+				submission=submission[0]
+				canvasGrade=float(submission.grade)
+				if (canvasGrade!=originalCurvedTotalPoints):
+					print(f"Warning: Canvas grade of {canvasGrade} does not match what is in memory {originalCurvedTotalPoints}, but regardless the grade on canvas is about to be overwritten with a new grade")
+				originalCurvedTotalPoints=canvasGrade
+				
+			if student in studentsNeedingReviewRegradeList:
+				reviewGradeOnCalibrations(assignment,student)
+			digits=int(2-math.log10(assignment.points_possible))
+			creationGrade=student.grades[assignment.id]['creation']
+			reviewGrade=student.grades[assignment.id]['review']
+			totalPoints=student.points[assignment.id]['total'] # xxx to see if a grade should be curved compare grades and points
+			curvedTotalPoints=student.points[assignment.id]['curvedTotal']
+			totalScoringSummaryString=("You earned %." + str(digits) +"f%% for your submission and %." + str(digits) +"f%% for your reviews.   When combined this gives you %." + str(digits) +"f%%.") % (creationGrade,  reviewGrade, totalPoints ) 
+			if (curvedTotalPoints!=totalPoints):
+				totalScoringSummaryString+=(("  When curved this gives a final regraded score of %." + str(digits) +"f.") % (curvedTotalPoints) )
+			if assignment.id in student.regradeComments:
+				student.regradeComments[assignment.id] += totalScoringSummaryString
+			else:
+				student.regradeComments[assignment.id] = totalScoringSummaryString
+			if assignment.id in student.regrade and student.regrade[assignment.id]!="Forget" and student.regrade[assignment.id]!="Done":
+				scoreDelta=curvedTotalPoints-originalCurvedTotalPoints					
+				printLine("\nRegrade comments for " + student.name, newLine=False)
+				print(student.regradeComments[assignment.id])
+				if scoreDelta<0:
+					print(f"\n{Fore.RED}{Style.BRIGHT}Score will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a loss of {-scoreDelta} points{Style.RESET_ALL}")
+				elif scoreDelta>0:
+					print(f"\nScore will go from {originalCurvedTotalPoints} to {curvedTotalPoints}, a gain of {scoreDelta} points")
+				else:
+					print(f"\nScore will not change")
+				if confirm("Ok to post?"):
+					postGrades(assignment, listOfStudents=[student], useRegradeComments=True)
+					student.regrade[assignment.id]="Done"
+					print("Posted regrade for " + student.name)
+					student.regrade[assignment.id]="Done"
+				else:
+					print("Not posting anything for " + student.name)
+					print("If you entered the score and comments manually, it should be marked as complete.")
+					if confirm("Mark " + student.name + "'s regrade as complete?"):
+						student.regrade[assignment.id]="Done"
+					else:
+						unresolvedRegrades=True
+			else:
+				print("Not posting anything for " + student.name)
+			printLine(line=True)
+	else:
+		print("There are no pending regrade requests for " + assignment.name)
+	printLine()
+	if unresolvedRegrades:
+		assignment.regradesCompleted=False
+	else:
+		if confirm("Shall we finalize " + assignment.name + " and stop checking it for regrade requests?"):
+			assignment.regradesCompleted=True
+		else:
+			assignment.regradesCompleted=False
+	
+	status["regraded"]=True
+	assignment.regraded=True		
+	dataToSave['students']=True
+	dataToSave['assignments']=True	
 		
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated

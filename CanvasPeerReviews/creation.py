@@ -9,6 +9,7 @@ class Creation:
 		self.excused = False
 		self.reviewCount=0
 		self.graderReviewCount=0
+		self.secondPassReviewerIds=[]
 		
 	def assignedPeerReviews(self):
 		returnList=[]
