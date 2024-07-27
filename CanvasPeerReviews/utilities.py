@@ -1864,7 +1864,7 @@ def assignRegrades(assignment, studentsToGrade="All", recalibrate=False):
 			body=f"Because of your request to have a regrade, additional peer reviews have been assigned to you for {assginment}.  Please complete the additional assigned reviews to have your work regraded."
 			print(subject +"\n"+body+"\n\n")
 			body=confirmText(body, prompt="Is this announcement acceptable?")
-			message(list(studentsNeedingCreationRegrade.values(), body, subject='', display=False):
+			message(list(studentsNeedingCreationRegrade.values()), body, subject='', display=False)
 			dataToSave['students']=True
 			dataToSave['assignments']=True
 			return
