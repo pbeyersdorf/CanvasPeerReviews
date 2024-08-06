@@ -2253,7 +2253,7 @@ def importGrades(assignment=None, fileName=None, overwrite=False):
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
-def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, saveToFile=True):
+def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, saveToFile=True, outOf100=False):
 	#fileName = "gradesheet.csv"
 	if fileName==None and assignment!= None:
 		fileName="scores for " + assignment.name + ".csv"
@@ -2265,7 +2265,10 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 				header+='"' + assignment.criteria_descriptions(cid) + '"' + delimiter #"LO" + str(cid) + delimiter
 			except Exception:
 				header+='"' + cid + '"' + delimiter #"LO" + str(cid) + delimiter
-		header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
+		if outOf100:
+			header+="Creation out of 100" + delimiter + "Review out of 100" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
+		else:
+			header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 	else:
 		header+="Grade, Comment\n"
 	if saveToFile:
@@ -2281,7 +2284,10 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 				str(student.sis_user_id) + delimiter)
 			if assignment!=None:
 				if assignment.id in student.points:
-					points=student.points[assignment.id]	
+					if outOf100:
+						points=student.grades[assignment.id]	
+					else:
+						points=student.points[assignment.id]	
 					for cid in assignment.criteria_ids():
 						if assignment.id in student.pointsByCriteria and cid in student.pointsByCriteria[assignment.id]:
 							line+=str(student.pointsByCriteria[assignment.id][cid]) + delimiter
