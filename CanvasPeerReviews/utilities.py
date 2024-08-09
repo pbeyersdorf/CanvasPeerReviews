@@ -94,6 +94,7 @@ status={'message': '',
 	'graded': False,
 	'regraded': False,
 	'posted': False,
+	'unreviewed work': False,
 	'printedUndoInfo': False,
 	'verificationKey': verificationKey,
 	'dataDir': './'}
@@ -1377,7 +1378,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			if student.creations[assignment.id].submitted_at != None:
 				creationGrade=100 # Change this
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
-				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
+				#print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
 	if reviewScoreGrading.lower()=="calibrated grading":
 		#calculate review grades
 		tempDelta=dict()
@@ -1475,13 +1476,17 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	curvedTotalPoints=curveFunc(totalPoints)
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
-	if reviewScoreGrading=="ignore":
-		
-		student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible}
-		student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}	
+	if creationWasReviewed or missingSubmission:
+		if reviewScoreGrading=="ignore":
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible, 'status': 'graded' if creationWasReviewed else 'ungraded'}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints, 'status': 'graded'if creationWasReviewed else 'ungraded'}
+		else:
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible, 'status': 'graded'if creationWasReviewed else 'ungraded'}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints, 'status': 'graded'if creationWasReviewed else 'ungraded'}
 	else:
-		student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible}
-		student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
+		print(f"{student.name}'s work wasn't reviewed so no score is being posted")
+		status['unreviewed work']=True
+	
 	percentileRanking=gradingPowerRanking(student, percentile=True)	
 	#make a summary of their points
 
@@ -1775,6 +1780,8 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 					else:
 						print(f"\nScore will not change")
 					if confirm("Ok to post?"):
+						student.points[assignment.id]['status']='regraded'
+						student.grades[assignment.id]['status']='regraded'
 						postGrades(assignment, listOfStudents=[student], useRegradeComments=True)
 						student.regrade[assignment.id]="Done"
 						print("Posted regrade for " + student.name)
@@ -1783,6 +1790,9 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 						print("If you entered the score and comments manually, it should be marked as complete.")
 						if confirm("Mark " + student.name + "'s regrade as complete?"):
 							student.regrade[assignment.id]="Done"
+							student.points[assignment.id]['status']='manually posted'
+							student.grades[assignment.id]['status']='manually posted'
+
 				else:
 					print("Not posting anything for " + student.name)
 				printLine(line=True)
@@ -1967,19 +1977,22 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	for student in listOfStudents:
 		if assignment.id in student.creations:
 			creation=student.creations[assignment.id]
-			printLine("posting for " + student.name, newLine=False)
-			if postGrades:
-				creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
-			if postComments:
-				try:
-					theComment=additionalGradingComment + "\n\n"
-				except:
-					theComment=""
-				if useRegradeComments and assignment.id in student.regradeComments:
-					theComment=student.regradeComments[assignment.id]
-				elif not useRegradeComments:
-					theComment=student.comments[assignment.id]
-				creation.edit(comment={'text_comment':theComment})			
+			if (student.points[assignment.id]['status'] in ['graded','regraded']):
+				printLine("posting for " + student.name, newLine=False)
+				if postComments:
+					try:
+						theComment=additionalGradingComment + "\n\n"
+					except:
+						theComment=""
+					if useRegradeComments and assignment.id in student.regradeComments:
+						theComment=student.regradeComments[assignment.id]
+					elif not useRegradeComments:
+						theComment=student.comments[assignment.id]
+					creation.edit(comment={'text_comment':theComment})			
+				if postGrades:
+					creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
+					student.points[assignment.id]['status']='posted'
+					student.grades[assignment.id]['status']='posted'
 		else:
 			printLine("No creation to post for " + student.name, newLine=False)
 	printLine()
@@ -1987,6 +2000,8 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	dataToSave['assignments']=True
 	log("Grades for " +assignment.name+ " posted")
 	status["posted"]=True
+	if status['unreviewed work']:
+		print("There were unreviewed submissions.  Review them in canvas and then re-run this gradeing script")
 
 ######################################
 # Read a CSV file with student names, grades, and comments and upload that data for the
@@ -2319,6 +2334,9 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 				print(line, end ="")
 	if saveToFile:
 		f.close()
+	if status['unreviewed work']:
+		print("There were unreviewed submissions.  Review them in canvas and then re-run this gradeing script")
+
 
 ######################################
 # view students that are as graders
