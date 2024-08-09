@@ -66,6 +66,8 @@ creationsByAuthorId=dict()
 reviewsByCreationId=dict()
 params=Parameters()
 students=[]
+instructors=[]
+instructorsWhoseReviewsShouldNotBeCalibrations=[]
 creations=[]
 creationsById=dict()
 solutionURLs=dict()
@@ -184,7 +186,7 @@ def reset():
 # with peer reviews and submissions and the most recent assignment
 @timer
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", update=False):
-	global course, canvas, students, graded_assignments, status, nearestAssignment, keyboardThread
+	global course, canvas, students, graded_assignments, status, nearestAssignment, keyboardThread, instructors
 	status['dataDir']=dataDirectory
 	status['prefix']=str(COURSE_ID)
 	if not os.path.exists(dataDirectory):
@@ -225,6 +227,7 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 			)
 			f.close()
 	loadCache()
+	instructors=getInstructors(course)
 	if 'setup' not in status:
 		printLine(status['message'],False)
 	
@@ -696,7 +699,14 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 						msg=str(j+1) + "." + str(i+1) + "/" + str(len(creationsListofList[i]))
 						peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 	dataToSave['students']=True
-				
+	
+	
+######################################
+# Get a list of all isntructors enrolled in the course.  
+@timer
+def getInstructors(course):
+	return course.get_users(enrollment_type=['Teacher'])	
+	
 ######################################
 # Get a list of all students enrolled in the course.  Return an array of Student objects
 @timer
@@ -846,7 +856,7 @@ def reviewSummary(assessment, display=False):
 # submission and the students performing the reviews.  Nothing is returned. 
 @timer
 def getReviews(creations):
-	global course, reviewsById, allReviews
+	global course, reviewsById, allReviews, instructorsWhoseReviewsShouldNotBeCalibrations
 	rubrics=course.get_rubrics()
 	allReviews=[]
 		
@@ -881,16 +891,16 @@ def getReviews(creations):
 							if thisReview.fingerprint() == review.fingerprint() and assessment['assessment_type']=="grading":
 								studentsById[creation.user_id].reviewsReceived[i]=review			
 					if creation.id in reviewsByCreationId:
-						#reviewsByCreationId[creation.id].append(review)
 						reviewsByCreationId[creation.id][review.id]=review
 					else:
 						reviewsByCreationId[creation.id]={review.id: review}
 					if assessment['assessment_type']=='grading':
-						if creation.assignment_id in professorsReviews:
-							if review.fingerprint() not in [pr.fingerprint() for pr in professorsReviews[creation.assignment_id]]:
-								professorsReviews[creation.assignment_id].append(review)
-						else:
-							professorsReviews[creation.assignment_id]=[review]
+						if review.reviewer_id not in [inst.id for inst in instructorsWhoseReviewsShouldNotBeCalibrations]:
+							if creation.assignment_id in professorsReviews:
+								if review.fingerprint() not in [pr.fingerprint() for pr in professorsReviews[creation.assignment_id]]:
+									professorsReviews[creation.assignment_id].append(review)
+							else:
+								professorsReviews[creation.assignment_id]=[review]
 					elif review.reviewer_id in studentsById:
 						# if not already assigned assignment.multiplier[cid]
 						studentsById[review.reviewer_id].reviewsGiven[review.submission_id]=review
@@ -2321,6 +2331,32 @@ def viewGraders():
 	else:
 		print("The class has no graders.")
 	print()
+
+######################################
+# Select instructors whose grades should be used for calibration
+def selectInstructors(prompt):
+	val="-"
+	selectedInstructors=[]
+	for i,instructor in enumerate(instructors):
+		print(f"{i+1})\t{instructor.name}")
+	while val != "":
+		val= input(f"{prompt}\n<return> when done.")
+		try:
+			val=int(val)-1
+			if instructors[val] in selectedInstructors:
+				selectedInstructors=[si for si in selectedInstructors if si!=instructors[val]]
+			else:
+				selectedInstructors.append(instructors[val])
+		except:
+			pass
+		for i,instructor in enumerate(instructors):
+			if instructor in selectedInstructors:
+				print(f"{i+1})\t{instructor.name} [selected]")
+			else:
+				print(f"{i+1})\t{instructor.name}")
+	return(selectedInstructors)	
+		
+	
 	
 ######################################
 # Select students to be assigned as graders
