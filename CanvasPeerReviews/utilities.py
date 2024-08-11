@@ -833,7 +833,7 @@ def reviewSummary(assessment, display=False):
 		# got an error here on next line
 		msg+="\t" + criteriaDescription[d['cid']] 
 		try:
-			msg+=" [" + str(d['points']) + "]"
+			msg+=" [" + str(d['['points']']) + "]"
 		except Exception:
 			msg+=" [missing]"
 		try:
@@ -1478,13 +1478,15 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		curvedTotalPoints=0 # no submission
 	if creationWasReviewed or missingSubmission:
 		if reviewScoreGrading=="ignore":
-			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible, 'status': 'graded' if creationWasReviewed else 'ungraded'}
-			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints, 'status': 'graded'if creationWasReviewed else 'ungraded'}
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
 		else:
-			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible, 'status': 'graded'if creationWasReviewed else 'ungraded'}
-			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints, 'status': 'graded'if creationWasReviewed else 'ungraded'}
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
+		student.gradingStatus[assignment.id]='graded'if creationWasReviewed else 'ungraded'
 	else:
 		print(f"{student.name}'s work wasn't reviewed so no score is being posted")
+		student.gradingStatus[assignment.id]='ungraded'
 		status['unreviewed work']=True
 	
 	percentileRanking=gradingPowerRanking(student, percentile=True)	
@@ -1780,8 +1782,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 					else:
 						print(f"\nScore will not change")
 					if confirm("Ok to post?"):
-						student.points[assignment.id]['status']='regraded'
-						student.grades[assignment.id]['status']='regraded'
+						student.gradingStatus[assignment.id]='regraded'
 						postGrades(assignment, listOfStudents=[student], useRegradeComments=True)
 						student.regrade[assignment.id]="Done"
 						print("Posted regrade for " + student.name)
@@ -1790,8 +1791,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 						print("If you entered the score and comments manually, it should be marked as complete.")
 						if confirm("Mark " + student.name + "'s regrade as complete?"):
 							student.regrade[assignment.id]="Done"
-							student.points[assignment.id]['status']='manually posted'
-							student.grades[assignment.id]['status']='manually posted'
+							student.gradingStatus[assignment.id]='manually posted'
 
 				else:
 					print("Not posting anything for " + student.name)
@@ -1977,7 +1977,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	for student in listOfStudents:
 		if assignment.id in student.creations:
 			creation=student.creations[assignment.id]
-			if (student.points[assignment.id]['status'] in ['graded','regraded']):
+			if (student.gradingStatus[assignment.id] in ['graded','regraded']):
 				printLine("posting for " + student.name, newLine=False)
 				if postComments:
 					try:
@@ -1991,8 +1991,8 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 					creation.edit(comment={'text_comment':theComment})			
 				if postGrades:
 					creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
-					student.points[assignment.id]['status']='posted'
-					student.grades[assignment.id]['status']='posted'
+					student.gradingStatus[assignment.id]='posted'
+
 		else:
 			printLine("No creation to post for " + student.name, newLine=False)
 	printLine()

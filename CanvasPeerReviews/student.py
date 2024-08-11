@@ -59,6 +59,7 @@ class Student:
 		self.gradingPowerNormalizationFactor=dict()
 		self.points=dict()
 		self.grades=dict()
+		self.gradingStatus=dict()
 		self.regrade=dict()
 		self.comments=dict()
 		self.reviewData=dict()
