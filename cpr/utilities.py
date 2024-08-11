@@ -833,7 +833,6 @@ def reviewSummary(assessment, display=False):
 		# got an error here on next line
 		msg+="\t" + criteriaDescription[d['cid']] 
 		try:
-			#msg+=" [" + str(d['['points']']) + "]"
 			msg+=" [" + str(d['points']) + "]"
 		except Exception:
 			msg+=" [missing]"
