@@ -61,7 +61,7 @@ while not successfullImport:
 		print("Giving up")
 		exit()
 	try:
-		from CanvasPeerReviews import *	
+		from cpr import *	
 		successfullImport=True	
 	except Exception as error:
 		print(error)

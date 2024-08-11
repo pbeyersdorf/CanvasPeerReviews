@@ -1,4 +1,4 @@
-from CanvasPeerReviews.utilities import *
+from cpr.utilities import *
 
 print("cprhelp() for information")
 
@@ -27,7 +27,7 @@ Finally you are asked for a 'compensation factor' from 0-1.  This adjusts the sc
 		msg='''
 To assign peer reviews including calibration reviews that you have already assessed on canvas:
 
-from CanvasPeerReviews import *
+from cpr import *
 initialize()
 params=getParameters()
 getStudentWork()
@@ -36,7 +36,7 @@ assignPeerReviews(creations, numberOfReviewers=params.numberOfReviews)
 
 To grade peer reviews that have been completed
 
-from CanvasPeerReviews import *
+from cpr import *
 students, graded_assignments, lastAssignment = initialize()
 params=getParameters()
 getStudentWork()
@@ -46,7 +46,7 @@ postGrades(lastAssignment)
 
 To view statistics on student graders:
 
-from CanvasPeerReviews import *
+from cpr import *
 initialize()
 params=getParameters()
 getStudentWork()

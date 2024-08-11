@@ -6,6 +6,6 @@ Installation python -m pip install -e path/to/CanvasPeerReviews
 
 To use:
 
-from CanvasPeerReviews import *
+from cpr import *
 
 cprhelp()

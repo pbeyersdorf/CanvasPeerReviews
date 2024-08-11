@@ -2,7 +2,7 @@ from credentials import *
 import sys, os
 sys.path.insert(0, "/Users/hilary/PycharmProjects/CanvasPeerReviewsTop/CanvasPeerReviews")
 from path_info import *
-from CanvasPeerReviews import *
+from cpr import *
 
 
 #################  course info  #################

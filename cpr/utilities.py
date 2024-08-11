@@ -6,12 +6,12 @@ try:
 	from canvasapi import Canvas
 except Exception:
 	errormsg+="Missing canvasapi module.  Run 'pip install canvasapi' to intall\n"
-from CanvasPeerReviews.creation import Creation
-from CanvasPeerReviews.student import Student
-from CanvasPeerReviews.comparison import Comparison
-from CanvasPeerReviews.assignment import GradedAssignment
-from CanvasPeerReviews.parameters import Parameters
-from CanvasPeerReviews.review import Review
+from cpr.creation import Creation
+from cpr.student import Student
+from cpr.comparison import Comparison
+from cpr.assignment import GradedAssignment
+from cpr.parameters import Parameters
+from cpr.review import Review
 try:
 	from dill.source import getsource	
 	import dill

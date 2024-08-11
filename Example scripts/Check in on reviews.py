@@ -1,7 +1,7 @@
 #################  Set up where to the environment  #################
 from credentials import *
 from path_info import * 			# Set up where to find the relevant files
-from CanvasPeerReviews import *		# the main module for managing peer reviews
+from cpr import *		# the main module for managing peer reviews
 
 #################  Get the data for the course  #################
 students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COURSE_ID, DATADIRECTORY)
