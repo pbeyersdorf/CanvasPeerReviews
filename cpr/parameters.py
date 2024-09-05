@@ -5,6 +5,20 @@ class Parameters:
 		self.multiplier=dict()
 		self.halfLife=9999
 	
+	def __repr__(self):
+		msg=("The parameters are:\n")
+		msg+=(f"    numberOfReviews: {self.numberOfReviews}\n")
+		msg+=(f"    weightingOfCreation: {self.weightingOfCreation}\n")
+		msg+=(f"    weightingOfReviews: {self.weightingOfReviews}\n")
+		msg+=(f"    compensationFactor: {self.compensationFactor}\n")
+		msg+=(f"    maxCompensationFraction: {self.maxCompensationFraction}\n")
+		msg+=(f"    gradingPowerForInstructors: {self.gradingPowerForInstructors}\n")
+		msg+=(f"    halfLife = {self.halfLife}\n")
+		msg+=(f"    multiplier:\n")
+		for key in self.multiplier:
+			msg+=(f"        {key}: {self.multiplier[key]}\n")
+		return msg
+			
 	def peerReviewDurationInSeconds(self):
 		#returns how long studnets are given to complete peer reviews (expressed in seconds)
 		return self.peerReviewDurationInDays*24*60*60
