@@ -188,6 +188,8 @@ def reset():
 @timer
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", update=False):
 	global course, canvas, students, graded_assignments, status, nearestAssignment, keyboardThread, instructors
+	if dataDirectory[-1]!='/':
+		dataDirectory+='/'
 	status['dataDir']=dataDirectory
 	status['prefix']=str(COURSE_ID)
 	if not os.path.exists(dataDirectory):
