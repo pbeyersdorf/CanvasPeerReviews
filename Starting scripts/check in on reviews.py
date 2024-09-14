@@ -47,7 +47,8 @@ for key in reviewsByCreationId:
 # make a list of all the submitted reviews as well as a list of ones that were submitted before the rubric was completely filled in
 reviews=[]
 for key in utilities.reviewsByCreationId:
-	reviews.append(list(utilities.reviewsByCreationId[key].values())[0])
+	for theReview in list(utilities.reviewsByCreationId[key].values()):
+		reviews.append(theReview)
 incompleteReviews=[]
 for review in reviews:
 	if review.creation.assignment_id == activeAssignment.id:
@@ -94,6 +95,7 @@ def showDelinquentStudents():
 
 #offer to reset any incomplete reviews and message the reviewers to let them know to redo them
 ReviewCount=0
+val=''
 for review in incompleteReviews:
 	if not findInLog(review.fingerprint()):
 		for d in review.data:
@@ -101,11 +103,15 @@ for review in incompleteReviews:
 			reviewer=studentsById[reviewerID]
 			authorName=studentsById[review.author_id].name
 			print("Incomplete review of " + authorName +" by " + reviewer.name)
-			val=input("(r) reset review or (i) ignore incomplete review: ")
-			if (val=='r'):
+			if (val=='' or val==val.lower()):
+				val=input("(r) reset review or (i) ignore incomplete review: ")
+			if (val.lower()=='r'):
 				msg1="Hi "+reviewer.name.split(" ")[0]+",  I  noticed one of your reviews was incomplete - likely because you hit 'save' before entering all of the data.  Since Canvas doesn't have a way to go back and finish a 'saved' review, I have deleted it and reassigned it so you can submit a complete review.  Here is what you had entered initially:\n\n"
 				msg1+=reviewSummary(review)
-				msg=confirmText(msg1)
+				if (val=='' or val==val.lower()):
+					msg=confirmText(msg1)
+				else:
+					msg=msg1
 				#find the creation that has a failed review
 				c1=[c for c in creations if c.id == review.submission_id][0]
 				#delete the failed review
@@ -132,11 +138,19 @@ unreviewedCreations=checkForUnreviewed(activeAssignment, openPage=True)  #open a
 
 #val=inputWithTimeout("(s) show students who haven't done any reviews", 60)
 #if confirm("\nShow students who haven't done any reviews? "):
+fileName=status['dataDir'] + activeAssignment.name + "_todo.html"
+runWithArguments = len(sys.argv)>1
+if runWithArguments: # this allows the script to be called from a cronjob without waiting for input
+	os.remove(fileName)
+	finish(True)
+	exit()
+
 if confirm("Show students who haven't yet done a review?"):
 	showDelinquentStudents()
 	endMessage="Done!"
 else:
 	endMessage="type 'showDelinquentStudents()' to show and/or message students who haven't yet completed any reviews"
 print(endMessage)
+os.remove(fileName)
 finish(True)
 	

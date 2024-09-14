@@ -1990,7 +1990,11 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						theComment=student.regradeComments[assignment.id]
 					elif not useRegradeComments:
 						theComment=student.comments[assignment.id]
-					creation.edit(comment={'text_comment':theComment})			
+					try:
+						creation.edit(comment={'text_comment':theComment})
+					except:
+						print(f"Unable to post grades for {student.name} - perhaps they dropped the class")
+						continue			
 				if postGrades:
 					creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
 					student.gradingStatus[assignment.id]='posted'
