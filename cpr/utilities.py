@@ -1132,6 +1132,17 @@ If you believe the score assigned to your creation is not an accurate reflection
 
 If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
 #########################################################################
+# 			review only feedback										#
+#########################################################################
+Compared to reviews by the instructor and other students, the peer review scores you gave others deviated by
+{review feedback by criteria}
+{comment on review}
+
+You earned {reviewGrade}% for your reviews.  
+
+If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
+
+#########################################################################
 # 				 general feedback ignoring reviews			 			#
 #########################################################################
 A weighted average of the reviews of your work give the following scores:
@@ -1498,10 +1509,13 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	percentileRanking=gradingPowerRanking(student, percentile=True)	
 	#make a summary of their points
 
+	
 	if reviewScoreGrading.lower()=="ignore":
 		templateName="general feedback ignoring reviews"
+		student.reviewComments[assignment.id]=""
 	elif reviewScoreGrading.lower()=="calibrated grading":
 		templateName="general feedback with calibrated review grading"
+		student.reviewComments[assignment.id]=processTemplate(student,assignment,name="review only feedback")
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
 			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
@@ -1514,6 +1528,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
 		student.comments[assignment.id]="No submission received"
+		student.reviewComments[assignment.id]="No reviews assigned"
 	student.recordAdjustments(assignment)
 
 
@@ -1592,7 +1607,7 @@ def reviewGradeOnCalibrations(assignment, student):
 
 ######################################
 # get a list of students that have requested a regrade
-def getStudentsNeedingRegrade(studentsToGrade="All"):
+def getStudentsNeedingRegrade(assignment, studentsToGrade="All"):
 	studentsNeedingRegrade=dict()
 	#make list of students needing a regrade
 	if str(studentsToGrade)==studentsToGrade and studentsToGrade.lower()=="all":
@@ -1656,7 +1671,7 @@ def regrade(assignmentList="all", studentsToGrade="All", recalibrate=False):
 		getStudentWork(assignment) # does this slow things down too much?
 		unresolvedRegrades=False
 		print("\nRegrading " + assignment.name + "...")	
-		studentsNeedingRegrade=getStudentsNeedingRegrade(studentsToGrade)			
+		studentsNeedingRegrade=getStudentsNeedingRegrade(assignment, studentsToGrade)			
 										
 		#process list of students needing a regrade
 		for i, student_key in enumerate(studentsNeedingRegrade):
@@ -1828,7 +1843,7 @@ def assignRegrades(assignment, studentsToGrade="All", recalibrate=False):
 	getStudentWork(assignment) 
 	unresolvedRegrades=False
 	print("\nLooking for regrade request for " + assignment.name + "...")				
-	studentsNeedingRegrade=getStudentsNeedingRegrade(studentsToGrade)
+	studentsNeedingRegrade=getStudentsNeedingRegrade(assignment, studentsToGrade)
 									
 	#process list of students needing a regrade
 	for i, student_key in enumerate(studentsNeedingRegrade):
@@ -1967,7 +1982,7 @@ def assignRegrades(assignment, studentsToGrade="All", recalibrate=False):
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated
 # comments.	 The optional arguments allow you to suppress posting comments or the grades
-def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='all', useRegradeComments=False):
+def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='all', useRegradeComments=False, useReviewComments=False):
 	global status
 	if not status['initialized']:
 		print("Error: You must first run 'initialize()' before calling 'postGrades'")
@@ -1992,6 +2007,8 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						theComment=""
 					if useRegradeComments and assignment.id in student.regradeComments:
 						theComment=student.regradeComments[assignment.id]
+					if useReviewComments and assignment.id in student.reviewComments:
+						theComment=student.reviewComments[assignment.id]
 					elif not useRegradeComments:
 						theComment=student.comments[assignment.id]
 					try:
@@ -2301,9 +2318,9 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 			except Exception:
 				header+='"' + cid + '"' + delimiter #"LO" + str(cid) + delimiter
 		if outOf100:
-			header+="Creation out of 100" + delimiter + "Review out of 100" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
+			header+="Creation out of 100" + delimiter + "Review out of 100" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Only Review Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 		else:
-			header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
+			header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Only Review Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 	else:
 		header+="Grade, Comment\n"
 	if saveToFile:
@@ -2333,6 +2350,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 						str(points['total']) + delimiter + 
 						str(points['curvedTotal']) + delimiter + 
 						'"' + student.comments[assignment.id] + '"' + delimiter +
+						'"' + student.reviewComments[assignment.id] + '"' + delimiter +
 						'"' + student.gradingExplanation + '"' + delimiter +
 						'"' + student.reviewGradeExplanation + '"')
 			else:

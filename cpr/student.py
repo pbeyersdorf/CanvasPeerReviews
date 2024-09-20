@@ -62,6 +62,7 @@ class Student:
 		self.gradingStatus=dict()
 		self.regrade=dict()
 		self.comments=dict()
+		self.reviewComments=dict()
 		self.reviewData=dict()
 		self.regradeComments=dict()
 		self.reviewGradeExplanation = None
