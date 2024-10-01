@@ -2486,13 +2486,15 @@ def announce(subject, body, section="all"):
 def message(theStudents, body, subject='', display=False):
 	studentList=makeList(theStudents)
 	for student in studentList:
+		print("\rMessageing " + student.name, end="")
 		try:
 			canvas.create_conversation(student.id, body=body, subject=subject)
 		except Exception:
 			print("error messaging " ,student.name, ".  Perhaps the student dropped." )
 		if display:
-			print("messaging " +  student.name)
-			
+			print("messaging " +  student.name)		
+	printLine("",False)
+	
 ######################################
 # Read a CSV file and return the data as an array
 def readCSV(fileName=None):
