@@ -1489,7 +1489,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	if (digits ==0):
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
-	totalPoints=creationPoints + reviewPoints
+	totalPoints=creationPoints + reviewPoints  # <- this calculation rounds before adding up creation and review grade
+	totalPoints=round(totalGrade*assignment.points_possible/100.0,digits) # <- this calculation rounds after  adding up creation and review grade
+	
 	curvedTotalPoints=curveFunc(totalPoints)
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
@@ -1594,7 +1596,7 @@ def reviewGradeOnCalibrations(assignment, student):
 		student.grades[assignment.id]['review']=reviewGrade
 		student.points[assignment.id]['review']=round(reviewGrade * assignment.points_possible/100.0 * params.weightingOfReviews)
 		student.grades[assignment.id]['total']=student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation
-		student.points[assignment.id]['total']=round((student.grades[assignment.id]['review'] * params.weightingOfReviews + student.grades[assignment.id]['creation'] * params.weightingOfCreation)*assignment.points_possible/100.0)
+		student.points[assignment.id]['total']=round(student.grades[assignment.id]['total']*assignment.points_possible/100.0)
 		student.grades[assignment.id]['curvedTotal']=curveFunc(student.grades[assignment.id]['total'])
 		student.points[assignment.id]['curvedTotal']=round(curveFunc(student.grades[assignment.id]['total'])*assignment.points_possible/100.0)
 		if (totalPointsDelta) > 0:
