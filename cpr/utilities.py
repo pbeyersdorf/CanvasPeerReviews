@@ -1408,7 +1408,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			if student.creations[assignment.id].submitted_at != None:
 				creationGrade=100 # Change this
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
-				#print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
+				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
 	if reviewScoreGrading.lower()=="calibrated grading":
 		#calculate review grades
 		tempDelta=dict()
@@ -1493,31 +1493,36 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		exit()	
 	#adjust the points from a scale of 100 down to the number of points for the assingmnet
 	digits=int(2-math.log10(assignment.points_possible))
-	if reviewScoreGrading.lower()=="ignore":
-		creationPoints=round(creationGrade*assignment.points_possible/100.0 ,digits)
+	if params.combineSubmissionAndReviewGrades:
+		maxCreationPoints=assignment.points_possible * params.weightingOfCreation
+		maxReviewPoints=assignment.points_possible * params.weightingOfReviews
+	elif reviewScoreGrading.lower()=="ignore":
+		maxCreationPoints=assignment.points_possible
+		maxReviewPoints=0
 	else:
-		creationPoints=round(creationGrade*assignment.points_possible/100.0*  params.weightingOfCreation ,digits)
-	reviewPoints=round(reviewGrade*assignment.points_possible/100.0 * params.weightingOfReviews ,digits)
-	if (digits ==0):
+		maxCreationPoints=points_possible
+		maxReviewPoints=maxCreationPoints * (params.weightingOfReviews/params.weightingOfCreation)
+		
+	creationPoints=round(creationGrade/100.0 * maxCreationPoints,digits)
+	reviewPoints=round(reviewGrade/100.0 * maxReviewPoints,digits)
+	if (digits == 0):
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
-	totalPoints=creationPoints + reviewPoints  # <- this calculation rounds before adding up creation and review grade
-	totalPoints=round(totalGrade*assignment.points_possible/100.0,digits) # <- this calculation rounds after adding up creation and review grade
+	totalPoints=max(round(creationGrade/100.0 * maxCreationPoints + reviewGrade/100.0 * maxReviewPoints,digits), creationPoints + reviewPoints)
 	
 	curvedTotalPoints=curveFunc(totalPoints)
 	curvedCreationGrade=curveFunc(creationGrade)
-	curvedReviewGrade=curveFunc(reviewGrade)
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
 		curvedCreationGrade=0 # no submission
-		curvedReviewGrade=0 # no submission
 	if creationWasReviewed or missingSubmission:
 		if reviewScoreGrading=="ignore":
-			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade, 'curvedReview': None}
-			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,  'curvedCreation':  assignment.points_possible * curvedCreationGrade/100, 'curvedReview': None}
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,  'curvedCreation':  assignment.points_possible * curvedCreationGrade/100}
 		else:
-			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade, 'curvedReview': curvedReviewGrade}
-			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,   'curvedCreation':  assignment.points_possible * curvedCreationGrade/100, 'curvedReview': 100 * curvedReviewGrade/100}
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,   'curvedCreation':  assignment.points_possible * curvedCreationGrade/100 }
+			
 		student.gradingStatus[assignment.id]='graded'if creationWasReviewed else 'ungraded'
 	else:
 		print(f"{student.name}'s work wasn't reviewed so no score is being posted")
@@ -2014,9 +2019,11 @@ def createRelatedAssignment(assignment, separateGroup=True):
 		if (a.name == assignmentName):
 			print(f"Found existing assignment named {assignmentName}")
 			return a
+	creationPoints=assignment.points_possible
+	reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / weightingOfCreation)
 	creationDict={
 	'name': assignmentName,
-	'points_possible': 100,
+	'points_possible': reviewAssignmentPoints,
 	'due_at': datetime.now(),
 	'description': "Score for the quality of the peer reviews you gave on " + assignment.name  ,
 	'published': False,
@@ -2084,7 +2091,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedCreation']})
 						for sub in reviewScoreAssignment.get_submissions():
 							if sub.user_id in studentsById:
-								sub.edit(submission={'posted_grade': student.points[assignment.id]['curvedReview']})
+								sub.edit(submission={'posted_grade': student.points[assignment.id]['reviewPoints']})
 								if postComments:
 									sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
 	
