@@ -10,12 +10,11 @@ class GradedAssignment:
 				if not 'title' in outcome:
 					outcome['title']=None
 		self.__dict__ = assignment.__dict__.copy() 
+		self.assignment = assignment
 		self.graded = False 
 		self.gradesPosted = False 
 		self.regraded = False 
 		self.peer_reviews_assigned = False
-		self.get_peer_reviews=assignment.get_peer_reviews
-		self.get_submissions=assignment.get_submissions
 		self.multiplier=dict()
 		self.curve='x'
 		self.reviewCurve='max(0,min(100, 120*(1-1.1*rms)))'
@@ -25,6 +24,14 @@ class GradedAssignment:
 		self.reviewScoreMethod="calibrated grading"
 		self.includeInCalibrations=True
 		self.solutionsUrl=None
+
+	def get_submissions(self):
+		return self.assignment.get_submissions()
+
+	def get_peer_reviews(self):
+		return self.assignment.get_peer_reviews()
+
+	
 
 	def sync(self, updatedAssignment):
 		# if the due date has changed on canvas this updates that

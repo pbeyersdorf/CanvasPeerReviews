@@ -8,6 +8,7 @@ class Parameters:
 	def __repr__(self):
 		msg=("The parameters are:\n")
 		msg+=(f"    numberOfReviews: {self.numberOfReviews}\n")
+		msg+=(f"    combineSubmissionAndReviewGrades: {self.combineSubmissionAndReviewGrades}\n")
 		msg+=(f"    weightingOfCreation: {self.weightingOfCreation}\n")
 		msg+=(f"    weightingOfReviews: {self.weightingOfReviews}\n")
 		msg+=(f"    compensationFactor: {self.compensationFactor}\n")

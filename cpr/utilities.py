@@ -1116,9 +1116,9 @@ def writeTemplate(fileName="feedback_template.txt"):
 {review feedback by criteria: similar scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average about the same  as other reviewers)
 {review feedback by criteria: lower scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average {absolute_value_of_deviation} lower than other reviewers)
 
-#########################################################################
-# 			general feedback with calibrated review grading				#
-#########################################################################
+#####################################################################################################
+# 			general feedback for creation and reviews with calibrated review grading				#
+#####################################################################################################
 A weighted average of the reviews of your work give the following scores:
     {points_by_criteria} for '{description_by_criteria}'
 
@@ -1131,6 +1131,19 @@ You earned {creationGrade}% for your submission and {reviewGrade}% for your revi
 If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
 
 If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
+
+#############################################################################
+# 			creation only feedback 											#
+#############################################################################
+
+A weighted average of the reviews of your work give the following scores:
+    {points_by_criteria} for '{description_by_criteria}'
+
+You earned {creationGrade}% for your submission.  {comment if grades are curved}
+
+If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
+
+
 #########################################################################
 # 			review only feedback										#
 #########################################################################
@@ -1138,7 +1151,7 @@ Compared to reviews by the instructor and other students, the peer review scores
 {review feedback by criteria}
 {comment on review}
 
-You earned {reviewGrade}% for your reviews.  
+You earned a grade of {reviewGrade}% for your reviews based on how closely your review aligned to the instructor's reviews on all of the reviews that you had in common on this assignment.  The instructor's's grade strictly according to the rubric, so the more closely your reviews align to the rubric the better your score will be.
 
 If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
 
@@ -1434,7 +1447,6 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 				else:
 					if not missingSubmission:
 						errorMessage=(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
-					#confirm("proceed?")
 					student.rmsByAssignment[assignment.id][cid]=0
 					student.deviationByAssignment[assignment.id][cid]=0
 					student.relativeRmsByAssignment[assignment.id][cid]=0
@@ -1490,18 +1502,22 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
 	totalPoints=creationPoints + reviewPoints  # <- this calculation rounds before adding up creation and review grade
-	totalPoints=round(totalGrade*assignment.points_possible/100.0,digits) # <- this calculation rounds after  adding up creation and review grade
+	totalPoints=round(totalGrade*assignment.points_possible/100.0,digits) # <- this calculation rounds after adding up creation and review grade
 	
 	curvedTotalPoints=curveFunc(totalPoints)
+	curvedCreationGrade=curveFunc(creationGrade)
+	curvedReviewGrade=curveFunc(reviewGrade)
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
+		curvedCreationGrade=0 # no submission
+		curvedReviewGrade=0 # no submission
 	if creationWasReviewed or missingSubmission:
 		if reviewScoreGrading=="ignore":
-			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible}
-			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade, 'curvedReview': None}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,  'curvedCreation':  assignment.points_possible * curvedCreationGrade/100, 'curvedReview': None}
 		else:
-			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible}
-			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints}
+			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade, 'curvedReview': curvedReviewGrade}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,   'curvedCreation':  assignment.points_possible * curvedCreationGrade/100, 'curvedReview': 100 * curvedReviewGrade/100}
 		student.gradingStatus[assignment.id]='graded'if creationWasReviewed else 'ungraded'
 	else:
 		print(f"{student.name}'s work wasn't reviewed so no score is being posted")
@@ -1513,11 +1529,17 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 
 	
 	if reviewScoreGrading.lower()=="ignore":
-		templateName="general feedback ignoring reviews"
+		creationTemplateName="general feedback ignoring reviews"
+		reviewTemplateName=None
 		student.reviewComments[assignment.id]=""
 	elif reviewScoreGrading.lower()=="calibrated grading":
-		templateName="general feedback with calibrated review grading"
-		student.reviewComments[assignment.id]=processTemplate(student,assignment,name="review only feedback")
+		if params.combineSubmissionAndReviewGrades:
+			creationTemplateName="general feedback for creation and reviews with calibrated review grading"
+		else:
+			creationTemplateName="creation only feedback"
+		reviewTemplateName="review only feedback"
+		student.creationComments[assignment.id]=processTemplate(student,assignment,name=creationTemplateName)
+		student.reviewComments[assignment.id]=processTemplate(student,assignment,name=reviewTemplateName)
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
 			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
@@ -1525,11 +1547,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 				student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
 			else:
 				print("not using template to craft regrade comments")
-	else:			
-		student.comments[assignment.id]=processTemplate(student,assignment,name=templateName)
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
-		student.comments[assignment.id]="No submission received"
+		student.creationComments[assignment.id]="No submission received"
 		student.reviewComments[assignment.id]="No reviews assigned"
 	student.recordAdjustments(assignment)
 
@@ -1981,6 +2001,43 @@ def assignRegrades(assignment, studentsToGrade="All", recalibrate=False):
 	dataToSave['students']=True
 	dataToSave['assignments']=True	
 		
+
+
+######################################
+# For the assignment given, create a related assignment to hold the peer review score
+# 
+def createRelatedAssignment(assignment, separateGroup=True):
+	assignment.name
+	assignmentName=assignment.name + " (reviewing score)"
+	#check if assignment already exists
+	for a in course.get_assignments():
+		if (a.name == assignmentName):
+			print(f"Found existing assignment named {assignmentName}")
+			return a
+	creationDict={
+	'name': assignmentName,
+	'points_possible': 100,
+	'due_at': datetime.now(),
+	'description': "Score for the quality of the peer reviews you gave on " + assignment.name  ,
+	'published': False,
+	}
+	if (separateGroup):
+		# check if the assignment group exists
+		groupName = "Review Scores"
+		groups=course.get_assignment_groups()
+		neefToCreateGroup=True
+		for g in groups:
+			if g.name==groupName:
+				groupForReviewScore=g
+				neefToCreateGroup=False
+				break
+		if neefToCreateGroup: 
+			#groupForReviewScore=course.create_assignment_group(name=groupName, group_weight = 100*params.weightingOfReviews) 
+			groupForReviewScore=course.create_assignment_group(name=groupName) 
+		creationDict['assignment_group_id'] = groupForReviewScore.id
+	print(f"Creating a new assignment named {assignmentName}")
+	return course.create_assignment(creationDict) 	
+		
 ######################################
 # For the assignment given, post the total grade on canvas and post the associated
 # comments.	 The optional arguments allow you to suppress posting comments or the grades
@@ -1995,6 +2052,8 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	if not status['graded']:
 		if not confirm("You haven't yet called grade() but you are calling postGrades()\nyou will be posting previously saved grades, and may get an error", False):
 			return
+	if not params.combineSubmissionAndReviewGrades:
+		reviewScoreAssignment=createRelatedAssignment(assignment)
 	if (listOfStudents=='all'):
 		listOfStudents=[s for s in students if s.role=='student']
 	for student in listOfStudents:
@@ -2012,14 +2071,23 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 					if useReviewComments and assignment.id in student.reviewComments:
 						theComment=student.reviewComments[assignment.id]
 					elif not useRegradeComments:
-						theComment=student.comments[assignment.id]
+						theComment=student.creationComments[assignment.id]
 					try:
 						creation.edit(comment={'text_comment':theComment})
 					except:
 						print(f"Unable to post grades for {student.name} - perhaps they dropped the class")
 						continue			
 				if postGrades:
-					creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
+					if params.combineSubmissionAndReviewGrades:
+						creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
+					else:
+						creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedCreation']})
+						for sub in reviewScoreAssignment.get_submissions():
+							if sub.user_id in studentsById:
+								sub.edit(submission={'posted_grade': student.points[assignment.id]['curvedReview']})
+								if postComments:
+									sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
+	
 					student.gradingStatus[assignment.id]='posted'
 
 		else:
@@ -2152,6 +2220,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 		total=weightingOfCreation+weightingOfReviews
 		params.weightingOfCreation=weightingOfCreation/total
 		params.weightingOfReviews=weightingOfReviews/total
+		params.combineSubmissionAndReviewGrades=getBool("Should submission and review scores be combined into one grade (yes/no)?")
 		params.numberOfReviews=getNum("How many reviewers should review each creation? (some students will be assigned one more than this number of reviews)",3, fileDescriptor=logFile)	
 		#params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews?",3, fileDescriptor=logFile)
 		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10, fileDescriptor=logFile)
@@ -2214,6 +2283,7 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 	reviewGrade=[]
 	rawTotal=[]
 	curvedTotal=[]
+	curvedCreation=[]
 	zeros=[]
 	for student in students:
 		if assignment.id in student.creations:
@@ -2224,16 +2294,20 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 				reviewGrade.append(grades['review'])
 				rawTotal.append(grades['total'])
 				curvedTotal.append(points['curvedTotal'])
+				curvedCreation.append(points['curvedCreation'])
 		else:
 			zeros.append(0)
+			
 	if len(curvedTotal)==0 or not assignment.graded:
 		print("You must grade the assignment before getting statistics")
 		return
 	if hist:
 		#importing required libraries
 		from matplotlib import pyplot as plt
-		# A dataset of 10 students
-		marks = curvedTotal + zeros
+		if (params.combineSubmissionAndReviewGrades):
+			marks = curvedTotal + zeros
+		else:
+			marks = curvedCreation + zeros
 		fig, axis = plt.subplots(figsize =(10, 5))
 		#axis.hist(marks, bins = [0, 10, 20, 30, 40,50, 60, 70, 80, 90, 100])
 		axis.hist(marks, bins = [i*assignment.points_possible/10 for i in range(11)])
@@ -2245,15 +2319,22 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 		print("Creation average is %.1f%% with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
 		print("Review average is %.1f%% with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
 		print("Raw total average is %.1f%% with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
-		print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
+		if (params.combineSubmissionAndReviewGrades):
+			print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
+		else:
+			print("Curved creation average is %.1f with stdev of %.1f" % (np.average(curvedCreation),np.std(curvedCreation)) )	
 	assignment.creationAverage=np.average(creationGrade)
 	assignment.creationStd=np.std(creationGrade)
 	assignment.reviewAverage=np.average(reviewGrade)
 	assignment.reviewStd=np.std(reviewGrade)
 	assignment.rawAverage=np.average(rawTotal)
 	assignment.rawStd=np.std(rawTotal)	
-	assignment.curvedAverage=np.average(curvedTotal)
-	assignment.curvedStd=np.std(curvedTotal)
+	if (params.combineSubmissionAndReviewGrades):
+		assignment.curvedAverage=np.average(curvedTotal)
+		assignment.curvedStd=np.std(curvedTotal)
+	else:
+		assignment.curvedAverage=np.average(curvedCreation)
+		assignment.curvedStd=np.std(curvedCreation)
 	
 ######################################
 # Import the student grades for the given assignment from a file =
@@ -2351,7 +2432,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 						str(points['review']) + delimiter + 
 						str(points['total']) + delimiter + 
 						str(points['curvedTotal']) + delimiter + 
-						'"' + student.comments[assignment.id] + '"' + delimiter +
+						'"' + student.creationComments[assignment.id] + '"' + delimiter +
 						'"' + student.reviewComments[assignment.id] + '"' + delimiter +
 						'"' + student.gradingExplanation + '"' + delimiter +
 						'"' + student.reviewGradeExplanation + '"')
@@ -2546,6 +2627,18 @@ def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=N
 				print("Your response must be between " + str(limits[0]) + " and " + str(limits[1]))
 		except Exception:
 			print("Your response must be numeric")			
+
+######################################
+# Prompt for a number with a default value
+def getBool(msg="'True' or 'False'", defaultVal=None):
+	dafaultString=""
+	if defaultVal!=None:
+		dafaultString=" [" + str(defaultVal) + "]"
+	response=input(msg + dafaultString +": ")
+	if response=="":
+		response=String(defaultVal)
+	val=response.strip().lower() in ["yes", "1" , "true", "ok"]
+	return val
 
 ######################################
 # Display text and allow the user to accept it or edit it
