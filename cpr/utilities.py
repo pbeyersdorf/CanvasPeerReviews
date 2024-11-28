@@ -214,6 +214,18 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 		TOKEN=input("Enter the token here: ")
 		print()
 		printCommand=True
+
+	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
+		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
+		print(Fore.RED +  Style.BRIGHT +  "\nUsing test environment\nset TEST_ENVIRONMENT=False in 'credentials.py' to change" + Style.RESET_ALL)
+		testDir=status['dataDir'][:-1]+"-test/"
+		cmd="cp -r '" + status['dataDir'] + "' '" + testDir + "'"
+		os.system(cmd)
+		status['dataDir'] = testDir
+		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
+	else:
+		print("\nUsing production environment\nset TEST_ENVIRONMENT=True in 'credentials.py' to change")
+
 	canvas = Canvas(CANVAS_URL, TOKEN)
 	course = canvas.get_course(COURSE_ID)
 	if printCommand:
@@ -250,16 +262,6 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 		for key in student.creations:
 			creationsById[student.creations[key].id]=student.creations[key]
 	status["initialized"]=True
-	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
-		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
-		print(Fore.RED +  Style.BRIGHT +  "\nUsing test environment\nset TEST_ENVIRONMENT=False in 'credentials.py' to change" + Style.RESET_ALL)
-		testDir=status['dataDir'][:-1]+"-test/"
-		cmd="cp -r '" + status['dataDir'] + "' '" + testDir + "'"
-		os.system(cmd)
-		status['dataDir'] = testDir
-		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
-	else:
-		print("\nUsing production environment\nset TEST_ENVIRONMENT=True in 'credentials.py' to change")
 		
 	return students, graded_assignments, lastAssignment
 
@@ -1500,7 +1502,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		maxCreationPoints=assignment.points_possible
 		maxReviewPoints=0
 	else:
-		maxCreationPoints=points_possible
+		maxCreationPoints=assignment.points_possible
 		maxReviewPoints=maxCreationPoints * (params.weightingOfReviews/params.weightingOfCreation)
 		
 	creationPoints=round(creationGrade/100.0 * maxCreationPoints,digits)
@@ -1515,6 +1517,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
 		curvedCreationGrade=0 # no submission
+		reviewGrade=0# no submission so no peer reviews
+		reviewPoints=0# no submission so no peer reviews
 	if creationWasReviewed or missingSubmission:
 		if reviewScoreGrading=="ignore":
 			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade}
@@ -2020,13 +2024,13 @@ def createRelatedAssignment(assignment, separateGroup=True):
 			print(f"Found existing assignment named {assignmentName}")
 			return a
 	creationPoints=assignment.points_possible
-	reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / weightingOfCreation)
+	reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
 	creationDict={
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,
 	'due_at': datetime.now(),
 	'description': "Score for the quality of the peer reviews you gave on " + assignment.name  ,
-	'published': False,
+	'published': True,
 	}
 	if (separateGroup):
 		# check if the assignment group exists
@@ -2091,7 +2095,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedCreation']})
 						for sub in reviewScoreAssignment.get_submissions():
 							if sub.user_id in studentsById:
-								sub.edit(submission={'posted_grade': student.points[assignment.id]['reviewPoints']})
+								sub.edit(submission={'posted_grade': student.points[assignment.id]['review']})
 								if postComments:
 									sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
 	
