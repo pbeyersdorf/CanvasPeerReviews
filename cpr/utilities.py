@@ -2035,18 +2035,27 @@ def createRelatedAssignment(assignment, separateGroup=True):
 	'published': True,
 	}
 	if (separateGroup):
+		creationGroupId=assignment.assignment_group_id
 		# check if the assignment group exists
 		groupName = "Review Scores"
 		groups=course.get_assignment_groups()
-		neefToCreateGroup=True
+		creationGroupWeight=None
+		for group in groups:
+			if (group.id==creationGroupId):
+				creationGroupWeight=group.group_weight
+				break
+					
+		needToCreateGroup=True
 		for g in groups:
 			if g.name==groupName:
 				groupForReviewScore=g
-				neefToCreateGroup=False
+				needToCreateGroup=False
 				break
-		if neefToCreateGroup: 
-			#groupForReviewScore=course.create_assignment_group(name=groupName, group_weight = 100*params.weightingOfReviews) 
-			groupForReviewScore=course.create_assignment_group(name=groupName) 
+		if needToCreateGroup:
+			if  creationGroupWeight==None:
+				groupForReviewScore=course.create_assignment_group(name=groupName) 
+			else:
+				groupForReviewScore=course.create_assignment_group(name=groupName, group_weight = creationGroupWeight*params.weightingOfReviews/params.weightingOfCreation) 
 		creationDict['assignment_group_id'] = groupForReviewScore.id
 	print(f"Creating a new assignment named {assignmentName}")
 	return course.create_assignment(creationDict) 	
