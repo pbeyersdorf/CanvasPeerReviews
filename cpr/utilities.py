@@ -1128,7 +1128,7 @@ Compared to reviews by the instructor and other students, the peer review scores
 {review feedback by criteria}
 {comment on review}
 
-You earned {creationGrade}% for your submission and {reviewGrade}% for your reviews.   When combined this gives you {rawGrade}%.  {comment if grades are curved}
+You earned {creationGrade}% for your submission and {reviewGrade}% for your reviews.   When combined this gives you {rawGrade}%.  {comment if grades are curved} ({curvedPoints} points).
 
 If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
 
@@ -1141,7 +1141,7 @@ If you believe your review grade does not correspond to the quality of your peer
 A weighted average of the reviews of your work give the following scores:
     {points_by_criteria} for '{description_by_criteria}'
 
-You earned {creationGrade}% for your submission.  {comment if grades are curved}
+You earned {creationGrade}% for your submission.  {comment if grades are curved}  ({creationPoints} points).
 
 If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
 
@@ -1163,7 +1163,7 @@ If you believe your review grade does not correspond to the quality of your peer
 A weighted average of the reviews of your work give the following scores:
     {points_by_criteria} for '{description_by_criteria}'
 
-You earned {creationGrade}% for your submission.  {comment if grades are curved}
+You earned {creationGrade}% for your submission.  {comment if grades are curved} ({curvedPoints} points).
 
 If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
 
@@ -1287,9 +1287,10 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 							pass
 				else:
 					if assignment.id in student.grades:
-						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
+						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), creationPoints=student.points[assignment.id]['curvedCreation'], reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),curvedPoints=student.points[assignment.id]['curvedTotal'],solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
+					
 					else:
-						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade="--", reviewGrade="--", rawGrade="--", curvedGrade="--",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"				
+						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade="--", creationPoints="--", reviewGrade="--", rawGrade="--", curvedGrade="--",curvedPoints="--",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"				
 		else:
 			templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
 			template_lines=templateText.split("\n")
@@ -2024,7 +2025,8 @@ def createRelatedAssignment(assignment, separateGroup=True):
 			print(f"Found existing assignment named {assignmentName}")
 			return a
 	creationPoints=assignment.points_possible
-	reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
+	#reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
+	reviewAssignmentPoints=100
 	creationDict={
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,
@@ -2095,7 +2097,8 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedCreation']})
 						for sub in reviewScoreAssignment.get_submissions():
 							if sub.user_id in studentsById:
-								sub.edit(submission={'posted_grade': student.points[assignment.id]['review']})
+								#sub.edit(submission={'posted_grade': student.points[assignment.id]['review']})
+								sub.edit(submission={'posted_grade': student.grade[assignment.id]['review']})
 								if postComments:
 									sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
 	
