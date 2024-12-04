@@ -38,7 +38,7 @@ if not confirm("The peer review assignment have been opened in a web browser.  V
 	exit()
 
 if not params.combineSubmissionAndReviewGrades:
-		reviewScoreAssignment=createRelatedAssignment(assignment)	
+		reviewScoreAssignment=createRelatedAssignment(activeAssignment)	
 
 
 url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")

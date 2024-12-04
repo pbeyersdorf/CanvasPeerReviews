@@ -33,7 +33,7 @@ try:
 	import readchar
 except ImportError:
 	errormsg+="Missing readchar module.  Run 'pip3 install readchar' to intall\n"
-
+import textwrap
 import webbrowser
 import copy
 import random
@@ -2025,21 +2025,19 @@ def createRelatedAssignment(assignment, separateGroup=True):
 			print(f"Found existing assignment named {assignmentName}")
 			return a
 	creationPoints=assignment.points_possible
-	#reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
 	reviewAssignmentPoints=100
-	creationDueDate=assignment.due_at_date.replace(tzinfo=None)
+	creationDueDate=assignment.due_at_date
 	reviewDueDate=creationDueDate+timedelta(days=params.peerReviewDurationInDays)
 	creationDict={
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,
 	'due_at': reviewDueDate,
-	'description': f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed before {reviewDueDate} to receive credit.",
+	'description': f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed before {reviewDueDate.astimezone().strftime('%A (%-m/%-d) at %-I:%M %p')} to receive credit.",
 	'published': True,
 	}
 	if (separateGroup):
 		creationGroupId=assignment.assignment_group_id
-		# check if the assignment group exists
-		reviewGroupName = "Review Scores"
+		# Get the assignment group for the creation
 		groups=course.get_assignment_groups()
 		for group in groups:
 			if (group.id==creationGroupId):
@@ -2047,11 +2045,15 @@ def createRelatedAssignment(assignment, separateGroup=True):
 				break
 					
 		needToCreateGroup=True
+		reviewGroupName = "Review Scores"
+		# Check if review group already exists
 		for g in groups:
 			if g.name==reviewGroupName:
 				groupForReviewScore=g
 				needToCreateGroup=False
 				break
+				
+		#create the review group
 		if needToCreateGroup:
 			if (params.weightingOfCreationGroup != None):
 				group.edit(group_weight= params.weightingOfCreationGroup)
@@ -2642,9 +2644,19 @@ def confirm(msg="", requireResponse=False):
 
 
 ######################################
+# Wrat long string of text to fit on screen
+def wrapText(text,width=None):
+	if width==None:
+		width, _ = os.get_terminal_size()
+	return "\n".join(textwrap.wrap(text, width))
+
+
+######################################
 # Prompt for a number with a default value
 def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=None, allowBlank=False):
 	dafaultString=""
+	msg=wrapText(msg)
+
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
 	while True:

@@ -57,7 +57,7 @@ for sectionName in sorted(list(sections.values())):
 			#if not confirm("The peer review assignment has been opened in a web browser.  Verify they look correct."):
 			#	undoAssignedPeerReviews(assignment=activeAssignment)
 			if not params.combineSubmissionAndReviewGrades:
-					reviewScoreAssignment=createRelatedAssignment(assignment)	
+					reviewScoreAssignment=createRelatedAssignment(activeAssignment)	
 
 			print(f"Done assigning reviews for {activeAssignment.name} section {sectionName}.")
 

@@ -59,7 +59,7 @@ for sectionName in sorted(list(sections.values())):
 			#	undoAssignedPeerReviews(assignment=activeAssignment)
 			
 			if not params.combineSubmissionAndReviewGrades:
-				reviewScoreAssignment=createRelatedAssignment(assignment)	
+				reviewScoreAssignment=createRelatedAssignment(activeAssignment)	
 
 			print(f"Done assigning reviews for {activeAssignment.name} section {sectionName}.")
 

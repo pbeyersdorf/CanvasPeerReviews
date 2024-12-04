@@ -42,7 +42,7 @@ webbrowser.open(activeAssignment.html_url + "/peer_reviews")
 print(f"Done assigning reviews for {activeAssignment.name}")
 
 if not params.combineSubmissionAndReviewGrades:
-		reviewScoreAssignment=createRelatedAssignment(assignment)	
+		reviewScoreAssignment=createRelatedAssignment(activeAssignment)	
 
 
 if (url==""):
