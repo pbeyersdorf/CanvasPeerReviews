@@ -57,6 +57,10 @@ for sectionName in sorted(list(sections.values())):
 			webbrowser.open(activeAssignment.html_url + "/peer_reviews")	 
 			#if not confirm("The peer review assignment has been opened in a web browser.  Verify they look correct."):
 			#	undoAssignedPeerReviews(assignment=activeAssignment)
+			
+			if not params.combineSubmissionAndReviewGrades:
+				reviewScoreAssignment=createRelatedAssignment(assignment)	
+
 			print(f"Done assigning reviews for {activeAssignment.name} section {sectionName}.")
 
 			#get the section instructor and message them about the calibration assignment

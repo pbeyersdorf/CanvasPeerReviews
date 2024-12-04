@@ -9,8 +9,13 @@ class Parameters:
 		msg=("The parameters are:\n")
 		msg+=(f"    numberOfReviews: {self.numberOfReviews}\n")
 		msg+=(f"    combineSubmissionAndReviewGrades: {self.combineSubmissionAndReviewGrades}\n")
-		msg+=(f"    weightingOfCreation: {self.weightingOfCreation}\n")
-		msg+=(f"    weightingOfReviews: {self.weightingOfReviews}\n")
+		if self.combineSubmissionAndReviewGrades:
+			msg+=(f"    weightingOfCreation: {self.weightingOfCreation}\n")
+			msg+=(f"    weightingOfReviews: {self.weightingOfReviews}\n")
+		else:
+			msg+=(f"    weightingOfCreationGroup: {self.weightingOfCreationGroup}%\n")
+			msg+=(f"    weightingOfReviewsGroup: {self.weightingOfReviewsGroup}%\n")		
+		msg+=(f"    peerReviewDurationInDays: {self.peerReviewDurationInDays}\n")		
 		msg+=(f"    compensationFactor: {self.compensationFactor}\n")
 		msg+=(f"    maxCompensationFraction: {self.maxCompensationFraction}\n")
 		msg+=(f"    gradingPowerForInstructors: {self.gradingPowerForInstructors}\n")

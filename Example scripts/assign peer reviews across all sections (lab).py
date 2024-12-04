@@ -41,6 +41,10 @@ assignPeerReviews(creationsToConsider, numberOfReviewers=params.numberOfReviews,
 webbrowser.open(activeAssignment.html_url + "/peer_reviews")	 
 print(f"Done assigning reviews for {activeAssignment.name}")
 
+if not params.combineSubmissionAndReviewGrades:
+		reviewScoreAssignment=createRelatedAssignment(assignment)	
+
+
 if (url==""):
 	url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
 	webbrowser.open(url)

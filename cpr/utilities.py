@@ -2018,7 +2018,7 @@ def assignRegrades(assignment, studentsToGrade="All", recalibrate=False):
 # 
 def createRelatedAssignment(assignment, separateGroup=True):
 	assignment.name
-	assignmentName=assignment.name + " (reviewing score)"
+	assignmentName="Peer reviews of " +assignment.name
 	#check if assignment already exists
 	for a in course.get_assignments():
 		if (a.name == assignmentName):
@@ -2027,35 +2027,38 @@ def createRelatedAssignment(assignment, separateGroup=True):
 	creationPoints=assignment.points_possible
 	#reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
 	reviewAssignmentPoints=100
+	creationDueDate=assignment.due_at_date.replace(tzinfo=None)
+	reviewDueDate=creationDueDate+timedelta(days=params.peerReviewDurationInDays)
 	creationDict={
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,
-	'due_at': datetime.now(),
-	'description': "Score for the quality of the peer reviews you gave on " + assignment.name  ,
+	'due_at': reviewDueDate,
+	'description': f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed before {reviewDueDate} to receive credit.",
 	'published': True,
 	}
 	if (separateGroup):
 		creationGroupId=assignment.assignment_group_id
 		# check if the assignment group exists
-		groupName = "Review Scores"
+		reviewGroupName = "Review Scores"
 		groups=course.get_assignment_groups()
-		creationGroupWeight=None
 		for group in groups:
 			if (group.id==creationGroupId):
-				creationGroupWeight=group.group_weight
+				creationGroup=group
 				break
 					
 		needToCreateGroup=True
 		for g in groups:
-			if g.name==groupName:
+			if g.name==reviewGroupName:
 				groupForReviewScore=g
 				needToCreateGroup=False
 				break
 		if needToCreateGroup:
-			if  creationGroupWeight==None:
-				groupForReviewScore=course.create_assignment_group(name=groupName) 
+			if (params.weightingOfCreationGroup != None):
+				group.edit(group_weight= params.weightingOfCreationGroup)
+			if (params.weightingOfReviewsGroup != None):
+				groupForReviewScore=course.create_assignment_group(name=reviewGroupName, group_weight = params.weightingOfReviewsGroup) 			
 			else:
-				groupForReviewScore=course.create_assignment_group(name=groupName, group_weight = creationGroupWeight*params.weightingOfReviews/params.weightingOfCreation) 
+				groupForReviewScore=course.create_assignment_group(name=reviewGroupName) 
 		creationDict['assignment_group_id'] = groupForReviewScore.id
 	print(f"Creating a new assignment named {assignmentName}")
 	return course.create_assignment(creationDict) 	
@@ -2238,14 +2241,22 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 							print(f"{criteria['description']} will be worth {params.multiplier[criteria['description']]:0.1f} points")
 				print()		
 	if not params.loadedFromFile or ignoreFile:
-		weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)
-		weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3, fileDescriptor=logFile)
-		total=weightingOfCreation+weightingOfReviews
-		params.weightingOfCreation=weightingOfCreation/total
-		params.weightingOfReviews=weightingOfReviews/total
 		params.combineSubmissionAndReviewGrades=getBool("Should submission and review scores be combined into one grade (yes/no)?")
+		if params.combineSubmissionAndReviewGrades:
+			weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)
+			weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3, fileDescriptor=logFile)
+			total=weightingOfCreation+weightingOfReviews
+			params.weightingOfCreation=weightingOfCreation/total
+			params.weightingOfReviews=weightingOfReviews/total
+			params.weightingOfCreationGroup=None
+			params.weightingOfReviewsGroup=None
+		else:
+			params.weightingOfCreation=1
+			params.weightingOfReviews=1
+			params.weightingOfCreationGroup=getNum("Enter the percentage of the total course grade that the assignment group for creations should be set to (or leave blank to remain unchanged):", fileDescriptor=logFile, allowBlank=True)
+			params.weightingOfReviewsGroup=getNum("Enter the percentage of the total course grade that the assignment group for peer review scores should be set to (or leave blank):", fileDescriptor=logFile, allowBlank=True)
 		params.numberOfReviews=getNum("How many reviewers should review each creation? (some students will be assigned one more than this number of reviews)",3, fileDescriptor=logFile)	
-		#params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews?",3, fileDescriptor=logFile)
+		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews after the assignment is due?",3, fileDescriptor=logFile)
 		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10, fileDescriptor=logFile)
 		params.gradingPowerForGraders=getNum("How many times greater than a student should  student graders grading be weighted?",5, fileDescriptor=logFile)
 		params.halfLife=getNum("How many assignments is the half life for grading power calculations?",4, fileDescriptor=logFile)
@@ -2632,7 +2643,7 @@ def confirm(msg="", requireResponse=False):
 
 ######################################
 # Prompt for a number with a default value
-def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=None):
+def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=None, allowBlank=False):
 	dafaultString=""
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
@@ -2640,6 +2651,8 @@ def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=N
 		response=input(msg + dafaultString +": ")
 		if response=="":
 			response=defaultVal
+			if allowBlank:
+				return None
 		try:
 			val=float(response)
 			if limits == None or (val>= limits[0] and val <= limits[1]):

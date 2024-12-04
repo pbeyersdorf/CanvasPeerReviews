@@ -38,6 +38,10 @@ if not confirm("The peer review assignment have been opened in a web browser.  V
 	finish()
 	exit()
 
+if not params.combineSubmissionAndReviewGrades:
+	reviewScoreAssignment=createRelatedAssignment(assignment)	
+
+
 for sectionName in sorted(list(sections.values())):
 	url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
 	if (url==""):

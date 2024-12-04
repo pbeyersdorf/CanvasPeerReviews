@@ -36,6 +36,9 @@ class GradedAssignment:
 	def get_submissions(self):
 		return self.assignment.get_submissions()
 		
+	def edit(self):
+		return self.assignment.edit()
+		
 	def sync(self, updatedAssignment):
 		# if the due date has changed on canvas this updates that
 		# records that change.
