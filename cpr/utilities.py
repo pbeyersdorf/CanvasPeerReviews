@@ -33,7 +33,7 @@ try:
 	import readchar
 except ImportError:
 	errormsg+="Missing readchar module.  Run 'pip3 install readchar' to intall\n"
-import textwrap
+
 import webbrowser
 import copy
 import random
@@ -124,7 +124,7 @@ def timer(func):
 
 ######################################
 # Try loading any cached data
-@timer
+#@timer
 def loadCache():
 	global course, status, params, dataDir, students, graded_assignments, reviewsById, reviewsByCreationId
 	status['prefix']="course_" + str(course.id) + "_"
@@ -185,7 +185,7 @@ def reset():
 ######################################
 # get the course data and return students enrolled, a list of assignments 
 # with peer reviews and submissions and the most recent assignment
-@timer
+#@timer
 def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Data/", update=False):
 	global course, canvas, students, graded_assignments, status, nearestAssignment, keyboardThread, instructors
 	if dataDirectory[-1]!='/':
@@ -295,7 +295,7 @@ def assignSections(students):
 ######################################
 # Given an assignment object this will return all of the student submissions
 # to that assignment as an array of objects
-@timer
+#@timer
 def getStudentWork(thisAssignment='last', includeReviews=True):
 	global creations, graded_assignments, status
 	if not status['initialized']:
@@ -350,7 +350,7 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 # Go through all of the assignments for the course and return an array of objects
 # from only those assignments that are set up to require peer reviews and
 # already have student submissions. 
-@timer
+#@timer
 def getGradedAssignments(course):
 	global graded_assignments, assignments
 	assignments = course.get_assignments()
@@ -380,7 +380,7 @@ def makeAssignmentByNumberDict():
 
 ######################################
 # Return the most recently due assignment of all the assignments that have peer reviews
-@timer
+#@timer
 def getMostRecentAssignment(nearest=False):
 	#if nearest=True it will get the assignment with a due date closest to now, regardless of whether it is past due or not yet due
 	global lastAssignment
@@ -708,13 +708,13 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 	
 ######################################
 # Get a list of all isntructors enrolled in the course.  
-@timer
+#@timer
 def getInstructors(course):
 	return course.get_users(enrollment_type=['Teacher'])	
 	
 ######################################
 # Get a list of all students enrolled in the course.  Return an array of Student objects
-@timer
+#@timer
 def getStudents(course):
 	users = course.get_users(enrollment_type=['student'])
 	global students
@@ -859,7 +859,7 @@ def reviewSummary(assessment, display=False):
 # Process a given student submission finding all of the peer reviews of that submissions
 # those peer reviews get attached to the student objects for both the author of the 
 # submission and the students performing the reviews.  Nothing is returned. 
-@timer
+#@timer
 def getReviews(creations):
 	global course, reviewsById, allReviews, instructorsWhoseReviewsShouldNotBeCalibrations
 	rubrics=course.get_rubrics()
@@ -869,6 +869,7 @@ def getReviews(creations):
 		if rubric.title == graded_assignments[creations[0].assignment_id].rubric_settings['title']:
 			break
 			
+	#rubric=course.get_rubric(rubric.id,include='assessments') #the documentation says that the style='full' is necessary to get a data hash, but startign in Dec 2024 this has caused occasional 504 errors and removing this parameter still seems to give a rubric with a data hash.
 	rubric=course.get_rubric(rubric.id,include='assessments', style='full')
 	
 	
@@ -2025,19 +2026,21 @@ def createRelatedAssignment(assignment, separateGroup=True):
 			print(f"Found existing assignment named {assignmentName}")
 			return a
 	creationPoints=assignment.points_possible
+	#reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
 	reviewAssignmentPoints=100
-	creationDueDate=assignment.due_at_date
+	creationDueDate=assignment.due_at_date.replace(tzinfo=None)
 	reviewDueDate=creationDueDate+timedelta(days=params.peerReviewDurationInDays)
 	creationDict={
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,
 	'due_at': reviewDueDate,
-	'description': f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed before {reviewDueDate.astimezone().strftime('%A (%-m/%-d) at %-I:%M %p')} to receive credit.",
+	'description': f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed before {reviewDueDate} to receive credit.",
 	'published': True,
 	}
 	if (separateGroup):
 		creationGroupId=assignment.assignment_group_id
-		# Get the assignment group for the creation
+		# check if the assignment group exists
+		reviewGroupName = "Review Scores"
 		groups=course.get_assignment_groups()
 		for group in groups:
 			if (group.id==creationGroupId):
@@ -2045,15 +2048,11 @@ def createRelatedAssignment(assignment, separateGroup=True):
 				break
 					
 		needToCreateGroup=True
-		reviewGroupName = "Review Scores"
-		# Check if review group already exists
 		for g in groups:
 			if g.name==reviewGroupName:
 				groupForReviewScore=g
 				needToCreateGroup=False
 				break
-				
-		#create the review group
 		if needToCreateGroup:
 			if (params.weightingOfCreationGroup != None):
 				group.edit(group_weight= params.weightingOfCreationGroup)
@@ -2644,19 +2643,9 @@ def confirm(msg="", requireResponse=False):
 
 
 ######################################
-# Wrat long string of text to fit on screen
-def wrapText(text,width=None):
-	if width==None:
-		width, _ = os.get_terminal_size()
-	return "\n".join(textwrap.wrap(text, width))
-
-
-######################################
 # Prompt for a number with a default value
 def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=None, allowBlank=False):
 	dafaultString=""
-	msg=wrapText(msg)
-
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
 	while True:
