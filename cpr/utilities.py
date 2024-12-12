@@ -2034,7 +2034,7 @@ def createRelatedAssignment(assignment, separateGroup=True):
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,
 	'due_at': reviewDueDate,
-	'description': f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed before {reviewDueDate} to receive credit.",
+	'description': f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed before {reviewDueDate} to receive credit.  Note that currently peer reviews are only functional via the web version of canvas (not the mobile app).  If you normally access canvas via the mobile app you should use a web browser when completing your peer reviews.",
 	'published': True,
 	}
 	if (separateGroup):
