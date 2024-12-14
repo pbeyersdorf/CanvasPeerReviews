@@ -1200,10 +1200,10 @@ def processTemplate(student, assignment, name, fileName="feedback_template.txt")
 							pass
 				else:
 					if assignment.id in student.grades:
-						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), creationPoints=student.points[assignment.id]['curvedCreation'], reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),curvedPoints=student.points[assignment.id]['curvedTotal'],solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
-					
+						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), creationPoints=student.points[assignment.id]['curvedCreation'], reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),curvedPoints=student.points[assignment.id]['curvedTotal'],solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name, reviewPoints=student.points[assignment.id]['review'], rawPoints=student.points[assignment.id]['total'])+"\n"
+	
 					else:
-						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade="--", creationPoints="--", reviewGrade="--", rawGrade="--", curvedGrade="--",curvedPoints="--",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"				
+						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade="--", creationPoints="--", reviewGrade="--", rawGrade="--", curvedGrade="--",curvedPoints="--",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name, reviewPoints="--", rawPoints="--")+"\n"				
 		else:
 			templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
 			template_lines=templateText.split("\n")
@@ -1325,15 +1325,17 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 				creationGrade=100 # Change this
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
-	if reviewScoreGrading.lower()=="calibrated grading":
+	if reviewScoreGrading.lower()=="calibrated grading" or reviewScoreGrading.lower()=="compare to instructor":
 		#calculate review grades
 		tempDelta=dict()
 		tempDelta2=dict()
 		tempWeight=dict()
 		compsOnThisAssignment=[student.comparisons[key] for key in student.comparisons if student.comparisons[key].assignment_id == assignment.id]
+
 		for comp in compsOnThisAssignment:
 			otherReview=reviewsById[comp.reviewIDComparedTo]
-			thisGivenReview=reviewsById[comp.reviewID]			
+			thisGivenReview=reviewsById[comp.reviewID]		
+			if reviewScoreGrading.lower()=="calibrated grading" or otherReview.review_type == "grading":
 			for cid in comp.weight:
 				adjustedData=comp.adjustedData(cid, degraded=False)
 				if cid not in tempWeight:
