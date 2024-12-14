@@ -870,9 +870,11 @@ def getReviews(creations):
 			break
 			
 	rubric=course.get_rubric(rubric.id,include='assessments') #the documentation says that the style='full' is necessary to get a data hash, but startign in Dec 2024 this has caused occasional 504 errors and removing this parameter still seems to give a rubric with a data hash.
-	if not hasattr(rubric,'data'):
+	if hasattr(rubric,'data'):
+		print("Got assessment data from rubric")
+	else:
 		rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
-	
+		print("Got assessment data from full rubric")
 	
 	try:
 		for creation in creations:
@@ -1090,108 +1092,17 @@ def checkForUnreviewed(assignment, openPage=False):
 	return creationsByNumberOfReviews[0]
 
 
-######################################
-# write a template file for the user to later edit
 def writeTemplate(fileName="feedback_template.txt"):
-		f = open(fileName, "w")
-		msg='''#     This is a template file for student feedback on grades
-#     variables should be enclosed in curly braces.  Allowable variable are
-# 
-#		{keywordCreation}
-# 		{keywordReview}
-#		{points_by_criteria}
-#		{description_by_criteria}
-#		{creationGrade}
-#		{reviewGrade}
-#		{rawGrade}
-#		{curvedGrade}
-# 
-#     any line with by_criteria in it will be written
-#     multiple times, once for each grading criteria
-#########################################################################
-# 							user defined variables				 		#
-#########################################################################
-# one definition per line.  
-{comment on review: high grade}=Good job on the reviews.  Keep it up!
-{comment on review: low grade}=Your review grade will improve as it aligns more closely with other graders.
-{comment on review: no reviews complete}=You didn't complete your peer reviews, so you review score is {reviewGrade}
-{comment if grades are curved}=This was curved to give an adjusted score of {curvedGrade}.
-{review feedback by criteria: higher scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average {absolute_value_of_deviation} higher than other reviewers)
-{review feedback by criteria: similar scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average about the same  as other reviewers)
-{review feedback by criteria: lower scores given}=    {review_rms_by_criteria} points for '{description_by_criteria}' (on average {absolute_value_of_deviation} lower than other reviewers)
-
-#####################################################################################################
-# 			general feedback for creation and reviews with calibrated review grading				#
-#####################################################################################################
-A weighted average of the reviews of your work give the following scores:
-    {points_by_criteria} for '{description_by_criteria}'
-
-Compared to reviews by the instructor and other students, the peer review scores you gave others deviated by
-{review feedback by criteria}
-{comment on review}
-
-You earned {creationGrade}% for your submission and {reviewGrade}% for your reviews.   When combined this gives you {rawGrade}%.  {comment if grades are curved} ({curvedPoints} points).
-
-If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
-
-If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
-
-#############################################################################
-# 			creation only feedback 											#
-#############################################################################
-
-A weighted average of the reviews of your work give the following scores:
-    {points_by_criteria} for '{description_by_criteria}'
-
-You earned {creationGrade}% for your submission.  {comment if grades are curved}  ({creationPoints} points).
-
-If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
-
-
-#########################################################################
-# 			review only feedback										#
-#########################################################################
-Compared to reviews by the instructor and other students, the peer review scores you gave others deviated by
-{review feedback by criteria}
-{comment on review}
-
-You earned a grade of {reviewGrade}% for your reviews based on how closely your review aligned to the instructor's reviews on all of the reviews that you had in common on this assignment.  The instructor's's grade strictly according to the rubric, so the more closely your reviews align to the rubric the better your score will be.
-
-If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
-
-#########################################################################
-# 				 general feedback ignoring reviews			 			#
-#########################################################################
-A weighted average of the reviews of your work give the following scores:
-    {points_by_criteria} for '{description_by_criteria}'
-
-You earned {creationGrade}% for your submission.  {comment if grades are curved} ({curvedPoints} points).
-
-If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{keywordCreation}' to have it regraded.
-
-If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
-
-#########################################################################
-# 							regrade comments							#
-#########################################################################
-I've regraded your work.  My review of your work give the following scores:
-    {points_by_criteria} for '{description_by_criteria}'
-Based on the regrading you earned {creationGrade}% for your submission
-which brings your final curved score to {curvedGrade}.
-
-#########################################################################
-# 					reminder about peer reviews							#
-#########################################################################
-I noticed you haven't yet completed any of your assigned peer reivews.  Remember to complete these on time to get credit for them.  Here are instructions on how to submit a peer review in case you need them: 
-https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293
-#########################################################################
-# 					message about posted solutions						#
-#########################################################################
-Peer reviews have been assigned and <a href='{solutionsUrl}'>solutions to {assignmentName}</a> have been posted.  Please review the solutions and then complete your peer reviews before the next class meeting."
-'''
-		f.write(msg)
-		f.close()
-		return msg
+	from importlib import resources as impresources
+	from . import templates
+	inp_file = impresources.files(templates) / 'feedback_template.txt'
+	with inp_file.open("rt") as f:
+		template = f.read()
+	f = open(fileName, "w")
+	f.write(template)
+	f.close()
+	print(f"Writing new template to  {fileName}")
+	return template
 
 ######################################
 # read a template file and extract and return the part identified by 'name'
