@@ -869,8 +869,9 @@ def getReviews(creations):
 		if rubric.title == graded_assignments[creations[0].assignment_id].rubric_settings['title']:
 			break
 			
-	#rubric=course.get_rubric(rubric.id,include='assessments') #the documentation says that the style='full' is necessary to get a data hash, but startign in Dec 2024 this has caused occasional 504 errors and removing this parameter still seems to give a rubric with a data hash.
-	rubric=course.get_rubric(rubric.id,include='assessments', style='full')
+	rubric=course.get_rubric(rubric.id,include='assessments') #the documentation says that the style='full' is necessary to get a data hash, but startign in Dec 2024 this has caused occasional 504 errors and removing this parameter still seems to give a rubric with a data hash.
+	if not hasattr(rubric,'data'):
+		rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
 	
 	
 	try:
