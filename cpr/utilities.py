@@ -1336,16 +1336,16 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			otherReview=reviewsById[comp.reviewIDComparedTo]
 			thisGivenReview=reviewsById[comp.reviewID]		
 			if reviewScoreGrading.lower()=="calibrated grading" or otherReview.review_type == "grading":
-			for cid in comp.weight:
-				adjustedData=comp.adjustedData(cid, degraded=False)
-				if cid not in tempWeight:
-					tempDelta[cid]=adjustedData['delta']*adjustedData['weight']
-					tempDelta2[cid]=adjustedData['delta2']*adjustedData['weight']
-					tempWeight[cid]=adjustedData['weight']
-				else:
-					tempDelta[cid]+=adjustedData['delta']*adjustedData['weight']
-					tempDelta2[cid]+=adjustedData['delta2']*adjustedData['weight']
-					tempWeight[cid]+=adjustedData['weight']
+				for cid in comp.weight:
+					adjustedData=comp.adjustedData(cid, degraded=False)
+					if cid not in tempWeight:
+						tempDelta[cid]=adjustedData['delta']*adjustedData['weight']
+						tempDelta2[cid]=adjustedData['delta2']*adjustedData['weight']
+						tempWeight[cid]=adjustedData['weight']
+					else:
+						tempDelta[cid]+=adjustedData['delta']*adjustedData['weight']
+						tempDelta2[cid]+=adjustedData['delta2']*adjustedData['weight']
+						tempWeight[cid]+=adjustedData['weight']
 		if assignment.id not in student.relativeRmsByAssignment or student.relativeRmsByAssignment[assignment.id]=={}: # i.e. if we haven't already graded this students reviews
 			student.rmsByAssignment[assignment.id]=dict()
 			student.deviationByAssignment[assignment.id]=dict()
