@@ -1457,7 +1457,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		creationTemplateName="general feedback ignoring reviews"
 		reviewTemplateName=None
 		student.reviewComments[assignment.id]=""
-	elif reviewScoreGrading.lower()=="calibrated grading":
+	elif reviewScoreGrading.lower()=="calibrated grading" or reviewScoreGrading.lower()=="compare to instructor":
 		if params.combineSubmissionAndReviewGrades:
 			creationTemplateName="general feedback for creation and reviews with calibrated review grading"
 		else:

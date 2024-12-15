@@ -23,6 +23,12 @@ class Comparison:
 		self.otherReviewType=otherReview.review_type
 		self.assignment_id=assignment.id
 		self.creation_id=thisGivenReview.creation.id
+		self.thisReview=thisGivenReview
+		self.otherReview=otherReview
+		self.author=studentsById[thisGivenReview.author_id]
+		self.thisReviewer=studentsById[thisGivenReview.reviewer_id]
+		self.otherReviewer=studentsById[otherReview.reviewer_id]
+		self.assignment=assignment
 
 		for cid in otherReview.scores:
 			if cid in thisGivenReview.scores:
@@ -50,6 +56,16 @@ class Comparison:
 			self.delta[0]/=self.weight[0]		
 			self.delta2[0]/=self.weight[0]		
 
+	def __repr__(self):
+		msg=""
+		msg+=(f"Comparison of review ({self.thisReview.id}) to ({self.otherReview.id}) on assignment ({self.assignment_id})\n")
+		try:
+			msg+=(f"This review of {self.author.name}'s submission \n\tis by {self.thisReviewer.name} ({self.thisReview.review_type}) \n\tand is compared to review by {self.otherReviewer.name} ({self.otherReview.review_type}) \n\tfor asignment {self.assignment.name}")
+		except:
+			msg+="error"
+			msg+=(f"This review of {self.author.name}'s submission \n\tis by user id {self.thisReview.reviewer_id} ({self.thisReview.review_type}) \n\tand is compared to review by uer id {self.otherReview.reviewer_id} ({self.otherReview.review_type}) \n\tfor asignment {self.assignment.name}")
+		return msg
+
 	def updateWeight(self, otherReviewer):
 		if not self.updateable:
 			return
@@ -73,5 +89,5 @@ class Comparison:
 				return {'delta': self.delta[cid], 'delta2': self.delta2[cid], 'weight':weight*degredationFactor}
 			
 		except Exception:
-			#return {'delta': self.delta[cid], 'delta2': self.delta2[cid], 'weight':self.weight[cid]}
-			return {'delta': 0, 'delta2': 0, 'weight':0}
+			return {'delta': self.delta[cid], 'delta2': self.delta2[cid], 'weight':self.weight[cid]}
+			#return {'delta': 0, 'delta2': 0, 'weight':0}

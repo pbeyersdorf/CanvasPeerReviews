@@ -64,9 +64,19 @@ Compared to reviews by the instructor and other students, the peer review scores
 {review feedback by criteria}
 {comment on review}
 
-You earned a grade of {reviewGrade}% for your reviews based on how closely your review aligned to the instructor's reviews on all of the reviews that you had in common on this assignment.  The instructor's's grade strictly according to the rubric, so the more closely your reviews align to the rubric the better your score will be.
+You earned a grade of {reviewGrade}% for your reviews based on how closely your review aligned to other students and the instructor's reviews on all of the reviews that you had in common on this assignment.  The instructor grades strictly according to the rubric, so the more closely your reviews align to the rubric the better your score will be.
 
 If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{keywordReview}' in it.
+
+###############################################################################
+# 	review compared to instructor feedback										
+###############################################################################
+Compared to reviews by the instructor, the peer review scores you gave others deviated by
+{review feedback by criteria}
+{comment on review}
+
+You earned a grade of {reviewGrade}% for your reviews based on how closely your review aligned to the instructor's reviews on all of the reviews that you had in common on this assignment.  The instructor grades strictly according to the rubric, so the more closely your reviews align to the rubric the better your score will be.
+
 
 ###############################################################################
 #	general feedback ignoring reviews
