@@ -940,22 +940,22 @@ def getReviews(creations):
 						student.comparisons[otherReview.id]=Comparison(thisGivenReview, otherReview, graded_assignments[thisGivenReview.assignment_id], studentsById, params)
 	
 	#export list of students who have completed a review
-	msg=""
-	#for reviewerName in completedReviewsByStudent:
+	assignment=graded_assignments[creations[0].assignment_id]
+	msg=f"Status of peer reviews on '{assignment.name}"
 	for student in students:
 		reviewerName=student.name
 		if (reviewerName in completedReviewsByStudent):
 			completedReviews=completedReviewsByStudent[reviewerName]
-			msg+=f"{reviewerName} conmpleted {len(completedReviews)} of {len(reviewer.assignedReviews(creations[0].assignment_id))} assigned\n"
+			msg+=f"{reviewerName} conmpleted {len(completedReviews)} of {len(reviewer.assignedReviews(assignment.id))} assigned'\n"
 			for completedReview in completedReviews:
 				msg+=f"\treview of {completedReview} was completed\n"
 		else:
 			if len(student.assignedReviews(creations[0].assignment_id)) == 0:
-				msg+=f"{reviewerName} was not assigned any reviews\n"
+				msg+=f"{reviewerName} was not assigned any reviews'\n"
 			else:
-				msg+=f"{reviewerName} did not complete any of the {len(student.assignedReviews(creations[0].assignment_id))} assigned\n"
+				msg+=f"{reviewerName} did not complete any of the {len(student.assignedReviews(creations[0].assignment_id))} assigned'\n"
 
-	log(msg, fileName=status['prefix']+"reviews_log.txt")
+	log(msg, display=False, fileName=status['prefix']+"reviews_log.txt")
 	
 	status["gotReviews"]=True
 	dataToSave['reviews']=True
