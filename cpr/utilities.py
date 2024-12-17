@@ -947,14 +947,18 @@ def getReviews(creations):
 		if (reviewerName in completedReviewsByStudent):
 			completedReviews=completedReviewsByStudent[reviewerName]
 			msg+=f"{reviewerName} conmpleted {len(completedReviews)} of {len(reviewer.assignedReviews(assignment.id))} assigned'\n"
-			for completedReview in completedReviews:
-				msg+=f"\treview of {completedReview} was completed\n"
+			for assignedReviewAuthors in [studentsById[pr.user_id].name for pr in student.assignedReviews(assignment.id)]:
+				if assignedReviewAuthors in completedReviews:
+					msg+=f"\tcompleted review of {assignedReviewAuthors}\n"
+				else:
+					msg+=f"\thas not completed review of {assignedReviewAuthors}\n"				
+
 		else:
 			if len(student.assignedReviews(creations[0].assignment_id)) == 0:
 				msg+=f"{reviewerName} was not assigned any reviews'\n"
 			else:
 				msg+=f"{reviewerName} did not complete any of the {len(student.assignedReviews(creations[0].assignment_id))} assigned'\n"
-
+	
 	log(msg, display=False, fileName=status['prefix']+"reviews_log.txt")
 	
 	status["gotReviews"]=True
