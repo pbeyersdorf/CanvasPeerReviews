@@ -864,17 +864,20 @@ def getReviews(creations):
 	global course, reviewsById, allReviews, instructorsWhoseReviewsShouldNotBeCalibrations
 	rubrics=course.get_rubrics()
 	allReviews=[]
+	completedReviewsByStudent=dict()
 		
 	for rubric in rubrics:
 		if rubric.title == graded_assignments[creations[0].assignment_id].rubric_settings['title']:
 			break
 			
-	rubric=course.get_rubric(rubric.id,include='assessments') #the documentation says that the style='full' is necessary to get a data hash, but startign in Dec 2024 this has caused occasional 504 errors and removing this parameter still seems to give a rubric with a data hash.
-	if hasattr(rubric,'data'):
-		print("Got assessment data from rubric")
-	else:
-		rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
-		print("Got assessment data from full rubric")
+	#rubric=course.get_rubric(rubric.id,include='assessments') #the documentation says that the style='full' is necessary to get a data hash, but startign in Dec 2024 this has caused occasional 504 errors and removing this parameter still seems to give a rubric with a data hash.
+	#if hasattr(rubric,'data'):
+	#	print("Got assessment data from rubric")
+	#else:
+	#	rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
+	#	print("Got assessment data from full rubric")
+	rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
+	
 	
 	try:
 		for creation in creations:
@@ -883,7 +886,10 @@ def getReviews(creations):
 					review=Review(assessment, creation, graded_assignments[creation.assignment_id].rubric, graded_assignments[creation.assignment_id])
 					reviewsById[review.id]=review
 					try:
-						reviewer=studentsById[assessment['assessor_id']]						
+						reviewer=studentsById[assessment['assessor_id']]
+						if reviewer.name not in completedReviewsByStudent:
+							completedReviewsByStudent[reviewer.name]=[]
+						completedReviewsByStudent[reviewer.name].append(studentsById[review.author_id].name)	
 						for pr in reviewer.assignedReviews(creation.assignment_id):
 							if review.author_id==pr.user_id:
 								review.peer_review=pr
@@ -932,6 +938,25 @@ def getReviews(creations):
 					alreadyCalibratedAgainst=otherReview.id in student.comparisons
 					if (otherReview.reviewer_id != student.id and not alreadyCalibratedAgainst): #don't compare this review to itself and dont repeat a calibration	
 						student.comparisons[otherReview.id]=Comparison(thisGivenReview, otherReview, graded_assignments[thisGivenReview.assignment_id], studentsById, params)
+	
+	#export list of students who have completed a review
+	msg=""
+	#for reviewerName in completedReviewsByStudent:
+	for student in students:
+		reviewerName=student.name
+		if (reviewerName in completedReviewsByStudent):
+			completedReviews=completedReviewsByStudent[reviewerName]
+			msg+=f"{reviewerName} conmpleted {len(completedReviews)} of {len(reviewer.assignedReviews(creations[0].assignment_id))} assigned\n"
+			for completedReview in completedReviews:
+				msg+=f"\treview of {completedReview} was completed\n"
+		else:
+			if len(student.assignedReviews(creations[0].assignment_id)) == 0:
+				msg+=f"{reviewerName} was not assigned any reviews\n"
+			else:
+				msg+=f"{reviewerName} did not complete any of the {len(student.assignedReviews(creations[0].assignment_id))} assigned\n"
+
+	log(msg, fileName=status['prefix']+"reviews_log.txt")
+	
 	status["gotReviews"]=True
 	dataToSave['reviews']=True
 	dataToSave['students']=True
