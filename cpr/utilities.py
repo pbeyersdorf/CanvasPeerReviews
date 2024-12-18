@@ -2025,16 +2025,24 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 		reviewScoreAssignment=createRelatedAssignment(assignment)
 	if (listOfStudents=='all'):
 		listOfStudents=[s for s in students if s.role=='student']
+	combineBeforePosting=False
+	if not params.combineSubmissionAndReviewGrades and "regrade" in assignment.name.lower():
+		printWithWrapping("This looks like a regrade assignment and separate creation and reveiw grades are being posted.  To incentivize careful reviews when the student already has a good review grade, the scores for the creation and review can be combined with the combined score posted as both the creation and review score.")
+		combineBeforePosting=getBool("Should submission and review scores be combined into one score before posting to each (yes/no)?")
+	additionalGradingComment=""
+	if combineBeforePosting:
+		additionalGradingComment = "For this regrade assignment your creation and review scores are being combined into a single score that will be recorded for both your creation and review.<p>"
+		weightingOfCreation=params.weightingOfCreationGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
+		weightingOfReviews=params.weightingOfReviewsGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
+			
+			
 	for student in listOfStudents:
 		if assignment.id in student.creations:
 			creation=student.creations[assignment.id]
 			if (student.gradingStatus[assignment.id] in ['graded','regraded']):
 				printLine("posting for " + student.name, newLine=False)
 				if postComments:
-					try:
-						theComment=additionalGradingComment + "\n\n"
-					except:
-						theComment=""
+					theComment=additionalGradingComment + "\n\n"
 					if useRegradeComments and assignment.id in student.regradeComments:
 						theComment=student.regradeComments[assignment.id]
 					if useReviewComments and assignment.id in student.reviewComments:
@@ -2048,13 +2056,22 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						continue			
 				if postGrades:
 					if params.combineSubmissionAndReviewGrades:
-						creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedTotal']})
+						scoreToPost=student.points[assignment.id]['curvedTotal']
+						creation.edit(submission={'posted_grade':scoreToPost})
 					else:
-						creation.edit(submission={'posted_grade':student.points[assignment.id]['curvedCreation']})
+						creationScoreToPost=student.points[assignment.id]['curvedCreation']
+						reviewScoreToPost=student.grades[assignment.id]['review']
+						if combineBeforePosting:
+							creationPoints=creationScoreToPost * weightingOfCreation
+							reviewPoints= assignment.points_possible * weightingOfReviews * student.grades[assignment.id]['review']
+							reviewScoreToPost = (creationPoints + reviewPoints) *100 / assignment.points_possible 
+							creationScoreToPost = int(creationPoints + reviewPoints)
+							student.reviewComments[assignment.id] = additionalGradingComment + student.reviewComments[assignment.id]
+						creation.edit(submission={'posted_grade': creationScoreToPost})
 						for sub in reviewScoreAssignment.get_submissions():
 							if sub.user_id in studentsById:
 								#sub.edit(submission={'posted_grade': student.points[assignment.id]['review']})
-								sub.edit(submission={'posted_grade': student.grade[assignment.id]['review']})
+								sub.edit(submission={'posted_grade': reviewScoreToPost})
 								if postComments:
 									sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
 	
