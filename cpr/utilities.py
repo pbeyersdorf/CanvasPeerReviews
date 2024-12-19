@@ -2031,9 +2031,12 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 		combineBeforePosting=getBool("Should submission and review scores be combined into one score before posting to each (yes/no)?")
 	additionalGradingComment=""
 	if combineBeforePosting:
-		additionalGradingComment = "For this regrade assignment your creation and review scores are being combined into a single score that will be recorded for both your creation and review.<p>"
 		weightingOfCreation=params.weightingOfCreationGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
-		weightingOfReviews=params.weightingOfReviewsGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
+		#weightingOfReviews=params.weightingOfReviewsGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
+		temp = getNum(f"What percentage of the combination should the creations have?", defaultVal=100*weightingOfCreation, limits=[2,100])
+		weightingOfCreation = temp/100
+		weightingOfReviews=1-weightingOfCreation
+		additionalGradingComment = f"For this regrade assignment your creation and review scores are being combined into a single score ({100*weightingOfCreation}% from the submission, {100*weightingOfReviews}% from the reviews) that will be recorded for both the creation and review assignment.<p>"
 			
 			
 	for student in listOfStudents:
