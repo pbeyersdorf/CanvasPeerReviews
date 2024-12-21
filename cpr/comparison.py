@@ -23,12 +23,16 @@ class Comparison:
 		self.otherReviewType=otherReview.review_type
 		self.assignment_id=assignment.id
 		self.creation_id=thisGivenReview.creation.id
-		self.thisReview=thisGivenReview
-		self.otherReview=otherReview
-		self.author=studentsById[thisGivenReview.author_id]
-		self.thisReviewer=studentsById[thisGivenReview.reviewer_id]
-		self.otherReviewer=studentsById[otherReview.reviewer_id]
-		self.assignment=assignment
+		self.thisReviewId=thisGivenReview.id
+		self.thisReviewType=thisGivenReview.review_type
+		self.thisReviewReviewerId=thisGivenReview.reviewer_id
+		self.otherReviewId=otherReview.id
+		self.otherReviewType=otherReview.review_type
+		self.otherReviewReviewerId=otherReview.reviewer_id
+		self.authorName=studentsById[thisGivenReview.author_id].name
+		self.thisReviewerName=studentsById[thisGivenReview.reviewer_id].name
+		self.otherReviewerName=studentsById[otherReview.reviewer_id].name
+		self.assignmentName=assignment.name
 
 		for cid in otherReview.scores:
 			if cid in thisGivenReview.scores:
@@ -58,12 +62,15 @@ class Comparison:
 
 	def __repr__(self):
 		msg=""
-		msg+=(f"Comparison of review ({self.thisReview.id}) to ({self.otherReview.id}) on assignment ({self.assignment_id})\n")
 		try:
-			msg+=(f"This review of {self.author.name}'s submission \n\tis by {self.thisReviewer.name} ({self.thisReview.review_type}) \n\tand is compared to review by {self.otherReviewer.name} ({self.otherReview.review_type}) \n\tfor asignment {self.assignment.name}")
+			msg+=(f"Comparison of review ({self.thisReviewId}) to ({self.otherReviewId}) on assignment ({self.assignment_id})\n")
+			try:
+				msg+=(f"This review of {self.authorName}'s submission \n\tis by {self.thisReviewerName} ({self.thisReviewType}) \n\tand is compared to review by {self.otherReviewerName} ({self.otherReviewType}) \n\tfor asignment {self.assignmentName}")
+			except:
+				msg+="error"
+				msg+=(f"This review of {self.authorName}'s submission \n\tis by user id {self.thisReviewReviewerId} ({self.thisReviewType}) \n\tand is compared to review by uer id {self.otherReviewReviewerId} ({self.otherReviewType}) \n\tfor asignment {self.assignmentName}")
 		except:
-			msg+="error"
-			msg+=(f"This review of {self.author.name}'s submission \n\tis by user id {self.thisReview.reviewer_id} ({self.thisReview.review_type}) \n\tand is compared to review by uer id {self.otherReview.reviewer_id} ({self.otherReview.review_type}) \n\tfor asignment {self.assignment.name}")
+			msg+="Comprison Object (possibly incomplete)"
 		return msg
 
 	def updateWeight(self, otherReviewer):

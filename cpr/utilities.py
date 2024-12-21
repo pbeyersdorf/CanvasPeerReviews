@@ -1997,7 +1997,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 		listOfStudents=[s for s in students if s.role=='student']
 	combineBeforePosting=False
 	if not params.combineSubmissionAndReviewGrades and "regrade" in assignment.name.lower():
-		printWithWrapping("This looks like a regrade assignment and separate creation and reveiw grades are being posted.  To incentivize careful reviews when the student already has a good review grade, the scores for the creation and review can be combined with the combined score posted as both the creation and review score.")
+		print("This looks like a regrade assignment and separate creation and reveiw grades are being posted.  To incentivize careful reviews when the student already has a good review grade, the scores for the creation and review can be combined with the combined score posted as both the creation and review score.")
 		combineBeforePosting=getBool("Should submission and review scores be combined into one score before posting to each (y/n)?")
 	additionalGradingComment=""
 	if combineBeforePosting:
@@ -2585,7 +2585,7 @@ def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=N
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
 	while True:
-		response=input(wrap(msg + dafaultString +": "))
+		response=input(msg + dafaultString +": ")
 		if response=="":
 			response=defaultVal
 			if allowBlank:
@@ -2607,7 +2607,7 @@ def getBool(msg="'True' or 'False'", defaultVal=None):
 	dafaultString=""
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
-	response=input(wrap(msg + dafaultString +": "))
+	response=input(msg + dafaultString +": ")
 	if response=="":
 		response=String(defaultVal)
 	val=response.strip().lower() in ["yes", "1" , "true", "ok", "y"]
@@ -2897,17 +2897,13 @@ def wrap(msg):
 		cols=size.columns
 	except:
 		cols=80
-	if len(msg.splitlines())<2:
+	if len(msg.split("\n"))<2:
 		return '\n'.join(textwrap.wrap(msg, width=cols, replace_whitespace=False))
 	returnStr=""
-	for line in msg.splitlines():
+	for line in msg.split("\n"):
 		returnStr+=('\n'.join(textwrap.wrap(line, width=cols, replace_whitespace=False)))+"\n"
 	return returnStr
 
-######################################
-# print a long line with auto word wrapping
-def printWithWrapping(msg):
-	print(wrap(msg))
 
 ######################################
 # hide the cursor
@@ -2944,4 +2940,20 @@ def allowPrinting(allow):
 		 sys.stdout = sys.__stdout__
 	else:
 	    sys.stdout = open(os.devnull, 'w')
-	    
+
+######################################
+# redefine the print function to wrap the output	    
+originalPrint= print
+def print(*args, **kwargs):
+	if type(*args ) == str:
+		originalPrint(wrap(*args), **kwargs)
+	else:
+		originalPrint(*args, **kwargs)
+
+######################################
+# redefine the input function to wrap the output	    
+originalInput= input
+def input(*args, **kwargs):
+	return originalInput(wrap(*args), **kwargs)
+	
+	

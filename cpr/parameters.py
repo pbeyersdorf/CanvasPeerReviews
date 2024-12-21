@@ -47,21 +47,23 @@ class Parameters:
 		return self.multiplier[cid]
 		
 	def setReviewScoringMethod(self):
-		# There are four ways that peer reviews can be scores:
-		#
-		# 'Calibrated Grading' compares scores assigned by the reviewer
-		# to those given by others.  The closer the scores align the
-		# higher the review score.
-		#
-		# '"compare to instructor"' is like Calibrated grading but
-		# reviews are only compared to the instructor graded calibration 
-		# 'percent complete' simply gives a score based on what percent
-		# of the assigned reviews were completed.  If all reviews
-		# were completed a score of 100% is given
-		#
-		# 'ignore' will not grade the peer reviews but will instead 
-		# copy the creation score to the review score.
-		print("Which method do you want to use for scoring peer reviews?")
+		print('''There are four ways that peer reviews can be scores:
+
+	'Calibrated Grading' compares scores assigned by the reviewer
+	to those given by others.  The closer the scores align the
+	higher the review score.
+
+	'compare to instructor' is similar but reviews are
+	 only compared to the calibrations graded by the instructor  
+
+	'percent completed' simply gives a score based on what percent	
+	of the assigned reviews were completed.  If all reviews
+	were completed a score of 100% is given
+
+	'ignore' will not grade the peer reviews but will instead copy 
+	the creation score to the review score.
+	
+Which method do you want to use for scoring peer reviews?''')
 		try:
 			currentMethod =  self.reviewScoreMethod
 		except:
@@ -69,9 +71,9 @@ class Parameters:
 		methods=["calibrated grading","compare to instructor", "percent completed", "ignore"]
 		for i, method in enumerate(methods):
 			if currentMethod == method:
-				print(f"{i+1}) {method} <---- current value")
+				print(f"	{i+1}) {method} <---- current value")
 			else:
-				print(f"{i+1}) {method}")
+				print(f"	{i+1}) {method}")
 		val=0
 		while val<1 or val>len(methods):
 			val=input("Which method do you want to use? ")
@@ -81,4 +83,3 @@ class Parameters:
 				val=0
 		self.reviewScoreMethod=methods[val-1]
 		print("Set default scoring method on all assignments to be '" + self.reviewScoreMethod + "' method for review grades ")
-	
