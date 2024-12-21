@@ -1138,11 +1138,13 @@ def createTemplate(templateName="", showAfterCreate=True):
 		os.system(cmd)
 		if showAfterCreate:
 			subprocess.call(["open", destinationFolder])
+			input(wrap("Make sure to edit these templates once the course is set up.  Press enter to continue:"))
 	else:
 		cmd=f"mkdir -p '{destinationFolder}' && cp -n '{impresources.files()}/templates/{templateName}.txt' '{destinationFolder}'" 
 		os.system(cmd)
 		if showAfterCreate:
 			subprocess.call(["open", f"{destinationFolder}/{templateName}.txt"])
+			input(wrap("Edit and save the template, then press enter to continue:"))
 	return
 
 	
