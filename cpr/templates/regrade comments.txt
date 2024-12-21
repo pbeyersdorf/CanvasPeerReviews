@@ -32,6 +32,8 @@ macros: (see macros.txt for complete list)
 	{{ macros.comment_if_curved(student,assignment) }}
 	{{ macros.compared_to(assignment) }}
 	
+further documentation on how to format the template is available at https://jinja.palletsprojects.com/en/stable/templates/
+
 ###############################################################################}
 I've regraded your work.  My review of your work give the following scores:
 <ul>

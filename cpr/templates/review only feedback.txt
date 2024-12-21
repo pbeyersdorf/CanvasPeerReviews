@@ -30,7 +30,9 @@ macros: (see macros.txt for complete list)
 	{{ macros.review_feedback_by_criteria(student,assignment,criteriaDescription) }} - see macros file
 	{{ macros.comment_on_reviews(student,assignment) }} - see macros file
 	{{ macros.comment_if_curved(student,assignment) }}
-	{{ macros.compared_to(assignment) }}
+	{{ macros.compared_to(assignment) }
+
+further documentation on how to format the template is available at https://jinja.palletsprojects.com/en/stable/templates/
 
 ###############################################################################}
 Compared to reviews by {{macros.compared_to(assignment)}}, the peer review scores you gave others deviated by
