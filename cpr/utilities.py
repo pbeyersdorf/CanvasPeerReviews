@@ -1996,7 +1996,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	combineBeforePosting=False
 	if not params.combineSubmissionAndReviewGrades and "regrade" in assignment.name.lower():
 		printWithWrapping("This looks like a regrade assignment and separate creation and reveiw grades are being posted.  To incentivize careful reviews when the student already has a good review grade, the scores for the creation and review can be combined with the combined score posted as both the creation and review score.")
-		combineBeforePosting=getBool("Should submission and review scores be combined into one score before posting to each (yes/no)?")
+		combineBeforePosting=getBool("Should submission and review scores be combined into one score before posting to each (y/n)?")
 	additionalGradingComment=""
 	if combineBeforePosting:
 		weightingOfCreation=params.weightingOfCreationGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
@@ -2173,7 +2173,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 							print(f"{criteria['description']} will be worth {params.multiplier[criteria['description']]:0.1f} points")
 				print()		
 	if not params.loadedFromFile or ignoreFile:
-		params.combineSubmissionAndReviewGrades=getBool("Should submission and review scores be combined into one grade (yes/no)?")
+		params.combineSubmissionAndReviewGrades=getBool("Should submission and review scores be combined into one grade (y/n)?")
 		if params.combineSubmissionAndReviewGrades:
 			weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)
 			weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3, fileDescriptor=logFile)
@@ -2583,7 +2583,7 @@ def getNum(msg="choose a number", defaultVal=None, limits=None, fileDescriptor=N
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
 	while True:
-		response=input(msg + dafaultString +": ")
+		response=input(wrap(msg + dafaultString +": "))
 		if response=="":
 			response=defaultVal
 			if allowBlank:
@@ -2605,10 +2605,10 @@ def getBool(msg="'True' or 'False'", defaultVal=None):
 	dafaultString=""
 	if defaultVal!=None:
 		dafaultString=" [" + str(defaultVal) + "]"
-	response=input(msg + dafaultString +": ")
+	response=input(wrap(msg + dafaultString +": "))
 	if response=="":
 		response=String(defaultVal)
-	val=response.strip().lower() in ["yes", "1" , "true", "ok"]
+	val=response.strip().lower() in ["yes", "1" , "true", "ok", "y"]
 	return val
 
 ######################################
@@ -2887,16 +2887,25 @@ def printLeftRight(left,right, end="\n"):
 	showCursor()
 
 ######################################
-# print a long line with auto word wrapping
-def printWithWrapping(msg):
+# wrap a long line with auto word wrapping
+def wrap(msg):
 	import textwrap, os
 	try:
 		size=os.get_terminal_size()
 		cols=size.columns
 	except:
 		cols=80
+	if len(msg.splitlines())<2:
+		return '\n'.join(textwrap.wrap(msg, width=cols, replace_whitespace=False))
+	returnStr=""
 	for line in msg.splitlines():
-		print('\n'.join(textwrap.wrap(line, width=cols, replace_whitespace=False)))
+		returnStr+=('\n'.join(textwrap.wrap(line, width=cols, replace_whitespace=False)))+"\n"
+	return returnStr
+
+######################################
+# print a long line with auto word wrapping
+def printWithWrapping(msg):
+	print(wrap(msg))
 
 ######################################
 # hide the cursor
