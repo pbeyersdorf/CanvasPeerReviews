@@ -45,6 +45,9 @@ class GradedAssignment:
 		if updatedAssignment.id == self.id:
 			self.__dict__.update(updatedAssignment.__dict__)
 			self.date=self.getDate(updatedAssignment)
+			
+	def reattatch(self, course):
+		self.assignment=course.get_assignment(self.assignment.id)
 	
 	def setReviewScoringMethod(self):
 		# There are four ways that peer reviews can be scores:

@@ -1034,7 +1034,6 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default", secon
 				assignment.setReviewScoringMethod()
 				reviewScoreGrading =	assignment.reviewScoreMethod 	
 	assignment.reviewScoreMethod = reviewScoreGrading
-	print(f"USING {reviewScoreGrading} SCORING xxx")
 	for student in makeList(studentsToGrade):
 		gradeStudent(assignment, student, reviewScoreGrading, secondPass)
 	assignment.graded=True
@@ -1317,7 +1316,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		if not assignment.id in student.creations:
 			creationGrade=0
 			student.gradingExplanation+="No submission received"
-			print("No submission for",student.name,"on assignment",assignment.name, "assigning grade of", creationGrade)
+			print(f"No submission for {student.name} on assignment {assignment.name} assigning grade of {creationGrade}")
 			missingSubmission=True
 		else:
 			if student.creations[assignment.id].submitted_at != None:
@@ -2945,7 +2944,7 @@ def allowPrinting(allow):
 # redefine the print function to wrap the output	    
 originalPrint= print
 def print(*args, **kwargs):
-	if type(*args ) == str:
+	if args and type(*args ) == str:
 		originalPrint(wrap(*args), **kwargs)
 	else:
 		originalPrint(*args, **kwargs)
