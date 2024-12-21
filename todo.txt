@@ -1,2 +1,6 @@
 assignment.rubric  id is not unique
 
+[done] Implement new template structure in the test.py 
+Test new templates
+[done] Have a param property that defines the default grading method
+test the default grading methods

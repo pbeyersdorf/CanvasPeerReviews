@@ -33,6 +33,10 @@ try:
 	import readchar
 except ImportError:
 	errormsg+="Missing readchar module.  Run 'pip3 install readchar' to intall\n"
+try:
+	from jinja2 import Environment, select_autoescape, FileSystemLoader
+except ImportError:
+	errormsg+="Missing jinja2 module.  Run 'pip3 install jinja2' to intall\n"
 
 import webbrowser
 import copy
@@ -1022,12 +1026,17 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default", secon
 		return		
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		studentsToGrade=students
+	if reviewScoreGrading=="default":
+		if assignment.reviewScoreMethod == None:
+			reviewScoreGrading=params.reviewScoreMethod
+			val=inputWithTimeout(f"Review grades will use '{reviewScoreGrading}' method.  (c) to change", 3)		
+			if val=='c':
+				assignment.setReviewScoringMethod()
+				reviewScoreGrading =	assignment.reviewScoreMethod 	
+	assignment.reviewScoreMethod = reviewScoreGrading
+	print(f"USING {reviewScoreGrading} SCORING xxx")
 	for student in makeList(studentsToGrade):
 		gradeStudent(assignment, student, reviewScoreGrading, secondPass)
-	if reviewScoreGrading=="default":
-		val=inputWithTimeout(f"Review grades will use '{assignment.reviewScoreMethod}' method.  (c) to change", 3)		
-		if val=='c':
-			assignment.setReviewScoringMethod()		
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
@@ -1121,129 +1130,87 @@ def checkForUnreviewed(assignment, openPage=False):
 	return creationsByNumberOfReviews[0]
 
 
-def writeTemplate(fileName="feedback_template.txt"):
+def createTemplate(templateName="", showAfterCreate=True):
 	from importlib import resources as impresources
-	from . import templates
-	inp_file = impresources.files(templates) / 'feedback_template.txt'
-	with inp_file.open("rt") as f:
-		template = f.read()
-	f = open(fileName, "w")
-	f.write(template)
-	f.close()
-	print(f"Writing new template to  {fileName}")
-	return template
+	destinationFolder=f"{status['dataDir']}templates/"
+	if templateName=="":
+		cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{impresources.files()}/templates/{templateName}' '{destinationFolder}'" 
+		os.system(cmd)
+		if showAfterCreate:
+			subprocess.call(["open", destinationFolder])
+	else:
+		cmd=f"mkdir -p '{destinationFolder}' && cp -n '{impresources.files()}/templates/{templateName}.txt' '{destinationFolder}'" 
+		os.system(cmd)
+		if showAfterCreate:
+			subprocess.call(["open", f"{destinationFolder}/{templateName}.txt"])
+	return
 
-######################################
-# read a template file and extract and return the part identified by 'name'
-def getTemplate(fileName="feedback_template.txt", name=None):
-	global status
-	if ("alternativeFeedbackTemplate" in dir(params) and "feedback_template.txt" in fileName):
-		fileName=fileName.replace("feedback_template.txt",params.alternativeFeedbackTemplate)
-		if "alternativeFeedbackTemplateWarningGiven" not in status:
-			print("Using " + fileName + " as an altenrative feedback template")
-		status["alternativeFeedbackTemplateWarningGiven"]=True
-	try:
-		f = open(fileName, "r")
-		raw_lines = f.readlines()
-		f.close()
-	except:
-		raw_lines=writeTemplate(fileName)
-		print(f"created new template file")
-	foundTemplate=False
-	for i,line in enumerate(raw_lines):
-		if line[0]=="#" and name in line:
-			foundTemplate=True
-			break
-	#clear any commented lines:
-	while raw_lines[i][0]=="#":
-		i+=1
-	lines=[]
-	while foundTemplate and i<len(raw_lines) and raw_lines[i][0]!="#":
-		lines.append(raw_lines[i])
-		i+=1
-	if len(lines)==0:
-		print(f"No text found for '{name}' template.  Using generated template.  Edit and save before continuing.")
-		subprocess.call(('open', fileName))
-		if not confirm("Accept the new template? "):
-			if confirm("Save data beforfe exiting? "):
-				finish()
-			exit()
-		return getTemplate(fileName, name)
-	return "".join(lines)
 	
 ######################################
 # fill out student grade information using a template to format it
-def processTemplate(student, assignment, name, fileName="feedback_template.txt"):
+def processTemplate(theStudent, assignment, templateName):
+	student=copy.deepcopy(theStudent)
 	global params
-	fileName=status['dataDir'] + fileName
-	
-	def processUserDefinedKeywords(templateText, fileName):
-		userDefiendKeywords=getTemplate(fileName, name="user defined variables")
-		for line in userDefiendKeywords.split("\n"):
-			if "=" in line:
-				templateText=templateText.replace(line.split("=")[0],line.split("=")[1])
-		return templateText
-	templateText=getTemplate(fileName, name)
+	if not os.path.isfile(f"{status['dataDir']}templates/macros.txt"):
+		createTemplate(templateName="macros", showAfterCreate=False)
+	if not os.path.isfile(f"{status['dataDir']}templates/{templateName}.txt"):
+		createTemplate(templateName=templateName)
+		print("Please edit the template and save it.")
+	if assignment.id not in student.creations:
+		return None
+	env = Environment(loader=FileSystemLoader(f"{status['dataDir']}templates"))
+	if not  hasattr(student,"pointsByCriteriaScaled"):
+		student.pointsByCriteriaScaled=dict()
+	if assignment.id not in student.pointsByCriteriaScaled:
+		student.pointsByCriteriaScaled[assignment.id]=dict()
 	try:
-		if student != None:
-			# preprocess conditional keywords	
-			if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:
-				templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
-			elif student.grades[assignment.id]['review']>90:
-				templateText=templateText.replace("{comment on review}","{comment on review: high grade}")
-			elif student.grades[assignment.id]['review']<=70:
-				templateText=templateText.replace("{comment on review}","{comment on review: low grade}")
-			else:
-				templateText=templateText.replace("\n{comment on review}","")
-				templateText=templateText.replace("{comment on review}","")
-			if assignment.id in student.grades and student.points[assignment.id]['total']==student.points[assignment.id]['curvedTotal']:
-				templateText=templateText.replace("{comment if grades are curved}","")
-			templateText=processUserDefinedKeywords(templateText, fileName)
-			template_lines=templateText.split("\n")
-			processed_lines=[]
-			cids=assignment.criteria_ids()
-			# fill in all predefined substitutions
-			if assignment.id not in student.creations:
-				return None
-			for line in template_lines:
-				if "by_criteria" in line or "by criteria" in line:
-					#xxx for cid in student.pointsByCriteria[assignment.id]: #trying to fix bug Hilary found
-					for cid in assignment.criteria_ids(): 
-						tempLine=""
-						try:
-							if cid in student.deviationByAssignment[assignment.id]:
-								if  student.deviationByAssignment[assignment.id][cid] > 0.05:
-									tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: higher scores given}")
-								elif student.deviationByAssignment[assignment.id][cid] < -0.05:
-									tempLine=line.replace("{review feedback by criteria}","{review feedback by criteria: lower scores given}")
-								else:
-									tempLine=line.replace("{review feedback by criteria}", "{review feedback by criteria: similar scores given}")
-							tempLine=processUserDefinedKeywords(tempLine, fileName)
-							points=0
-							if cid in student.pointsByCriteria[assignment.id]:
-								if student.pointsByCriteria[assignment.id][cid]!='':
-									points=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)
-							processed_lines+=tempLine.format(points_by_criteria=points, description_by_criteria=criteriaDescription[cid], keywordCreation="regrade", keywordReview="recalculate", review_rms_by_criteria=round(student.rmsByAssignment[assignment.id][cid],1), absolute_value_of_deviation=round(abs(student.deviationByAssignment[assignment.id][cid]),1))	+"\n"
-						except:
-							points=0
-							pass
-				else:
-					if assignment.id in student.grades:
-						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade=round(student.grades[assignment.id]['creation']), creationPoints=student.points[assignment.id]['curvedCreation'], reviewGrade=round(student.grades[assignment.id]['review']), rawGrade=round(student.grades[assignment.id]['total']), curvedGrade=round(student.grades[assignment.id]['curvedTotal']),curvedPoints=student.points[assignment.id]['curvedTotal'],solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name, reviewPoints=student.points[assignment.id]['review'], rawPoints=student.points[assignment.id]['total'])+"\n"
-	
-					else:
-						processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate", creationGrade="--", creationPoints="--", reviewGrade="--", rawGrade="--", curvedGrade="--",curvedPoints="--",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name, reviewPoints="--", rawPoints="--")+"\n"				
+		for cid in assignment.criteria_ids(): 
+			if cid not in student.deviationByAssignment[assignment.id]:
+				student.deviationByAssignment[assignment.id][cid]=999
+				student.rmsByAssignment[assignment.id][cid]=999
+			student.pointsByCriteriaScaled[assignment.id][cid]=0
+			if True:#try:
+				if cid in student.pointsByCriteria[assignment.id]:
+					if student.pointsByCriteria[assignment.id][cid]!='':
+						student.pointsByCriteriaScaled[assignment.id][cid]=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)				
+			else:#except:
+				pass
+		
+		if assignment.id in student.grades:
+			creationGrade=round(student.grades[assignment.id]['creation'])
+			creationPoints=student.points[assignment.id]['curvedCreation']
+			reviewGrade=round(student.grades[assignment.id]['review'])
+			rawGrade=round(student.grades[assignment.id]['total'])
+			curvedGrade=round(student.grades[assignment.id]['curvedTotal'])
+			curvedPoints=student.points[assignment.id]['curvedTotal']
+			reviewPoints=student.points[assignment.id]['review']
+			rawPoints=student.points[assignment.id]['total']
 		else:
-			templateText=templateText.replace("{comment on review}","{comment on review: no reviews complete}")
-			template_lines=templateText.split("\n")
-			processed_lines=[]
-			for line in template_lines:
-				processed_lines+=line.format(keywordCreation="regrade", keywordReview="recalculate",solutionsUrl=assignment.solutionsUrl, assignmentName=assignment.name)+"\n"
+			creationGrade=creationPoints=reviewGrade=rawGrade=curvedGrade=curvedPoints=reviewPoints=rawPoints="--"
+		
 	except KeyError:
 		print("Key error for " + student.name + " perhaps they dropped")
 		return ""
-	returnVal="".join(processed_lines)
-	return returnVal
+		
+	renderedTemplate = env.get_template(templateName+'.txt').render(
+ 		keywordCreation="regrade",
+ 		keywordReview="recalculate",
+ 		solutionsUrl=assignment.solutionsUrl,
+ 		assignmentName=assignment.name,
+ 		creationGrade=creationGrade,
+ 		creationPoints=creationPoints,
+ 		reviewGrade=reviewGrade,
+ 		rawGrade=rawGrade,
+ 		curvedGrade=curvedGrade,
+ 		curvedPoints=curvedPoints,
+ 		reviewPoints=reviewPoints,
+ 		rawPoints=rawPoints,
+ 		pointsByCriteria=student.pointsByCriteriaScaled[assignment.id],
+ 		criteriaDescription=criteriaDescription,
+ 		student=student,
+ 		assignment=assignment
+ 		)
+	return renderedTemplate
 
 
 ######################################
@@ -1261,6 +1228,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	missingSubmission=False
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
+	assignment.reviewScoreMethod=reviewScoreGrading
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
 	curveFunc=eval('lambda x:' + assignment.curve)
@@ -1483,22 +1451,22 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 
 	
 	if reviewScoreGrading.lower()=="ignore":
-		creationTemplateName="general feedback ignoring reviews"
+		creationTemplateName="creation only feedback"
 		reviewTemplateName=None
 		student.reviewComments[assignment.id]=""
 	elif reviewScoreGrading.lower()=="calibrated grading" or reviewScoreGrading.lower()=="compare to instructor":
 		if params.combineSubmissionAndReviewGrades:
-			creationTemplateName="general feedback for creation and reviews with calibrated review grading"
+			creationTemplateName="creation and reviews feedback"
 		else:
 			creationTemplateName="creation only feedback"
 		reviewTemplateName="review only feedback"
-		student.creationComments[assignment.id]=processTemplate(student,assignment,name=creationTemplateName)
-		student.reviewComments[assignment.id]=processTemplate(student,assignment,name=reviewTemplateName)
+		student.creationComments[assignment.id]=processTemplate(student,assignment,templateName=creationTemplateName)
+		student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName=reviewTemplateName)
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
 			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
 				print("using template to craft regrade comments")
-				student.regradeComments[assignment.id]=processTemplate(student,assignment,name="regrade comments")
+				student.regradeComments[assignment.id]=processTemplate(student,assignment,templateName="regrade comments")
 			else:
 				print("not using template to craft regrade comments")
 	if not assignment.id in student.creations:
@@ -2229,6 +2197,9 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 			params.maxCompensationFraction=getNum("What is the max fractional amount of a score that can be compensated (0-1)?",defaultVal=0.2,limits=[0,1], fileDescriptor=logFile)
 		else:
 			params.maxCompensationFraction=0;
+		params.setReviewScoringMethod() 
+		createTemplate()
+
 	logFile.close()
 	dataToSave['parameters']=True
 	status["gotParameters"]=True

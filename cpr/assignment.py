@@ -23,7 +23,7 @@ class GradedAssignment:
 		self.regradesCompleted=False
 		self.date=self.getDate(assignment)
 		self.pointsByCidOverride=dict()
-		self.reviewScoreMethod="calibrated grading"
+		self.reviewScoreMethod=None
 		self.includeInCalibrations=True
 		self.solutionsUrl=None
 
@@ -47,12 +47,14 @@ class GradedAssignment:
 			self.date=self.getDate(updatedAssignment)
 	
 	def setReviewScoringMethod(self):
-		# There are three ways that peer reviews can be scores:
+		# There are four ways that peer reviews can be scores:
 		#
 		# 'Calibrated Grading' compares scores assigned by the reviewer
 		# to those given by others.  The closer the scores align the
 		# higher the review score.
 		#
+		# '"compare to instructor"' is like Calibrated grading but
+		# reviews are only compared to the instructor graded calibration 
 		# 'percent complete' simply gives a score based on what percent
 		# of the assigned reviews were completed.  If all reviews
 		# were completed a score of 100% is given
@@ -65,7 +67,7 @@ class GradedAssignment:
 		except:
 			self.reviewScoreMethod = "calibrated grading"
 			currentMethod =  self.reviewScoreMethod
-		methods=["calibrated grading","percent completed", "ignore"]
+		methods=["calibrated grading","compare to instructor", "percent completed", "ignore"]
 		for i, method in enumerate(methods):
 			if self.reviewScoreMethod == method:
 				print(f"{i+1}) {method} <---- current value")
