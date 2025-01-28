@@ -1131,19 +1131,23 @@ def checkForUnreviewed(assignment, openPage=False):
 
 def createTemplate(templateName="", showAfterCreate=True):
 	from importlib import resources as impresources
-	destinationFolder=f"{status['dataDir']}templates/"
-	if templateName=="":
-		cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{impresources.files()}/templates/{templateName}' '{destinationFolder}'" 
-		os.system(cmd)
-		if showAfterCreate:
-			subprocess.call(["open", destinationFolder])
-			input(wrap("Make sure to edit these templates once the course is set up.  Press enter to continue:"))
-	else:
-		cmd=f"mkdir -p '{destinationFolder}' && cp -n '{impresources.files()}/templates/{templateName}.txt' '{destinationFolder}'" 
-		os.system(cmd)
-		if showAfterCreate:
-			subprocess.call(["open", f"{destinationFolder}/{templateName}.txt"])
-			input(wrap("Edit and save the template, then press enter to continue:"))
+	try:
+		destinationFolder=f"{status['dataDir']}templates/"
+		if templateName=="":
+			cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{impresources.files()}/templates/{templateName}' '{destinationFolder}'" 
+			os.system(cmd)
+			if showAfterCreate:
+				subprocess.call(["open", destinationFolder])
+				input(wrap("Make sure to edit these templates once the course is set up.  Press enter to continue:"))
+		else:
+			cmd=f"mkdir -p '{destinationFolder}' && cp -n '{impresources.files()}/templates/{templateName}.txt' '{destinationFolder}'" 
+			os.system(cmd)
+			if showAfterCreate:
+				subprocess.call(["open", f"{destinationFolder}/{templateName}.txt"])
+				input(wrap("Edit and save the template, then press enter to continue:"))
+	except:
+		print(wrap(f"Unable to copy templates into data folder, please manually copy the templates from cpr/tempaltes to {destinationFolder}"))
+		input(wrap("Edit and save the templates in the new location, then press enter to continue:"))
 	return
 
 	
