@@ -3,6 +3,17 @@ from tkinter import *
 from tkinter import filedialog
 
 homeFolder = os.path.expanduser('~')
+# def getPath(prompt, defaultPath=None):
+# 	if defaultPath!=None:
+# 		thePath=input(f"{prompt} [{defaultPath}]: ").strip().replace("\\","")
+# 		if thePath=="":
+# 			thePath=defaultPath
+# 	else:
+# 		thePath=input(f"{prompt}: ").strip().replace("\\","")
+# 	if thePath[-1]!="/":
+# 		thePath+="/"
+# 	return thePath
+
 
 def clearOldContent():
 	contentToDelete=["Data", "Data-backups", "path_info.py", "credentials.py"]
@@ -23,6 +34,7 @@ def getPath(prompt="Select directory", defaultPath="/"):
 	return root.filename + "/"
 
 def getRelativeDataPath():
+	defaultLocation=os.path.dirname(os.path.realpath(__file__))
 	dataLocation=getPath(f"Enter the absolute path where the data directory should go.  A 'Data' directory will be created here if it doesn't exist", defaultLocation)
 	if not os.path.exists(dataLocation + "Data"):
 		print("Making Data directory")
@@ -37,12 +49,7 @@ os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the scr
 clearOldContent()
 homeFolder = os.path.expanduser('~')				  # get the home folder 
 #sys.path.insert(0, homeFolder + '/Documents/GitHub/CanvasPeerReviews')	# location of the module files.  Only necessary if they are stored somewhere other than the scripts
-if status['fromPyInstall']:
-	relDataDirectory=os.path.abspath(DATADIRECTORY).replace(homeFolder,"")
-	print(f"{relDataDirectory=}")
-	RELATIVE_DATA_PATH=relDataDirectory
-else:
-	RELATIVE_DATA_PATH=getRelativeDataPath() #data directory relative to the home folder where your class data will be stored
+RELATIVE_DATA_PATH=getRelativeDataPath() #data directory relative to the home folder where your class data will be stored
 
 
 cwd = os.getcwd()
@@ -58,28 +65,27 @@ while not successfullImport:
 		successfullImport=True	
 	except Exception as error:
 		print(error)
-		print(__file__) # /Users/peteman/Documents/GitHub/CanvasPeerReviews/dist/calibrated peer reviews/_internal/scripts/setup class.py
 		print("Unable to import CanvasPeerReviews, perhaps the wrong import path?")
-		if "cpr" in str(error):
+		if "CanvasPeerReviews" in str(error):
 			cprLocation=getPath("Select your 'CanvasPeerReviews' folder")
 			cprLocation=cprLocation.replace("CanvasPeerReviews/CanvasPeerReviews","CanvasPeerReviews")
 		cprLocation=cprLocation[:-1]
 		print(f"adding {cprLocation} to sys.path")
 		sys.path.insert(0, cprLocation)
 
-#  file1 = open('path_info.py', 'w')
-#  msg= f'''import sys, os
-#  os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
-#  homeFolder = os.path.expanduser('~')				  # get the home folder
-#  sys.path.insert(0, homeFolder + '/Documents/GitHub/CanvasPeerReviews') # one location of the module files
-#  '''
-#  if not successfullImport:
-# 	 msg+=f"sys.path.insert(0, '{cprLocation}') # another location for the module files."
-#  msg+=f'''
-#  RELATIVE_DATA_PATH='{RELATIVE_DATA_PATH}' #data directory relative to the home folder where class data will be stored
-#  DATADIRECTORY=homeFolder + RELATIVE_DATA_PATH'''
-#  file1.write(msg)
-#  file1.close()
+file1 = open('path_info.py', 'w')
+msg= f'''import sys, os
+os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
+homeFolder = os.path.expanduser('~')				  # get the home folder
+sys.path.insert(0, homeFolder + '/Documents/GitHub/CanvasPeerReviews') # one location of the module files
+'''
+if not successfullImport:
+	msg+=f"sys.path.insert(0, '{cprLocation}') # another location for the module files."
+msg+=f'''
+RELATIVE_DATA_PATH='{RELATIVE_DATA_PATH}' #data directory relative to the home folder where class data will be stored
+DATADIRECTORY=homeFolder + RELATIVE_DATA_PATH'''
+file1.write(msg)
+file1.close()
 
 
 
@@ -137,7 +143,6 @@ if not aliasExists:
 	print("Added an alias 'cpr' to .profile")
 	
 print()
-print("Congratulations - you are all set up.  You can now run any of the canvas peer review scripts ")
-if not status['fromPyInstall']:
-	print()
-	returnVal=os.system("python3 -i 'menu.py'")
+print("Congratulations - you are all set up.  You can now run any of the canvas peer review scripts: ")
+print()
+returnVal=os.system("python3 -i 'menu.py'")

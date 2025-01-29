@@ -4,5 +4,3 @@ assignment.rubric  id is not unique
 Test new templates
 [done] Have a param property that defines the default grading method
 test the default grading methods
-
-To create an app see https://realpython.com/pyinstaller-python/
