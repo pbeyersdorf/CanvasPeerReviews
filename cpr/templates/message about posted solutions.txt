@@ -1,9 +1,2 @@
 {% import 'macros.txt' as macros %}
-{###############################################################################
-
-This is the message that gets sent to students when peer reviews have been assigned
-
-further documentation on how to format the template is available at https://jinja.palletsprojects.com/en/stable/templates/
-
-###############################################################################}
 Peer reviews have been assigned and <a href='{{solutionsUrl}}'>solutions to {{assignmentName}}</a> have been posted.  Please review the solutions and then complete your peer reviews before the due date (pPeer reviews that are not completed by the due date will not receive credit.)

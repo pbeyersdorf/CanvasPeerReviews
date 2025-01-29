@@ -1130,17 +1130,20 @@ def checkForUnreviewed(assignment, openPage=False):
 
 
 def createTemplate(templateName="", showAfterCreate=True):
-	from importlib import resources as impresources
+	from pathlib import Path
+	resource_path = Path(__file__).parent / "templates"
+	sourcePath=str(resource_path.resolve())
+	
 	try:
 		destinationFolder=f"{status['dataDir']}templates/"
 		if templateName=="":
-			cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{impresources.files()}/templates/{templateName}' '{destinationFolder}'" 
+			cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{sourcePath}/{templateName}' '{destinationFolder}'" 
 			os.system(cmd)
 			if showAfterCreate:
 				subprocess.call(["open", destinationFolder])
 				input(wrap("Make sure to edit these templates once the course is set up.  Press enter to continue:"))
 		else:
-			cmd=f"mkdir -p '{destinationFolder}' && cp -n '{impresources.files()}/templates/{templateName}.txt' '{destinationFolder}'" 
+			cmd=f"mkdir -p '{destinationFolder}' && cp -n '{sourcePath}/{templateName}.txt' '{destinationFolder}'" 
 			os.system(cmd)
 			if showAfterCreate:
 				subprocess.call(["open", f"{destinationFolder}/{templateName}.txt"])
@@ -1150,7 +1153,7 @@ def createTemplate(templateName="", showAfterCreate=True):
 		input(wrap("Edit and save the templates in the new location, then press enter to continue:"))
 	return
 
-	
+
 ######################################
 # fill out student grade information using a template to format it
 def processTemplate(theStudent, assignment, templateName):
