@@ -1,0 +1,10 @@
+{% import 'macros.txt' as macros %}
+Compared to reviews by {{macros.compared_to(assignment)}}, the peer review scores you gave others deviated by
+{{ macros.review_feedback_by_criteria(student,assignment,criteriaDescription) }} 
+{{ macros.comment_on_reviews(student,assignment) }}
+
+You earned a grade of {{reviewGrade}}% for your reviews based on how closely your review aligned to those by {{macros.compared_to(assignment)}} on all of the reviews that you had in common on this assignment.  The instructor grades strictly according to the rubric, so the more closely your reviews align to the rubric the better your score will be.
+
+{%if assignment.reviewScoreMethod == "calibrated grading":%}
+If you believe your review grade does not correspond to the quality of your peer reviewing, you can request to have it recalculated using only comparisons to my reviews.  To have it recalculated enter a comment with the word '{{keywordReview}}' in it.
+{%endif%}

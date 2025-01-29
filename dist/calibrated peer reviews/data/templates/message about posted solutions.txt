@@ -1,0 +1,2 @@
+{% import 'macros.txt' as macros %}
+Peer reviews have been assigned and <a href='{{solutionsUrl}}'>solutions to {{assignmentName}}</a> have been posted.  Please review the solutions and then complete your peer reviews before the due date (pPeer reviews that are not completed by the due date will not receive credit.)

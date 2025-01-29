@@ -1,0 +1,7 @@
+How many reviewers should review each creation? (some students will be assigned one more than this number of reviews): 3.0
+How many days should the students have to complete their peer reviews after the assignment is due?: 3.0
+How many times greater than a student should an instructors grading be weighted?: 10.0
+How many times greater than a student should  student graders grading be weighted?: 5.0
+How many assignments is the half life for grading power calculations?: 4.0
+What compensation factor for grader deviations (0-1)?: 1.0
+What is the max fractional amount of a score that can be compensated (0-1)?: 0.2

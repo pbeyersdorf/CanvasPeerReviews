@@ -53,11 +53,12 @@ import warnings
 if errormsg!="":
 	raise Exception(errormsg)
 homeFolder = os.path.expanduser('~')
-try:
-	from credentials import *
-	DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH
-	writeCredentials=False
-except Exception:
+writeCredentials=False
+if  os.path.isfile("../credentials.py"):
+	exec(open("../credentials.py").read())
+elif os.path.isfile("credentials.py"):
+	exec(open("credentials.py").read())
+else:
 	writeCredentials=True
 if 'verificationKey' not in locals():
 	verificationKey=""
@@ -87,6 +88,7 @@ params=Parameters()
 status={'message': '',
 	'err': '', 
 	'initialized': False, 
+	'fromPyInstall': False,
 	'gotParameters': False,
 	'gotStudentsWork': False, 
 	'gotGradedAssignments': False, 
@@ -238,8 +240,12 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 			print("\nIn the future you can use \n\tinitialize('" +CANVAS_URL+ "', '"+TOKEN+"', " + str(COURSE_ID) +")"+"\nto avoid having to reenter this information\n")
 		if 	writeCredentials==True:
 			print("Generating a credentials template file to use in the future")
-			f = open("credentials.py", "a")
+			if status['fromPyInstall']:
+				f = open("../credentials.py", "a")
+			else:
+				f = open("credentials.py", "a")
 			f.write("# credentials automatically generated ["+str(datetime.now())+"] for the canvas course to be used by the other python scripts int his folder\n"
+				+ "global COURSE_ID, CANVAS_URL, TOKEN\n"
 				+ "COURSE_ID = " +str(COURSE_ID) +" #6 digit code that appears in the URL of your canvas course\n"
 				+ "CANVAS_URL = '" + CANVAS_URL + "'\n"
 				+ "TOKEN = '" + TOKEN+  "' # the canvas token for accessing your course.  See https://community.canvaslms.com/t5/Admin-Guide/How-do-I-obtain-an-API-access-token-in-the-Canvas-Data-Portal/ta-p/157\n"
@@ -1138,7 +1144,7 @@ def createTemplate(templateName="", showAfterCreate=True):
 	try:
 		destinationFolder=f"{status['dataDir']}templates/"
 		if templateName=="":
-			cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{sourcePath}/{templateName}' '{destinationFolder}'" 
+			cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{sourcePath}/{templateName}' '{destinationFolder}'"
 			os.system(cmd)
 			if showAfterCreate:
 				subprocess.call(["open", destinationFolder])
@@ -2194,8 +2200,8 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 		else:
 			params.weightingOfCreation=1
 			params.weightingOfReviews=1
-			params.weightingOfCreationGroup=getNum("Enter the percentage of the total course grade that the assignment group for creations should be set to (or leave blank to remain unchanged):", fileDescriptor=logFile, allowBlank=True)
-			params.weightingOfReviewsGroup=getNum("Enter the percentage of the total course grade that the assignment group for peer review scores should be set to (or leave blank):", fileDescriptor=logFile, allowBlank=True)
+			params.weightingOfCreationGroup=getNum("Enter the percentage of the total course grade that the assignment group for creations should be set to (or leave blank to remain unchanged)", fileDescriptor=logFile, allowBlank=True)
+			params.weightingOfReviewsGroup=getNum("Enter the percentage of the total course grade that the assignment group for peer review scores should be set to (or leave blank)", fileDescriptor=logFile, allowBlank=True)
 		params.numberOfReviews=getNum("How many reviewers should review each creation? (some students will be assigned one more than this number of reviews)",3, fileDescriptor=logFile)	
 		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews after the assignment is due?",3, fileDescriptor=logFile)
 		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10, fileDescriptor=logFile)
@@ -2616,7 +2622,7 @@ def getBool(msg="'True' or 'False'", defaultVal=None):
 		dafaultString=" [" + str(defaultVal) + "]"
 	response=input(msg + dafaultString +": ")
 	if response=="":
-		response=String(defaultVal)
+		response=str(defaultVal)
 	val=response.strip().lower() in ["yes", "1" , "true", "ok", "y"]
 	return val
 
@@ -2731,7 +2737,9 @@ def backup(ndays=0):
 # Saves any data that has beem marked for saving
 def saveData(listToSave=[]):
 	listToSave=makeList(listToSave)
-	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
+	cmd="mkdir -p '" + status['dataDir'] + "PickleJar" + "'"
+	print(cmd)
+	os.system(cmd)
 	backup(4) #backup the data if there is no backup in the last 4 days
 	if dataToSave['students'] or 'students' in listToSave:
 		with open(status['dataDir'] + "PickleJar/" + status['prefix'] +'students.pkl', 'wb') as handle:

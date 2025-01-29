@@ -1,0 +1,67 @@
+{###############################################################################
+
+Put any macros here that you want to access in other templates.  To use a
+macro in another template you will first need to import it using:
+
+{% import 'macros.txt' as macros %}
+
+and then you will call it using the following syntax
+
+{{ macros.comment_on_reviews(student,assignment) }}
+
+further documentation on how to format the template is available at https://jinja.palletsprojects.com/en/stable/templates/
+
+###############################################################################}
+
+{###############################################################################
+This produces a comment about student review scores based on the score  
+###############################################################################}
+{% macro comment_on_reviews(student,assignment) -%}{#
+#}{%if student.numberOfReviewsGivenOnAssignment(assignment.id)==0:%}{#
+#}You didn't complete your peer reviews, so you review score is {{"{0:0.1f}".format(student.grades[assignment.id]['review'])}}
+{%elif student.grades[assignment.id]['review']>90:%}{#
+#}Good job on the reviews.  Keep it up!
+{%elif student.grades[assignment.id]['review']<70:%}{#
+#}Your review grade will improve as it aligns more closely with other graders.
+{%endif%}{#
+#}{%- endmacro %}
+
+{###############################################################################
+This is a comment that is only made when a score gets curved
+###############################################################################}
+{% macro comment_if_curved(student,assignment) -%}{#
+#}{%if assignment.id in student.grades and student.points[assignment.id]['total']!=student.points[assignment.id]['curvedTotal']:%}{#
+#}.  This was curved to give an adjusted score of {{"{0:0.1f}".format(student.grades[assignment.id]['curvedTotal'])}}
+{%endif%}{#
+#}{%- endmacro %}
+
+
+{###############################################################################
+This is what text describing what the students review scores are compared to
+###############################################################################}
+{% macro compared_to(assignment) -%}{#
+#}{%if assignment.reviewScoreMethod == "calibrated grading":%}{#
+#}the instructor and other reviewers{%elif assignment.reviewScoreMethod == "compare to instructor":%}{#
+#}the instructor{%else:%}{#
+#}it should have been{#
+#}{%endif%}{#
+#}{%- endmacro %}
+
+{###############################################################################
+This compares the student review scores given to others to give them feedback
+on how they are grading
+###############################################################################}
+{% macro review_feedback_by_criteria(student,assignment,criteriaDescription) -%}{#
+#}<ul>
+{% for cid in assignment.criteria_ids(): %}{#
+#}<li>{#
+#}{%if student.deviationByAssignment[assignment.id][cid] > 0.05%}{#
+#}{{ "{0:0.1f}".format(student.rmsByAssignment[assignment.id][cid]) }} points for '{{criteriaDescription[cid]}}' (on average {{ "{0:0.1f}".format(student.deviationByAssignment[assignment.id][cid]) }} higher than {{compared_to(assignment)}}){#
+#}{%elif student.deviationByAssignment[assignment.id][cid] < -0.05:%}{#
+#}{{ "{0:0.1f}".format(student.rmsByAssignment[assignment.id][cid]) }} points for '{{criteriaDescription[cid]}}' (on average {{ "{0:0.1f}".format(-student.deviationByAssignment[assignment.id][cid]) }} lower than {{compared_to(assignment)}}){#
+#}{%else:%}{#
+#}{{ "{0:0.1f}".format(student.rmsByAssignment[assignment.id][cid]) }} points for '{{criteriaDescription[cid]}}' (on average about the same as {{compared_to(assignment)}}){#
+#}{%endif%}
+{% endfor %}{#
+#}</ul>{#
+#}{%- endmacro %}

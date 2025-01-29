@@ -1,0 +1,7 @@
+cd into this directory and then run:
+
+pyinstaller calibrated\ peer\ reviews.spec
+
+The diretory with the "calibrated peer reviews menu" executable for distribution on mac systems will be in the dist/ directory
+
+for more info see https://realpython.com/pyinstaller-python/
