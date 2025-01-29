@@ -221,14 +221,15 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 
 	if "TEST_ENVIRONMENT" in locals() or 'TEST_ENVIRONMENT' in globals() and TEST_ENVIRONMENT:
 		CANVAS_URL=CANVAS_URL.replace(".instructure",".test.instructure")
-		print(Fore.RED +  Style.BRIGHT +  "\nUsing test environment\nset TEST_ENVIRONMENT=False in 'credentials.py' to change" + Style.RESET_ALL)
+		print(Fore.RED +  Style.BRIGHT +  "\nUsing test environment because of TEST_ENVIRONMENT=True statement in 'credentials.py'"+ Style.RESET_ALL)
+
 		testDir=status['dataDir'][:-1]+"-test/"
 		cmd="cp -r '" + status['dataDir'] + "' '" + testDir + "'"
 		os.system(cmd)
 		status['dataDir'] = testDir
 		print("Copying data into temporary data directory at \n\t'" + status['dataDir'] + "'")
 	else:
-		print("\nUsing production environment\nset TEST_ENVIRONMENT=True in 'credentials.py' to change")
+		print("\nUsing production environment because of TEST_ENVIRONMENT=False statement in 'credentials.py'")
 
 	canvas = Canvas(CANVAS_URL, TOKEN)
 	course = canvas.get_course(COURSE_ID)
