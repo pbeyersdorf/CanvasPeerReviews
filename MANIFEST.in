@@ -1,0 +1,3 @@
+# To include all files and subdirectories within the my_package/directory_name directory
+recursive-include CanvasPeerReviews/cpr *
+

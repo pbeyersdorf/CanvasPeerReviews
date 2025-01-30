@@ -1,0 +1,21 @@
+Metadata-Version: 2.2
+Name: cpr
+Version: 0.2
+Summary: A plugin to mange peer review grading on canvas
+Home-page: https://www.sjsu.edu/faculty/beyersdorf/
+Author: Peter Beyersdorf
+Author-email: peter.beyersdorf@sjsu.edu
+License: MIT
+Keywords: python,canvas,peer reviews
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Education
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: MacOS :: MacOS X
+License-File: LICENSE
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license
+Dynamic: summary
