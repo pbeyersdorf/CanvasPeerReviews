@@ -3,6 +3,7 @@
 import os, time
 complete=False
 relPath="."
+startingPath=relPath
 theFile=""
 print()
 while theFile=="":
@@ -10,7 +11,7 @@ while theFile=="":
 	folders=[item for item in os.listdir(relPath) if os.path.isdir(os.path.join(os.path.abspath("."), item)) and "__pycache__" not in item and "."!=item[0] and "Data" not in item]
 	files.sort()
 	folders.sort()
-	if relPath==".":
+	if relPath==startingPath:
 		print("\t"+str(0) + ") python shell")
 	else:
 		print("\t"+str(0) + ") <- go back")
@@ -21,7 +22,7 @@ while theFile=="":
 			print("\t"+str(j+i+2) + ") " + folder + "...")
 	print()
 	val=int(input("which program do you want to run? "))-1
-	if val<0 and relPath==".":
+	if val<0 and relPath==startingPath:
 		theFile="shell.py"
 	elif val<0:
 		relPath="/".join(relPath.split("/")[:-1])
@@ -32,7 +33,7 @@ while theFile=="":
 	else:
 		theFile=relPath+"/"+files[val]
 
-if relPath!=".":
+if relPath!=startingPath:
 	cmd='cp credentials.py "' + relPath +'/"'
 	os.system(cmd)
 	cmd='cp "path_info.py" "' + relPath +'/"'
@@ -42,7 +43,7 @@ returnVal=os.system("python3 -i '" + theFile + "'")
 end = time.perf_counter()
 if (end-start)<1 and returnVal!=0:
 	returnVal=os.system("python -i '" + theFile + "'")
-if relPath!=".":
+if relPath!=startingPath:
 	cmd='rm "' + relPath +'/credentials.py"'
 	os.system(cmd)
 	cmd='rm "' + relPath +'/path_info.py"'
