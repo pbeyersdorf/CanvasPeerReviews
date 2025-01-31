@@ -3,17 +3,6 @@ from tkinter import *
 from tkinter import filedialog
 
 homeFolder = os.path.expanduser('~')
-# def getPath(prompt, defaultPath=None):
-# 	if defaultPath!=None:
-# 		thePath=input(f"{prompt} [{defaultPath}]: ").strip().replace("\\","")
-# 		if thePath=="":
-# 			thePath=defaultPath
-# 	else:
-# 		thePath=input(f"{prompt}: ").strip().replace("\\","")
-# 	if thePath[-1]!="/":
-# 		thePath+="/"
-# 	return thePath
-
 
 def clearOldContent():
 	contentToDelete=["Data", "Data-backups", "path_info.py", "credentials.py"]
@@ -35,7 +24,7 @@ def getPath(prompt="Select directory", defaultPath="/"):
 
 def getRelativeDataPath():
 	defaultLocation=os.path.dirname(os.path.realpath(__file__))
-	dataLocation=getPath(f"Enter the absolute path where the data directory should go.  A 'Data' directory will be created here if it doesn't exist", defaultLocation)
+	dataLocation=getPath(f"In the pop up window (which may be behind terminal) choose the folder where the data directory should go.  A 'Data' directory will be created here if it doesn't exist", defaultLocation)
 	if not os.path.exists(dataLocation + "Data"):
 		print("Making Data directory")
 		os.mkdir(dataLocation + "Data")
@@ -47,7 +36,6 @@ def getRelativeDataPath():
 
 os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
 clearOldContent()
-homeFolder = os.path.expanduser('~')				  # get the home folder 
 #sys.path.insert(0, homeFolder + '/Documents/GitHub/CanvasPeerReviews')	# location of the module files.  Only necessary if they are stored somewhere other than the scripts
 RELATIVE_DATA_PATH=getRelativeDataPath() #data directory relative to the home folder where your class data will be stored
 
@@ -67,7 +55,7 @@ while not successfullImport:
 		print(error)
 		print("Unable to import CanvasPeerReviews, perhaps the wrong import path?")
 		if "cpr" in str(error):
-			cprLocation=getPath("Select your 'CanvasPeerReviews' folder")
+			cprLocation=getPath("In the pop up window (which may be behind terminal) choose the 'cpr' folder that contains the source code")
 			cprLocation=cprLocation.replace("CanvasPeerReviews/CanvasPeerReviews","CanvasPeerReviews")
 		cprLocation=cprLocation[:-1]
 		print(f"adding {cprLocation} to sys.path")
@@ -81,7 +69,11 @@ sys.path.insert(0, homeFolder + '/Documents/GitHub/CanvasPeerReviews') # one loc
 '''
 if not successfullImport:
 	msg+=f"sys.path.insert(0, '{cprLocation}') # another location for the module files."
-msg+=f'''
+if not os.path.exists(homeFolder + RELATIVE_DATA_PATH):
+	msg+=f'''
+DATADIRECTORY='{RELATIVE_DATA_PATH}' #data directory'''
+else:
+	msg+=f'''
 RELATIVE_DATA_PATH='{RELATIVE_DATA_PATH}' #data directory relative to the home folder where class data will be stored
 DATADIRECTORY=homeFolder + RELATIVE_DATA_PATH'''
 file1.write(msg)
