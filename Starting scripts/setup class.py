@@ -66,7 +66,7 @@ while not successfullImport:
 	except Exception as error:
 		print(error)
 		print("Unable to import CanvasPeerReviews, perhaps the wrong import path?")
-		if "CanvasPeerReviews" in str(error):
+		if "cpr" in str(error):
 			cprLocation=getPath("Select your 'CanvasPeerReviews' folder")
 			cprLocation=cprLocation.replace("CanvasPeerReviews/CanvasPeerReviews","CanvasPeerReviews")
 		cprLocation=cprLocation[:-1]
