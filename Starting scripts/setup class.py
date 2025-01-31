@@ -53,12 +53,15 @@ while not successfullImport:
 		successfullImport=True	
 	except Exception as error:
 		print(error)
+		if "cpr" not in error:
+			exit()
 		print("Unable to import CanvasPeerReviews, perhaps the wrong import path?")
 		cprLocation=getPath("In the pop up window (which may be behind terminal) choose the 'cpr' folder that contains the source code")
 		cprLocation=cprLocation.replace("/cpr/","")
 		#cprLocation=cprLocation[:-1]
 		print(f"adding {cprLocation} to sys.path")
 		sys.path.insert(0, cprLocation)
+			
 
 file1 = open('path_info.py', 'w')
 msg= f'''import sys, os
