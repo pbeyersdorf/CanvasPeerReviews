@@ -2963,5 +2963,3 @@ def print(*args, **kwargs):
 originalInput= input
 def input(*args, **kwargs):
 	return originalInput(wrap(*args), **kwargs)
-	
-	
