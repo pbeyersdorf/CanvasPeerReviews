@@ -1948,7 +1948,8 @@ def createRelatedAssignment(assignment, separateGroup=True):
 	creationPoints=assignment.points_possible
 	#reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
 	reviewAssignmentPoints=100
-	creationDueDate=assignment.due_at_date.replace(tzinfo=None)
+	#creationDueDate=assignment.due_at_date.replace(tzinfo=None)
+	creationDueDate=assignment.due_at_date
 	reviewDueDate=creationDueDate+timedelta(days=params.peerReviewDurationInDays)
 	creationDict={
 	'name': assignmentName,
@@ -2182,7 +2183,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 							print(f"{criteria['description']} will be worth {params.multiplier[criteria['description']]:0.1f} points")
 				print()		
 	if not params.loadedFromFile or ignoreFile:
-		params.combineSubmissionAndReviewGrades=getBool("Should submission and review scores be combined into one grade (y/n)?")
+		params.combineSubmissionAndReviewGrades=getBool("Should submission and review scores be combined into one grade (y/n)?", defaultVal='n')
 		if params.combineSubmissionAndReviewGrades:
 			weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)
 			weightingOfReviews=getNum("Enter the relative weight of the review towards the total grade",0.3, fileDescriptor=logFile)
