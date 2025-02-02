@@ -50,7 +50,7 @@ for sectionName in sorted(list(sections.values())):
 	# Post announcement telling students the peer reviews have been assigned
 	subject=("Peer reviews and solutions for " + activeAssignment.name)
 	activeAssignment.solutionsUrl = url
-	body=processTemplate(student=None,assignment=activeAssignment,name="message about posted solutions")
+	body=processTemplate(None,activeAssignment,"message about posted solutions")
 	print(subject +"\n"+body+"\n\n")
 	body=confirmText(body, prompt="Is this announcement acceptable?")
 	#if confirm("Send announcement to "+ sectionName +"?", False):

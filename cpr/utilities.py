@@ -1157,8 +1157,8 @@ def createTemplate(templateName="", showAfterCreate=True):
 
 ######################################
 # fill out student grade information using a template to format it
-def processTemplate(theStudent, assignment, templateName):
-	student=copy.deepcopy(theStudent)
+def processTemplate(student, assignment, templateName):
+	student=copy.deepcopy(student)
 	global params
 	if not os.path.isfile(f"{status['dataDir']}templates/macros.txt"):
 		createTemplate(templateName="macros", showAfterCreate=False)
@@ -2898,6 +2898,7 @@ def printLeftRight(left,right, end="\n"):
 ######################################
 # wrap a long line with auto word wrapping
 def wrap(msg):
+	msg=str(msg)
 	import textwrap, os
 	try:
 		size=os.get_terminal_size()
