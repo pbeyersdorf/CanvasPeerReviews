@@ -310,7 +310,7 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 		if graded_assignments['last'] ==[]:
 			for key in 	graded_assignments:
 				try:
-					print(key, graded_assignments[key].name)
+					print(f"{key}\t{graded_assignments[key].name}")
 				except Exception:
 					pass
 			val=int(input("Choose the assignment id to grade: "))
@@ -550,7 +550,7 @@ def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSecti
 	if calibrations=="auto":
 		calibrations=[]
 		try:
-			print("professor reviews for ", assignment.name, assignment.id)
+			print(f"professor reviews for {assignment.name} {assignment.id}")
 			professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id]]
 			calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
 		except:
@@ -2952,7 +2952,7 @@ def allowPrinting(allow):
 # redefine the print function to wrap the output	    
 originalPrint= print
 def print(*args, **kwargs):
-	if args and type(*args ) == str:
+	if args and len(args)==1 and type(*args ) == str:
 		originalPrint(wrap(*args), **kwargs)
 	else:
 		originalPrint(*args, **kwargs)
