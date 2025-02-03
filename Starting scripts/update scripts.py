@@ -84,3 +84,4 @@ outdatedScriptsFiles=listOutdatedFiles(scriptsFiles)
 print(f"\nThere are {len(outdatedScriptsFiles)} differing starting script files.")
 if len(outdatedScriptsFiles)>0:# and input(f"Update starting scripts (y/n)?").lower()=="y":
 	updateFiles(outdatedScriptsFiles)
+
