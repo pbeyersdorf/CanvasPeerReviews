@@ -41,5 +41,10 @@ DATADIRECTORY=homeFolder + RELATIVE_DATA_PATH
 file1.write(msg)
 file1.close()
 os.system(f"cd '{cwd}'; pip install -r {cwd}/requirements.txt")
+bashCmd=f'''echo "alias cpr='cd '{cwd}';python3 menu.py'" >> ~/.bashrc'''
+zshCmd=f'''echo "alias cpr='cd '{cwd}';python3 menu.py'" >> ~/.zshrc'''
+os.system(bashCmd)
+os.system(zshCmd)
 os.system(f"cd {cwd}/; python3 'menu.py'")
+print("an alias has been set up so that you can type 'cpr' into the terminal to open the menu.")
 exit()
