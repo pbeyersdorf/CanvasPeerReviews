@@ -54,6 +54,11 @@ if errormsg!="":
 	raise Exception(errormsg)
 homeFolder = os.path.expanduser('~')
 try:
+	from path_info import *
+except:
+	pass
+
+try:
 	from credentials import *
 	DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH
 	writeCredentials=False
@@ -214,6 +219,8 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 				COURSE_ID=int(parts[1].split('/')[0])
 				printCommand=True
 				success=True
+			except KeyboardInterrupt:
+				sys.exit()
 			except:
 				print("\nThat wasn't a valid URL for a canvas course.  It should look like https://sjsu.instructure.com/courses/314159")
 	if (TOKEN==None):
