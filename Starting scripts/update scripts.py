@@ -67,7 +67,7 @@ scriptsFiles= [y for x in os.walk(cwd) for y in glob(os.path.join(x[0], '*.py'))
 print('''
 This script will access the latest files in the 'CanvasPeerReviews' 
 repository on github, and give you the option to use them to overwrite the
-existing files on your computer.  There are three categories of files:
+existing files on your computer.  There are two categories of files:
 	
 	Core python files from the cpr package
 	Starting scripts that you interact with 
