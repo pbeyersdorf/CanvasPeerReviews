@@ -1,4 +1,6 @@
 import os, sys
+from glob import glob
+
 cwd="/".join(__file__.split("/")[:-1])
 cwdFiles = [y for x in os.walk(cwd) for y in glob(os.path.join(x[0], '*'))]
 cwdFiles=[x for x in cwdFiles if "CPREnv" not in x]
@@ -8,7 +10,7 @@ Place the install.py file in an empty directory that it can install
 into before running.  You will go to this directory to run the scripts, 
 and once you install into it you should not move or rename it.
 ''')
-	sys.exit()
+	quit()
 
 #step 1, create virtual environment
 if not os.path.exists(f"{cwd}/CPREnv"):
@@ -17,7 +19,7 @@ if not os.path.exists(f"{cwd}/CPREnv"):
 #step 2, activate virtual environment
 if sys.prefix == sys.base_prefix:
 	print(f"Paste\n\nsource  {cwd}/CPREnv/bin/activate\n\ninto terminal then run install.py again")
-	sys.exit()
+	quit()
 
 #step 3 run scripts
 os.system("pip install requests")
