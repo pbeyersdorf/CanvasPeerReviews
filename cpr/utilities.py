@@ -58,7 +58,11 @@ try:
 	DATADIRECTORY=homeFolder  + RELATIVE_DATA_PATH
 	writeCredentials=False
 except Exception:
+	CANVAS_URL=None
+	TOKEN=None
+	COURSE_ID=None
 	writeCredentials=True
+	
 if 'verificationKey' not in locals():
 	verificationKey=""
 	
