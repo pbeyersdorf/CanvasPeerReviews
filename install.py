@@ -18,7 +18,7 @@ if not os.path.exists(f"{cwd}/CPREnv"):
 	os.system(f"python -m venv {cwd}/CPREnv")
 #step 2, activate virtual environment
 if sys.prefix == sys.base_prefix:
-	print(f"Paste\n\nsource  {cwd}/CPREnv/bin/activate\n\ninto terminal then run install.py again")
+	print(f"Paste\n\nsource  '{cwd}/CPREnv/bin/activate'\n\ninto terminal then run install.py again")
 	quit()
 
 #step 3 run scripts
@@ -53,8 +53,8 @@ DATADIRECTORY=homeFolder + RELATIVE_DATA_PATH
 file1.write(msg)
 file1.close()
 os.system(f"cd '{cwd}'; pip install -r {cwd}/requirements.txt")
-bashCmd=f'''echo "alias cpr='cd '{cwd}';python3 menu.py'" >> ~/.bashrc'''
-zshCmd=f'''echo "alias cpr='cd '{cwd}';python3 menu.py'" >> ~/.zshrc'''
+bashCmd=f'''echo "alias cpr='cd '{cwd}';source  '{cwd}/CPREnv/bin/activate';python3 menu.py'" >> ~/.bashrc'''
+zshCmd=f'''echo "alias cpr='cd '{cwd}';source  '{cwd}/CPREnv/bin/activate';python3 menu.py'" >> ~/.zshrc'''
 os.system(bashCmd)
 os.system(zshCmd)
 os.system(f"cd {cwd}/; python3 'menu.py'")
