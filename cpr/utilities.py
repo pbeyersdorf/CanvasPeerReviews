@@ -2224,7 +2224,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 	logFile.close()
 	dataToSave['parameters']=True
 	status["gotParameters"]=True
-	if confirm("Shall any changes be saved? "):
+	if (not params.loadedFromFile or ignoreFile) and confirm("Shall any changes be saved? "):
 		saveData()
 	return params
 
