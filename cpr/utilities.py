@@ -1152,14 +1152,16 @@ def createTemplate(templateName="", showAfterCreate=True):
 			cmd=f"mkdir -p '{destinationFolder}' && cp -r -n '{sourcePath}/{templateName}' '{destinationFolder}'" 
 			os.system(cmd)
 			if showAfterCreate:
+				input(wrap("You need to edit the communication templates to your liking.  Press enter to open the templated directory:"))
 				subprocess.call(["open", destinationFolder])
-				input(wrap("Make sure to edit these templates once the course is set up.  Press enter to continue:"))
+				input("Press enter to continue:")
 		else:
 			cmd=f"mkdir -p '{destinationFolder}' && cp -n '{sourcePath}/{templateName}.txt' '{destinationFolder}'" 
 			os.system(cmd)
 			if showAfterCreate:
+				input(wrap("You need to edit the communication templates to your liking.  Press enter to open the templated directory:"))
 				subprocess.call(["open", f"{destinationFolder}/{templateName}.txt"])
-				input(wrap("Edit and save the template, then press enter to continue:"))
+				input("Press enter to continue:")
 	except:
 		print(wrap(f"Unable to copy templates into data folder, please manually copy the templates from cpr/tempaltes to {destinationFolder}"))
 		input(wrap("Edit and save the templates in the new location, then press enter to continue:"))
