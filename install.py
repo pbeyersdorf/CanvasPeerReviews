@@ -1,10 +1,4 @@
-import os
-os.system("pip install requests")
-
-
-import requests, zipfile, io
-from glob import glob
-
+import os, sys
 cwd="/".join(__file__.split("/")[:-1])
 cwdFiles = [y for x in os.walk(cwd) for y in glob(os.path.join(x[0], '*'))]
 if len(cwdFiles)>1:
@@ -15,6 +9,19 @@ and once you install into it you should not move or rename it.
 ''')
 	exit()
 
+#step 1, create virtual environment
+if not os.path.exists(f"{cwd}/CPREnv"):
+	print("Creating virtual environemnt CPREnv")
+	os.system(f"python -m venv {cwd}/CPREnv")
+#step 2, activate virtual environment
+if sys.prefix == sys.base_prefix:
+	print("run 'source  {cwd}/CPREnv/bin/activate' and then run install.py again")
+
+#step 3 run scripts
+os.system("pip install requests")
+
+import requests, zipfile, io
+from glob import glob
 #download and extract the zip archive from github
 zip_file_url="https://github.com/pbeyersdorf/CanvasPeerReviews/archive/refs/heads/main.zip"
 r = requests.get(zip_file_url)
