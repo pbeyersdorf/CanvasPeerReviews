@@ -8,7 +8,7 @@ theFile=""
 print()
 while theFile=="":
 	files=[file for file in os.listdir(relPath) if ".py" in file and "menu" not in file and ".pyc" not in file and "credentials" not in file and "(conflicted" not in file and "shell.py" not in file and "path_info.py" not in file]
-	folders=[item for item in os.listdir(relPath) if os.path.isdir(os.path.join(os.path.abspath("."), item)) and "__pycache__" not in item and "."!=item[0] and "Data" not in item]
+	folders=[item for item in os.listdir(relPath) if os.path.isdir(os.path.join(os.path.abspath("."), item)) and "__pycache__" not in item and "."!=item[0] and "Data" not in item and "venv" not in item and "cpr" not in item]
 	files.sort()
 	folders.sort()
 	if relPath==startingPath:
