@@ -40,6 +40,6 @@ DATADIRECTORY=homeFolder + RELATIVE_DATA_PATH
 '''
 file1.write(msg)
 file1.close()
-os.system("cd '{cwd}'; pip install -r requirements.txt")
-os.system("python3 'menu.py'")
+os.system(f"cd '{cwd}'; pip install -r {cwd}/requirements.txt")
+os.system(f"cd {cwd}/; python3 'menu.py'")
 exit()

@@ -2224,6 +2224,9 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 	logFile.close()
 	dataToSave['parameters']=True
 	status["gotParameters"]=True
+	saveData=confirm("Shall any changes be saved? ")
+	if saveData:
+		saveData()
 	return params
 
 def setPoints(assignment):

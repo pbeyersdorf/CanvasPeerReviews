@@ -1,6 +1,4 @@
 #################  Set up where to the environment  #################
-from credentials import *
-from path_info import * 			# Set up where to find the relevant files
 from cpr import *		# the main module for managing peer reviews
 
 #################  Get the data for the course  #################
