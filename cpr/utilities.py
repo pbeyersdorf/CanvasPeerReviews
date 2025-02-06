@@ -953,7 +953,10 @@ def getReviews(creations):
 				for otherReview in reviewsByCreationId[thisGivenReview.submission_id].values():
 					alreadyCalibratedAgainst=otherReview.id in student.comparisons
 					if (otherReview.reviewer_id != student.id and not alreadyCalibratedAgainst): #don't compare this review to itself and dont repeat a calibration	
-						student.comparisons[otherReview.id]=Comparison(thisGivenReview, otherReview, graded_assignments[thisGivenReview.assignment_id], studentsById, params)
+						try:
+							student.comparisons[otherReview.id]=Comparison(thisGivenReview, otherReview, graded_assignments[thisGivenReview.assignment_id], studentsById, params)
+						except:
+							pass
 	
 	#export list of students who have completed a review
 	assignment=graded_assignments[creations[0].assignment_id]
