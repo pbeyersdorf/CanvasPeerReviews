@@ -1378,7 +1378,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 				#print(f"setting up reviewGradeExplanation for {student.name} ")
 			errorMessage=None
 			for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
+				tempWeight[cid]=1 #xxx need to delete this and fix
 				if tempWeight[cid]!=0:
+					
 					student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
 					student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
 					student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
@@ -1394,6 +1396,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			if errorMessage!=None:
 				print(errorMessage)
 			delta2=weight=0
+			
 			for cid in [cid for cid in tempWeight if cid!=0]:
 				delta2+=(student.relativeRmsByAssignment[assignment.id][cid]**2)*tempWeight[cid]
 				weight+=tempWeight[cid]
