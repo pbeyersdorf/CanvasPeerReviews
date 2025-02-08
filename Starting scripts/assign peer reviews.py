@@ -39,23 +39,40 @@ if not confirm("The peer review assignment have been opened in a web browser.  V
 if not params.combineSubmissionAndReviewGrades:
 	reviewScoreAssignment=createRelatedAssignment(activeAssignment)	
 
-for sectionName in sorted(list(sections.values())):
-	url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
+sendSeparateMessageToEachSection=False
+if sendSeparateMessageToEachSection:
+	for sectionName in sorted(list(sections.values())):
+		url=getSolutionURLs(assignment=activeAssignment, fileName="solution urls for " + sectionName + ".csv")
+		if (url==""):
+			url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ", True)
+		webbrowser.open(url)
+		while not confirm("Verify the correct solutions for " + sectionName + " opened in a web browser. "):
+			url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
+		# Post announcement telling students the peer reviews have been assigned
+		subject=("Peer reviews and solutions for " + activeAssignment.name)
+		activeAssignment.solutionsUrl = url
+		body=processTemplate(None,activeAssignment,"message about posted solutions")
+		print(subject +"\n"+body+"\n\n")
+		body=confirmText(body, prompt="Is this announcement acceptable?")
+		#if confirm("Send announcement to "+ sectionName +"?", False):
+		print("Sending announcement to "+ sectionName)
+		key=[k for k in sections if sections[k]==sectionName][0] #get the sectionID
+		announce(subject, body, key)
+else:
+	url=getSolutionURLs(assignment=activeAssignment)
 	if (url==""):
-		url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ", True)
+		url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
 	webbrowser.open(url)
-	while not confirm("Verify the correct solutions for " + sectionName + " opened in a web browser. "):
-		url=input("Enter the URL for the solutions for '"+activeAssignment.name+"' for " + sectionName +": ").strip()
+	while not confirm("Verify the correct solutions opened in a web browser. "):
+		url=input("Enter the URL for the solutions for '"+activeAssignment.name+"": ").strip()
 	# Post announcement telling students the peer reviews have been assigned
 	subject=("Peer reviews and solutions for " + activeAssignment.name)
 	activeAssignment.solutionsUrl = url
 	body=processTemplate(None,activeAssignment,"message about posted solutions")
 	print(subject +"\n"+body+"\n\n")
-	body=confirmText(body, prompt="Is this announcement acceptable?")
-	#if confirm("Send announcement to "+ sectionName +"?", False):
-	print("Sending announcement to "+ sectionName)
-	key=[k for k in sections if sections[k]==sectionName][0] #get the sectionID
-	announce(subject, body, key)
+	body=confirmText(body, prompt="Is this announcement acceptable - it wil be send to the entire class?")
+	print("Sending announcement )
+	announce(subject, body)
 	
 
 if confirm("If you assigned or deleted any peer reviews manually, the data needs to be resyncronized.  Shall we resynchonize?"):

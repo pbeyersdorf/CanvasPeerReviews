@@ -30,8 +30,14 @@ class Comparison:
 		self.otherReviewType=otherReview.review_type
 		self.otherReviewReviewerId=otherReview.reviewer_id
 		self.authorName=studentsById[thisGivenReview.author_id].name
-		self.thisReviewerName=studentsById[thisGivenReview.reviewer_id].name
-		self.otherReviewerName=studentsById[otherReview.reviewer_id].name
+		if thisGivenReview.reviewer_id in studentsById:
+			self.thisReviewerName=studentsById[thisGivenReview.reviewer_id].name
+		else:
+			self.thisReviewerName=thisGivenReview.reviewer_id
+		if otherReview.reviewer_id in studentsById:
+			self.otherReviewerName=studentsById[otherReview.reviewer_id].name
+		else:
+			self.otherReviewerName=otherReview.reviewer_id
 		self.assignmentName=assignment.name
 
 		for cid in otherReview.scores:
