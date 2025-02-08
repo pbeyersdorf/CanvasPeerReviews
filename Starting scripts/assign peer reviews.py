@@ -5,7 +5,7 @@ from cpr import *		# the main module for managing peer reviews
 students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COURSE_ID, DATADIRECTORY)
 
 #################  Get relevant parameters assignment  #################
-#params=getParameters()
+params=getParameters()
 # if no assignments have yet been graded then prompt for graders
 if len([g for g in graded_assignments.values() if g.graded])==0: 
 	assignGraders()
@@ -64,14 +64,14 @@ else:
 		url=confirm("Enter the URL for the solutions for '"+activeAssignment.name+"': ", True)
 	webbrowser.open(url)
 	while not confirm("Verify the correct solutions opened in a web browser. "):
-		url=input("Enter the URL for the solutions for '"+activeAssignment.name+"": ").strip()
+		url=input("Enter the URL for the solutions for '"+activeAssignment.name+"': ").strip()
 	# Post announcement telling students the peer reviews have been assigned
 	subject=("Peer reviews and solutions for " + activeAssignment.name)
 	activeAssignment.solutionsUrl = url
 	body=processTemplate(None,activeAssignment,"message about posted solutions")
 	print(subject +"\n"+body+"\n\n")
 	body=confirmText(body, prompt="Is this announcement acceptable - it wil be send to the entire class?")
-	print("Sending announcement )
+	print("Sending announcement" )
 	announce(subject, body)
 	
 
