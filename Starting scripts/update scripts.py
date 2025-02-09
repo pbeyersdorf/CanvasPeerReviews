@@ -1,4 +1,5 @@
 #################  Set up where to the environment  #################
+from path_info import *
 from cpr import *		# the main module for managing peer reviews
 
 #Get all files
