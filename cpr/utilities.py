@@ -2911,7 +2911,7 @@ def clearTerminal(end='\r'):
 		cols=size.columns
 	except:
 		cols=80
- 	print('', end='\r')  # return cursor to beginning
+	print('', end='\r')  # return cursor to beginning
 	print(' ' * (size - 1), end=end)  # Fill line with spaces
     
 ######################################
