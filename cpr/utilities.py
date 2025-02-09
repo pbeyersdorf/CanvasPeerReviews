@@ -2916,9 +2916,9 @@ def printLine(msg="", newLine=True, line=False):
 	if (line):
 		print("-"*cols)
 	if newLine:
-		print("\r{: <{width}}".format(msg, width=cols))		
+		print("\r{: <{width}}".format(msg, width=cols),"")		
 	else:
-		print("\r{: <{width}}".format(msg, width=cols),end="")
+		print("\r{: <{width}}".format(msg, width=cols),"",end="")
 	showCursor()	
 
 ######################################
@@ -2991,7 +2991,7 @@ def allowPrinting(allow):
 
 ######################################
 # redefine the print function to wrap the output	    
-originalPrint= print
+originalPrint = print
 def print(*args, **kwargs):
 	if args and len(args)==1 and type(*args ) == str:
 		originalPrint(wrap(*args), **kwargs)
