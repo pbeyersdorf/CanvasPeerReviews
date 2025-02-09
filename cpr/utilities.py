@@ -1988,7 +1988,7 @@ def createRelatedAssignment(assignment, separateGroup=True):
 	#creationDueDate=assignment.due_at_date.replace(tzinfo=None)
 	creationDueDate=assignment.due_at_date
 	reviewDueDate=creationDueDate+timedelta(days=params.peerReviewDurationInDays)
-	reviewDueDateString=reviewDueDate.astimezone().astimezone().strftime("%A (%D)")
+	reviewDueDateString=reviewDueDate.astimezone().astimezone().strftime("%A (%m/%d) at %I:%M %p")
 	creationDict={
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,
