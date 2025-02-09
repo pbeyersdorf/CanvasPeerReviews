@@ -29,6 +29,27 @@ def listOutdatedFiles(files):
 	printLine(msg="", newLine=True)
 	return changedFiles
 
+def addTemplates():
+	templateDir=[x for x in txtFiles if "cpr/templates" in x][0].split("cpr/templates")[0]+"cpr/templates/"
+	templateFileName=[y.replace(templateDir,"") for x in os.walk(templateDir) for y in glob(os.path.join(x[0], '*.txt'))]
+	#https://api.github.com/repos/[USER]/[REPO]/git/trees/[BRANCH]?recursive=1
+	url="https://api.github.com/repos/pbeyersdorf/CanvasPeerReviews/git/trees/main?recursive=1"
+	resp = requests.get(url)
+	exec("githubData=" + resp.text.replace("false","False").replace("true","True"))
+	for b in  githubData['tree']:
+		if "cpr/templates/" in b['path'] and ".txt" in b["path"]:
+			fileName=b['path'].replace("cpr/templates/","")
+			if (fileName not in templateFileName):
+				print(f"unable to find {fileName}")
+				print(f"{templateDir}{fileName} is at {b['url']}")
+				fileUrl=f"{gitHubPath2}/cpr/templates/{fileName}".replace(" ","%20")
+				templateContent = requests.get(fileUrl).text
+				try:
+					f = open(f"{templateDir}{fileName}" ,'w')
+					f.write(templateContent)
+					f.close()
+				except:
+					print(f"Unable to create template '{file}'")
 
 def updateFiles(files):
 	val="n"
@@ -82,6 +103,7 @@ print(f"There are {len(outdatedPyFiles)} differing core python files.")
 if len(outdatedPyFiles)>0:# and input(f"Update core python files (y/n)?").lower()=="y":
 	updateFiles(outdatedPyFiles)
 print()
+addTemplates()
 #if input(f"\nUpdate text files (such as from templates) (y/n)?").lower()=="y":
 #	updateFiles(txtFiles)
 outdatedScriptsFiles=listOutdatedFiles(scriptsFiles)
