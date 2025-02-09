@@ -2904,6 +2904,17 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 		
 	
 ######################################
+# clear a line on the temrinal	
+def clearTerminal(end='\r'):
+	try:
+		size=os.get_terminal_size()
+		cols=size.columns
+	except:
+		cols=80
+ 	print('', end='\r')  # return cursor to beginning
+	print(' ' * (size - 1), end=end)  # Fill line with spaces
+    
+######################################
 # print a line by printing white space
 def printLine(msg="", newLine=True, line=False):
 	try:

@@ -23,6 +23,7 @@ def listOutdatedFiles(files):
 		existingContent=f.read()
 		f.close()	
 		#print(f"checking {fileName}" , end="\r")
+		clearTerminal()
 		printLine(msg=f"checking {fileName}", newLine=False)
 		if (resp.status_code==200 and existingContent!=githubContent):
 			changedFiles.append(file)
