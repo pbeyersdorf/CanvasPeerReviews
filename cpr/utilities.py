@@ -2916,9 +2916,9 @@ def printLine(msg="", newLine=True, line=False):
 	if (line):
 		print("-"*cols)
 	if newLine:
-		print("\r{: <{width}}".format(msg, width=cols),"")		
+		print("\r{: <{width}}".format(msg, width=cols-1),"")		
 	else:
-		print("\r{: <{width}}".format(msg, width=cols),"",end="")
+		print("\r{: <{width}}".format(msg, width=cols-1),"",end="")
 	showCursor()	
 
 ######################################
