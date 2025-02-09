@@ -50,9 +50,12 @@ def updateFiles(files):
 			val = input(f"Overwrite {file} (y/N)?")
 
 		if val.lower()=="y":
-			f = open(file,'w')
-			f.write(githubContent)
-			f.close()
+			try:
+				f = open(file,'w')
+				f.write(githubContent)
+				f.close()
+			except:
+				print(f"Unable to overwrite, {file} is uncahnged")
 		elif val=="N":
 			print(msg)	
 			return
