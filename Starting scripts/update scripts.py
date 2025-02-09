@@ -35,19 +35,18 @@ def addTemplates():
 	#https://api.github.com/repos/[USER]/[REPO]/git/trees/[BRANCH]?recursive=1
 	url="https://api.github.com/repos/pbeyersdorf/CanvasPeerReviews/git/trees/main?recursive=1"
 	resp = requests.get(url)
-	exec("githubData=" + resp.text.replace("false","False").replace("true","True"))
+	githubData= eval(resp.text.replace("false","False").replace("true","True"))
 	for b in  githubData['tree']:
 		if "cpr/templates/" in b['path'] and ".txt" in b["path"]:
 			fileName=b['path'].replace("cpr/templates/","")
 			if (fileName not in templateFileName):
-				print(f"unable to find {fileName}")
-				print(f"{templateDir}{fileName} is at {b['url']}")
 				fileUrl=f"{gitHubPath2}/cpr/templates/{fileName}".replace(" ","%20")
 				templateContent = requests.get(fileUrl).text
 				try:
 					f = open(f"{templateDir}{fileName}" ,'w')
 					f.write(templateContent)
 					f.close()
+					print(f"Adding template: {fileName}")
 				except:
 					print(f"Unable to create template '{file}'")
 
