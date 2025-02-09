@@ -1158,9 +1158,11 @@ def createTemplate(templateName="", showAfterCreate=True):
 		else:
 			cmd=f"mkdir -p '{destinationFolder}' && cp -n '{sourcePath}/{templateName}.txt' '{destinationFolder}'" 
 			os.system(cmd)
+			cmd=f"touch '{destinationFolder}{templateName}.txt'" 
+			os.system(cmd)
 			if showAfterCreate:
 				input(wrap("You need to edit the communication templates to your liking.  Press enter to open the templated directory:"))
-				subprocess.call(["open", f"{destinationFolder}/{templateName}.txt"])
+				subprocess.call(["open", f"{destinationFolder}{templateName}.txt"])
 				input("Press enter to continue:")
 	except:
 		print(wrap(f"Unable to copy templates into data folder, please manually copy the templates from cpr/tempaltes to {destinationFolder}"))
@@ -1993,11 +1995,12 @@ def createRelatedAssignment(assignment, separateGroup=True):
 	assignment.solutionsUrl=None
 	
 	#xxx after the end of the semester the following code block can be removed and only the statement in the try section kept
-	#try:
+	try:
 	#the problem with this is 'assignment' is not the peer review assignment, but the one it is based off ot
-	#description=processTemplate(None,assignment,"peer review assignment description")
-	#except:
-	description=f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed by the due date on {reviewDueDateString} to receive credit.  Note that currently peer reviews are only functional via the web version of canvas (not the mobile app).  If you normally access canvas via the mobile app you should use a web browser when completing your peer reviews."
+		assignment.reviewDueDateString=reviewDueDateString
+		description=processTemplate(None,assignment,"peer review assignment description")
+	except:
+		description=f"To access the assigned peer reviews go to the <a href='{assignment.html_url}'>'{assignment.name}' assignment</a> page.   <a href='https://community.canvaslms.com/t5/Student-Guide/How-do-I-submit-a-peer-review-to-an-assignment/ta-p/293'>This canvas guide</a> explains the process of completing a peer review.  Make sure to carefully follow the rubric since your score for this assignment will be determined by how closely the scores you assign match those assigned by the instructor (who will be carefully following the rubric).  The reviews must be completed by the due date on {reviewDueDateString} to receive credit.  Note that currently peer reviews are only functional via the web version of canvas (not the mobile app).  If you normally access canvas via the mobile app you should use a web browser when completing your peer reviews."
 	creationDict={
 	'name': assignmentName,
 	'points_possible': reviewAssignmentPoints,

@@ -26,6 +26,7 @@ class GradedAssignment:
 		self.reviewScoreMethod=None
 		self.includeInCalibrations=True
 		self.solutionsUrl=None
+		self.reviewDueDateString=None
 
 	def get_submissions(self):
 		return self.assignment.get_submissions()

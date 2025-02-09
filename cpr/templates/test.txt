@@ -1,0 +1,2 @@
+{% import 'macros.txt' as macros %}
+Peer reviews have been assigned and <a href='{{data["solutionsUrl"]}}'>grading notes for {{data["assignmentName"]}}</a> have been posted.  Please review the notes and then complete your peer reviews before the due date (Peer reviews that are not completed by the due date will not receive credit.)
