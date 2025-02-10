@@ -2,40 +2,13 @@
 from path_info import *
 from cpr import *		# the main module for managing peer reviews
 
-import hashlib
-
 #Get all files
 cprPath="/".join(utilities.__file__.split("/")[:-1])
 gitHubPath='https://raw.githubusercontent.com/pbeyersdorf/CanvasPeerReviews/main/cpr'
 gitHubPath2='https://raw.githubusercontent.com/pbeyersdorf/CanvasPeerReviews/refs/heads/main'
 
-def git_blob_hash(file):
-	#returns the hash of a local file, can be compared to the hash of the files stored on github  to determine if the file has changed.  To get the github hases
-	with open(file, 'rb') as file_for_hash:
-		data = file_for_hash.read()
-	if isinstance(data, str):
-		data = data.encode()
-	data = b'blob ' + str(len(data)).encode() + b'\0' + data
-	h = hashlib.sha1()
-	h.update(data)
-	return h.hexdigest()
 
 def listOutdatedFiles(files):
-	#not yet implemented
-	url="https://api.github.com/repos/pbeyersdorf/CanvasPeerReviews/git/trees/main?recursive=1"
-	resp = requests.get(url)
-	githubData= eval(resp.text.replace("false","False").replace("true","True"))
-	tree=githubData['tree']
-	gitShasAndFiles=[{"sha": b['sha'], "path":b['path'].replace("Starting scripts/","")} for b in tree]
-	gitShas=[b['sha'] for b in tree]
-	localShasAndFiles={file: {"sha": git_blob_hash(file), "path":file, "fileName": file.split("/")[-1]} for file in files}	
-	localFileNames=[file.split("/")[-1] for file in files]
-	gitHubFileNames=[saf['path'].split("/")[-1] for saf in gitShasAndFiles]
-	commonFileNames=list(set(localFileNames) & set(gitHubFileNames))
-	return [file for file in files if localShasAndFiles[file]["sha"] not in gitShas and file.split("/")[-1] in commonFileNames]
-
-
-def listOutdatedFilesSlow(files):
 	changedFiles=[]
 	for file in files:
 		fileName=file.split("/")[-1]
@@ -93,7 +66,7 @@ def updateFiles(files):
 			msg+=(f"Failed to download {url} with status code {resp.status_code}\n")
 			continue	
 		if val!=val.upper():
-			val = input(f"Overwrite {file} (y/N)?")
+			val = input(f"Overwrite {file} (y/n)?")
 
 		if val.lower()=="y":
 			try:
