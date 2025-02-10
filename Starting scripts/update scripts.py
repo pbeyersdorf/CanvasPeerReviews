@@ -115,25 +115,13 @@ pyFiles = [y for x in os.walk(cprPath) for y in glob(os.path.join(x[0], '*.py'))
 txtFiles = [y for x in os.walk(cprPath) for y in glob(os.path.join(x[0], '*.txt'))]
 scriptsFiles= [y for x in os.walk(cwd) for y in glob(os.path.join(x[0], '*.py'))]
 
-print('''
-This script will access the latest files in the 'CanvasPeerReviews' 
-repository on github, and give you the option to use them to overwrite the
-existing files on your computer.  There are two categories of files:
-	
-	Core python files from the cpr package
-	Starting scripts that you interact with 
-''')
+print("This script will access the latest files in the 'CanvasPeerReviews' repository on github. It will add any new templated to your system, and give you the option to overwrite any existing python files on your computer with ones on the gitHib server.")
 
-outdatedPyFiles=listOutdatedFiles(pyFiles)
-print(f"There are {len(outdatedPyFiles)} differing core python files.")
-if len(outdatedPyFiles)>0:# and input(f"Update core python files (y/n)?").lower()=="y":
-	updateFiles(outdatedPyFiles)
-print()
+
 addTemplates()
-#if input(f"\nUpdate text files (such as from templates) (y/n)?").lower()=="y":
-#	updateFiles(txtFiles)
+outdatedPyFiles=listOutdatedFiles(pyFiles)
 outdatedScriptsFiles=listOutdatedFiles(scriptsFiles)
-print(f"\nThere are {len(outdatedScriptsFiles)} differing starting script files.")
-if len(outdatedScriptsFiles)>0:# and input(f"Update starting scripts (y/n)?").lower()=="y":
-	updateFiles(outdatedScriptsFiles)
+print(f"There are {len(outdatedPyFiles)+len(outdatedScriptsFiles)} differing files.")
+updateFiles(outdatedPyFiles)
+updateFiles(outdatedScriptsFiles)
 
