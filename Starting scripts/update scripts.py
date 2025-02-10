@@ -86,7 +86,7 @@ def addTemplates():
 					f.close()
 					print(f"Adding template: {fileName}")
 				except:
-					print(f"Unable to create template '{file}'")
+					print(f"Unable to create template '{fileName}'")
 
 def updateFiles(files):
 	val="n"
