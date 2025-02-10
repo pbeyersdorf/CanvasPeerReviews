@@ -13,12 +13,12 @@ def git_blob_hash(file):
 	#returns the hash of a local file, can be compared to the hash of the files stored on github  to determine if the file has changed.  To get the github hases
 	with open(file, 'rb') as file_for_hash:
 		data = file_for_hash.read()
-    if isinstance(data, str):
-        data = data.encode()
-    data = b'blob ' + str(len(data)).encode() + b'\0' + data
-    h = hashlib.sha1()
-    h.update(data)
-    return h.hexdigest()
+	if isinstance(data, str):
+		data = data.encode()
+	data = b'blob ' + str(len(data)).encode() + b'\0' + data
+	h = hashlib.sha1()
+	h.update(data)
+	return h.hexdigest()
 
 def listOutdatedFiles(files):
 	#not yet implemented
