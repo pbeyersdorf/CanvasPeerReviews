@@ -11,11 +11,11 @@ gitHubPath2='https://raw.githubusercontent.com/pbeyersdorf/CanvasPeerReviews/ref
 
 
 def backupFile(file):
-	backupDir=status['dataDir'][:-1]+"-backups/"
+	backupDir=DATADIRECTORY+"-backups/"
 	os.system("mkdir -p '" + backupDir + "'")
 	dateString=datetime.now().strftime('%m-%d-%y')
 	fileName=file.split("/")[-1]
-	print("Creating backup of {fileName}")
+	#print("Creating backup of {fileName}")
 	cmd="cp -r '" + file + "' '" + backupDir + fileName + " " + dateString+""+"'"
 	os.system(cmd)
 
@@ -127,8 +127,9 @@ pyFiles = [y for x in os.walk(cprPath) for y in glob(os.path.join(x[0], '*.py'))
 txtFiles = [y for x in os.walk(cprPath) for y in glob(os.path.join(x[0], '*.txt'))]
 scriptsFiles= [y for x in os.walk(cwd) for y in glob(os.path.join(x[0], '*.py'))]
 
-print("This script will access the latest files in the 'CanvasPeerReviews' repository on github. It will add any new templated to your system, and give you the option to overwrite any existing python files on your computer with ones on the gitHib server.")
-print()
+print('''
+This script will access the latest files in the 'CanvasPeerReviews' repository on github. It will add any new template files to your system, and give you the option to overwrite any existing python files on your computer with ones on the gitHib server.  Before anything is overwritten a backup copy will be made in the data backups folder.
+''')
 
 
 addTemplates()
