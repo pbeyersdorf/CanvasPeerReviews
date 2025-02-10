@@ -9,6 +9,17 @@ cprPath="/".join(utilities.__file__.split("/")[:-1])
 gitHubPath='https://raw.githubusercontent.com/pbeyersdorf/CanvasPeerReviews/main/cpr'
 gitHubPath2='https://raw.githubusercontent.com/pbeyersdorf/CanvasPeerReviews/refs/heads/main'
 
+
+def backupFile(file):
+	backupDir=status['dataDir'][:-1]+"-backups/"
+	os.system("mkdir -p '" + backupDir + "'")
+	dateString=datetime.now().strftime('%m-%d-%y')
+	fileName=file.split("/")[-1]
+	print("Creating backup of {fileName}")
+	cmd="cp -r '" + file + "' '" + backupDir + fileName + " " + dateString+""+"'"
+	os.system(cmd)
+
+
 def git_blob_hash(file):
 	#returns the hash of a local file, can be compared to the hash of the files stored on github  to determine if the file has changed.  To get the github hases
 	with open(file, 'rb') as file_for_hash:
@@ -93,9 +104,10 @@ def updateFiles(files):
 			msg+=(f"Failed to download {url} with status code {resp.status_code}\n")
 			continue	
 		if val!=val.upper():
-			val = input(f"Overwrite {file} (y/N)?")
+			val = input(f"Overwrite {file} (y/n)?")
 
 		if val.lower()=="y":
+			backupFile(file)
 			try:
 				f = open(file,'w')
 				f.write(githubContent)
