@@ -51,8 +51,8 @@ file1.close()
 
 #install the required packages and set up aliases
 os.system(f"cd '{cwd}'; pip install -r '{cwd}/requirements.txt'")
-bashCmd=f'''echo "alias cpr='cd '{cwd}';source  '{cwd}/venv/bin/activate';python3 menu.py'" >> ~/.bashrc'''
-zshCmd=f'''echo "alias cpr='cd '{cwd}';source  '{cwd}/venv/bin/activate';python3 menu.py'" >> ~/.zshrc'''
+bashCmd=f'''echo "alias cpr=\\"cd 'cwd';source  'cwd/venv/bin/activate';python3 menu.py\\" " >> ~/.bashrc'''
+zshCmd=f'''echo "alias cpr=\\"cd 'cwd';source  'cwd/venv/bin/activate';python3 menu.py\\" " >> ~/.zshrc'''
 os.system(bashCmd)
 os.system(zshCmd)
 os.system(f"cd {cwd}/; python3 'menu.py'")
