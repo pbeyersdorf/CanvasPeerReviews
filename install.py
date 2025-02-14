@@ -52,11 +52,8 @@ file1.close()
 #install the required packages and set up aliases
 os.system(f"cd '{cwd}'; pip install -r '{cwd}/requirements.txt'")
 cmd=f'''echo "alias cpr='cd '{cwd}';source  '{cwd}/venv/bin/activate';python3 menu.py'" >> ~/outputFile'''
-zshCmd=cmd.replace("outputFile", ".zshrc")
-bashCmd=cmd.replace("outputFile", ".bashrc")
-
-os.system(bashCmd)
-os.system(zshCmd)
+os.system(cmd.replace("outputFile", ".bashrc"))
+os.system(cmd.replace("outputFile", ".zshrc"))
 os.system(f"cd {cwd}/; python3 'menu.py'")
 print("an alias has been set up so that you can type 'cpr' into the terminal to open the menu.")
 exit()
