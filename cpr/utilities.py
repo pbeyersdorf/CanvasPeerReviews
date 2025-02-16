@@ -37,6 +37,10 @@ try:
 	from jinja2 import Environment, select_autoescape, FileSystemLoader
 except ImportError:
 	errormsg+="Missing jinja2 module.  Run 'pip3 install jinja2' to intall\n"
+try:
+	from matplotlib import pyplot as plt
+except ImportError:
+	errormsg+="Missing matplotlib module.  Run 'pip3 install matplotlib' to intall\n"
 
 import webbrowser
 import copy
@@ -2332,8 +2336,6 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 		print("You must grade the assignment before getting statistics")
 		return
 	if hist:
-		#importing required libraries
-		from matplotlib import pyplot as plt
 		if (params.combineSubmissionAndReviewGrades):
 			marks = curvedTotal + zeros
 		else:
