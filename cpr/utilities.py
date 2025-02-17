@@ -2103,11 +2103,15 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 							reviewScoreToPost = (creationPoints + reviewPoints) *100 / assignment.points_possible 
 							creationScoreToPost = int(creationPoints + reviewPoints)
 							student.reviewComments[assignment.id] = additionalGradingComment + student.reviewComments[assignment.id]
-						creation.edit(submission={'posted_grade': creationScoreToPost})
-						sub=reviewScoreAssignment.get_submission(student.id)
-						sub.edit(submission={'posted_grade': reviewScoreToPost})
-						if postComments:
-							sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
+						try:
+							creation.edit(submission={'posted_grade': creationScoreToPost})
+							sub=reviewScoreAssignment.get_submission(student.id)
+							sub.edit(submission={'posted_grade': reviewScoreToPost})
+							if postComments:
+								sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
+						except:
+							print(f"Unable to post grades for {student.name} - perhaps they dropped the class")
+
 	
 					student.gradingStatus[assignment.id]='posted'
 
