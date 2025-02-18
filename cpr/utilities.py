@@ -2605,7 +2605,7 @@ def announce(subject, body, section="all"):
 def message(theStudents, body, subject='', display=False):
 	studentList=makeList(theStudents)
 	for student in studentList:
-		print("\rMessageing " + student.name, end="")
+		print("\rMessaging " + student.name, end="")
 		try:
 			canvas.create_conversation(student.id, body=body, subject=subject)
 		except Exception:
