@@ -85,7 +85,7 @@ def showDelinquentStudents():
 	for student in delinquentReviewers:
 		print("\t" + student.name)	
 	if confirm("Shall I message these students to remind them?"):
-		msg=processTemplate(student,activeAssignment,"reminder about peer reviews")
+		msg=processTemplate(None,activeAssignment,"reminder about peer reviews")
 		msg=confirmText(msg)
 		message(delinquentReviewers, body=msg, subject='Reminder to complete your peer reviews', display=True)
 		print("Messages sent")
