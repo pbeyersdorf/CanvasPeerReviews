@@ -1298,7 +1298,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	creationWasReviewed=False
 	for cid in assignment.criteria_ids():
 		total, numberCount, weightCount = 0, 0, 0
-		student.gradingExplanation+=str(criteriaDescription[cid]) + ":\n"
+		if cid in criteriaDescription:
+			student.gradingExplanation+=str(criteriaDescription[cid]) + ":\n"
 		gradingExplanationLine=""
 		multiplier=params.pointsForCid(cid, assignment)
 		for i,review in enumerate(reviewsToGrade):
