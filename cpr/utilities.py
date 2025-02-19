@@ -1411,12 +1411,14 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			errorMessage=None
 			for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
 				if tempWeight[cid]!=0:
-					if cid in criteriaDescription:
+					try:
 						student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
 						student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
 						student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
 						student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
 						student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
+					except:
+						pass
 				else:
 					if not missingSubmission:
 						errorMessage=(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
