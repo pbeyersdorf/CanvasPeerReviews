@@ -1185,18 +1185,18 @@ def processTemplate(student, assignment, templateName):
 		createTemplate(templateName=templateName)
 		print("Please edit the template and save it.")
 	env = Environment(loader=FileSystemLoader(f"{status['dataDir']}templates"))
-	if student==None:
-		creationGrade=None
-		creationPoints=None
-		reviewGrade=None
-		rawGrade=None
-		curvedGrade=None
-		curvedPoints=None
-		reviewPoints=None
-		rawPoints=None
-		pointsByCriteria={}
-		criteriaDescription={}
-	else:
+
+	creationGrade=None
+	creationPoints=None
+	reviewGrade=None
+	rawGrade=None
+	curvedGrade=None
+	curvedPoints=None
+	reviewPoints=None
+	rawPoints=None
+	pointsByCriteria={}
+	criteriaDescription={}
+	if student!=None:
 		if assignment.id not in student.creations:
 			return None
 		if not  hasattr(student,"pointsByCriteriaScaled"):
