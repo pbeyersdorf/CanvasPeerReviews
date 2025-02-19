@@ -1058,7 +1058,10 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default", secon
 	if status["regraded"]:
 		msg=assignment.name +  " regraded with the following point values:\n"
 	for cid in assignment.criteria_ids():
-		msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
+		try:
+			msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
+		except:
+			pass
 	msg+="Using the following function for review '" + assignment.reviewCurve+ "' and a curve of '" + assignment.curve + "'\n"
 	log(msg)
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
