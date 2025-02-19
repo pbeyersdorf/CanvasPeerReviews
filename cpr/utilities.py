@@ -1343,17 +1343,20 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 						student.reviewData[assignment.id]=dict()
 					if not cid in student.reviewData[assignment.id]:
 						student.reviewData[assignment.id][cid]=[]	
-					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid], 'reviewerRole': role}
-					replacedData=False
-					for i,itm in enumerate(student.reviewData[assignment.id][cid]):
-						if itm['reviewerID']==review.reviewer_id:
-							replacedData=True
-							student.reviewData[assignment.id][cid][i]=newData
-					if not replacedData:
-						student.reviewData[assignment.id][cid].append(newData)
-					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
-					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
-						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
+					try:
+						newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid], 'reviewerRole': role}						
+						replacedData=False
+						for i,itm in enumerate(student.reviewData[assignment.id][cid]):
+							if itm['reviewerID']==review.reviewer_id:
+								replacedData=True
+								student.reviewData[assignment.id][cid][i]=newData
+						if not replacedData:
+							student.reviewData[assignment.id][cid].append(newData)
+						gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
+						if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
+							student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
+					except:
+						print(f"{student.name} was not able to have their review data saved - perhaps they have dropped the dclass")
 					total+=max(0,min((review.scores[cid] + compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
 					weightCount+=weight
 					numberCount+=1
