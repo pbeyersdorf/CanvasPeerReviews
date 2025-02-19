@@ -1233,7 +1233,7 @@ def processTemplate(student, assignment, templateName):
 			print("Key error for " + student.name + " perhaps they dropped")
 			return ""
 		
-	if True:#try:
+	try:
 		renderedTemplate = env.get_template(templateName+'.txt').render(
 			keywordCreation="regrade",
 			keywordReview="recalculate",
@@ -1252,7 +1252,10 @@ def processTemplate(student, assignment, templateName):
 			student=student,
 			assignment=assignment
 			)
-	return renderedTemplate
+		return renderedTemplate
+	except:
+		print(f"Unable to render template")
+		return ""
 	try:
 		pass
 	except KeyboardInterrupt:
