@@ -2921,10 +2921,10 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 					msg1=Fore.RED  + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
 				elif int(timeLeftString) <= 10:
 					msg1=Fore.YELLOW  + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
-				print("\r"+msg1 + self.inp, end="")
+				originalPrint("\r"+msg1 + self.inp, end="")
 				time.sleep(0.01)
 				printLine("",False)
-			print("\r",end="")
+			originalPrint("\r",end="")
 			
 	def alarm_handler(signum, frame):
 		raise TimeoutExpired
@@ -2973,11 +2973,12 @@ def printLine(msg="", newLine=True, line=False):
 		cols=80
 	hideCursor()
 	if (line):
-		print("-"*cols)
+		originalPrint("-"*cols)
 	if newLine:
-		print("\r{: <{width}}".format(msg, width=cols-1),"")		
+		originalPrint("\r{: <{width}}".format(msg, width=cols-1),"")		
 	else:
-		print("\r{: <{width}}".format(msg, width=cols-1),"",end="")
+		originalPrint("\r{: <{width}}".format(msg, width=cols-1),"",end="")
+		
 	showCursor()	
 
 ######################################
