@@ -1256,14 +1256,14 @@ def processTemplate(student, assignment, templateName):
 			)
 		return renderedTemplate
 	except:
-		print(f"Unable to render template")
+		print(f"Unable to render template '{templateName}'")
 		return ""
 	try:
 		pass
 	except KeyboardInterrupt:
 		exit()
 	except:
-		print(f"Unable to render template for {student.name} - perhaps they dropped")
+		print(f"Unable to render template '{templateName}' for {student.name} - perhaps they dropped")
 		return ""
 	return renderedTemplate
 
@@ -1280,6 +1280,7 @@ def processTemplate(student, assignment, templateName):
 # explaining the grade		
 def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent=False, secondPass=False):
 	global params
+	surpressFurtherPrintingForStudent=False
 	missingSubmission=False
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
@@ -1376,13 +1377,22 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		if not assignment.id in student.creations:
 			creationGrade=0
 			student.gradingExplanation+="No submission received"
-			print(f"No submission for {student.name} on assignment {assignment.name} assigning grade of {creationGrade}")
+			if not surpressFurtherPrintingForStudent:
+				print(f"No submission for {student.name} on assignment {assignment.name} assigning grade of {creationGrade}")
+			surpressFurtherPrintingForStudent=True
 			missingSubmission=True
 		else:
-			if student.creations[assignment.id].submitted_at != None:
+			if student.creations[assignment.id].seconds_late >0:
+				creationGrade=0 # Change this
+				student.gradingExplanation+="The submission was late"#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
+				if not surpressFurtherPrintingForStudent:
+					print(f"{student.name}'s submission was late and not included in the review process.  Assigning a grade of {creationGrade}")	
+				surpressFurtherPrintingForStudent=True
+			elif student.creations[assignment.id].submitted_at != None:
 				creationGrade=100 # Change this
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
-				print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
+				if not surpressFurtherPrintingForStudent:
+					print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
 	if reviewScoreGrading.lower()=="calibrated grading" or reviewScoreGrading.lower()=="compare to instructor":
 		#calculate review grades
 		tempDelta=dict()
@@ -1415,14 +1425,11 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			errorMessage=None
 			for cid in [cid for cid in tempDelta if cid!=0]: #iterate through all cids in temDelta except 0
 				if tempWeight[cid]!=0:
-					try:
-						student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
-						student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
-						student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
-						student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
-						student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
-					except:
-						pass
+					student.reviewGradeExplanation+=" for '" + str(criteriaDescription[cid]) +"'\n"
+					student.rmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid])
+					student.deviationByAssignment[assignment.id][cid]=tempDelta[cid]/tempWeight[cid]
+					student.relativeRmsByAssignment[assignment.id][cid]=math.sqrt(tempDelta2[cid]/tempWeight[cid]) / assignment.criteria_points(cid)
+					student.weightsByAssignment[assignment.id][cid]=tempWeight[cid]
 				else:
 					if not missingSubmission:
 						errorMessage=(f"Unable to record review grade for {student.name} - perhaps no reviews to compare it to?")
@@ -1457,8 +1464,12 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			rms=student.relativeRmsByAssignment[assignment.id][0]
 		else:
 			if not missingSubmission:
-				print("Unable to get rms for "+ student.name)
-			rms=2
+				if not surpressFurtherPrintingForStudent:
+					if len(student.rmsByAssignment[assignment.id]) >0:
+						print(f"Unable to get rms for {student.name}, perhaps they didn't complete any reviews")
+					else:
+						print(f"{student.name} did not complete any reviews, assigning review score of 0")
+			rms=None
 		if rms != None:
 			reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
 			reviewGrade=student.amountReviewed(assignment) * reviewGradeFunc(rms)
@@ -1513,7 +1524,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			
 		student.gradingStatus[assignment.id]='graded'if creationWasReviewed else 'ungraded'
 	else:
-		print(f"{student.name}'s work wasn't reviewed so no score is being posted")
+		if not surpressFurtherPrintingForStudent:
+			print(f"{student.name}'s work wasn't reviewed so no score is being posted")
 		student.gradingStatus[assignment.id]='ungraded'
 		status['unreviewed work']=True
 	
@@ -1531,8 +1543,14 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		else:
 			creationTemplateName="creation only feedback"
 		reviewTemplateName="review only feedback"
-		student.creationComments[assignment.id]=processTemplate(student,assignment,templateName=creationTemplateName)
-		student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName=reviewTemplateName)
+		if student.gradingStatus[assignment.id]=='ungraded':
+			student.creationComments[assignment.id]=""
+		else:
+			student.creationComments[assignment.id]=processTemplate(student,assignment,templateName=creationTemplateName)
+		if len(student.rmsByAssignment[assignment.id])>0:
+			student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName=reviewTemplateName)
+		else:
+			student.reviewComments[assignment.id]="No reviews were completed"
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
 			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
