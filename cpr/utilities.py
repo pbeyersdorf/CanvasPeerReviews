@@ -1043,12 +1043,12 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default", secon
 	if isinstance(studentsToGrade, str) and studentsToGrade.lower()=="all":
 		studentsToGrade=students
 	if reviewScoreGrading=="default":
-		if assignment.reviewScoreMethod == None:
+		if assignment.reviewScoreMethod == None or assignment.reviewScoreMethod == 'default':
 			reviewScoreGrading=params.reviewScoreMethod
 			val=inputWithTimeout(f"Review grades will use '{reviewScoreGrading}' method.  (c) to change", 3)		
 			if val=='c':
 				assignment.setReviewScoringMethod()
-				reviewScoreGrading =	assignment.reviewScoreMethod 	
+		reviewScoreGrading = assignment.reviewScoreMethod 	
 	assignment.reviewScoreMethod = reviewScoreGrading
 	for student in makeList(studentsToGrade):
 		gradeStudent(assignment, student, reviewScoreGrading, secondPass)
@@ -1198,7 +1198,6 @@ def processTemplate(student, assignment, templateName):
 	reviewPoints=None
 	rawPoints=None
 	pointsByCriteria={}
-	criteriaDescription={}
 	if student!=None:
 		if assignment.id not in student.creations:
 			return None
@@ -1285,6 +1284,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
 	assignment.reviewScoreMethod=reviewScoreGrading
+	
+
 	# get a list of the criteria ids assessed on this assignment
 	#calculate creation grades
 	curveFunc=eval('lambda x:' + assignment.curve)
@@ -1346,20 +1347,20 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 						student.reviewData[assignment.id]=dict()
 					if not cid in student.reviewData[assignment.id]:
 						student.reviewData[assignment.id][cid]=[]	
-					try:
-						newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid], 'reviewerRole': role}						
-						replacedData=False
-						for i,itm in enumerate(student.reviewData[assignment.id][cid]):
-							if itm['reviewerID']==review.reviewer_id:
-								replacedData=True
-								student.reviewData[assignment.id][cid][i]=newData
-						if not replacedData:
-							student.reviewData[assignment.id][cid].append(newData)
-						gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
-						if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
-							student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
-					except:
-						print(f"{student.name} was not able to have their review data saved - perhaps they have dropped the dclass")
+					#try:
+					newData={'points': review.scores[cid], 'compensation': compensation, 'weight': weight, 'reviewerID': review.reviewer_id, 'description': criteriaDescription[cid], 'reviewerRole': role}						
+					replacedData=False
+					for i,itm in enumerate(student.reviewData[assignment.id][cid]):
+						if itm['reviewerID']==review.reviewer_id:
+							replacedData=True
+							student.reviewData[assignment.id][cid][i]=newData
+					if not replacedData:
+						student.reviewData[assignment.id][cid].append(newData)
+					gradingExplanationLine+=" Grade of {:.2f} with an adjustment for this grader of {:+.2f} and a relative grading weight of {:.2f}".format(review.scores[cid], compensation, weight)
+					if not (str(review.reviewer_id)+"_" + str(cid)) in student.gradingExplanation:
+						student.gradingExplanation += "    "  + gradingExplanationLine + "\n"
+					#except:
+					#	print(f"{student.name} was not able to have their review data saved - perhaps they have dropped the class")
 					total+=max(0,min((review.scores[cid] + compensation)*weight, assignment.criteria_points(cid)*weight)) # don't allow the compensation to result in a score above 100% or below 0%%
 					weightCount+=weight
 					numberCount+=1
@@ -1494,9 +1495,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
 	totalPoints=max(round(creationGrade/100.0 * maxCreationPoints + reviewGrade/100.0 * maxReviewPoints,digits), creationPoints + reviewPoints)
-	
 	curvedTotalPoints=curveFunc(totalPoints)
-	curvedCreationGrade=curveFunc(creationGrade)
+	curvedCreationGrade=100*curveFunc(creationPoints)/maxCreationPoints
+	#curvedCreationGrade=curveFunc(creationGrade) #xxx need to fix this
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
 		curvedCreationGrade=0 # no submission

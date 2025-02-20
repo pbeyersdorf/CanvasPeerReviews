@@ -5,6 +5,6 @@ A weighted average of the reviews of your work give the following scores:
 #}	<li>{{pointsByCriteria[cid]}} for '{{criteriaDescription[cid]}}'
 {% endfor %}{#
 #}</ul>    
-You earned {{ creationGrade }}% for your submission{{ macros.comment_if_curved(student,assignment) }}  ({{ creationPoints }} points).<p>
+You earned {{ creationGrade }}% for your submission{{ macros.creation_comment_if_curved(student,assignment) }}  ({{ creationPoints }} points).<p>
 
 If you believe the score assigned to your creation is not an accurate reflection of your work, explain in a comment in the next few days and include the word '{{keywordCreation}}' to have it regraded.

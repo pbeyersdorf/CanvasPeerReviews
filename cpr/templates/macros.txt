@@ -27,11 +27,20 @@ This produces a comment about student review scores based on the score
 #}{%- endmacro %}
 
 {###############################################################################
-This is a comment that is only made when a score gets curved
+This is a comment that is only made when a total score gets curved
 ###############################################################################}
 {% macro comment_if_curved(student,assignment) -%}{#
 #}{%if assignment.id in student.grades and student.points[assignment.id]['total']!=student.points[assignment.id]['curvedTotal']:%}{#
-#}.  This was curved to give an adjusted score of {{"{0:0.1f}".format(student.grades[assignment.id]['curvedTotal'])}}
+#}.  This was curved to give an adjusted score of {{"{0:0.1f}".format(student.grades[assignment.id]['curvedTotal'])}}%
+{%endif%}{#
+#}{%- endmacro %}
+
+{###############################################################################
+This is a comment that is only made when a creation score gets curved
+###############################################################################}
+{% macro creation_comment_if_curved(student,assignment) -%}{#
+#}{%if assignment.id in student.grades and student.points[assignment.id]['total']!=student.points[assignment.id]['curvedTotal']:%}{#
+#}.  This was curved to give an adjusted score of {{"{0:0.1f}".format(student.grades[assignment.id]['curvedCreation'])}}%
 {%endif%}{#
 #}{%- endmacro %}
 
