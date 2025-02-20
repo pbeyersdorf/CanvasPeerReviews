@@ -1284,6 +1284,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	missingSubmission=False
 	if reviewScoreGrading=="default":
 		reviewScoreGrading=assignment.reviewScoreMethod
+	if reviewScoreGrading == None or reviewScoreGrading == "":
+		reviewScoreGrading=params.reviewScoreMethod
+	
 	assignment.reviewScoreMethod=reviewScoreGrading
 	
 
