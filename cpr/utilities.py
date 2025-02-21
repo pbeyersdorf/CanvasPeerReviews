@@ -1553,7 +1553,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		if len(student.rmsByAssignment[assignment.id])>0:
 			student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName=reviewTemplateName)
 		else:
-			student.reviewComments[assignment.id]="No reviews were completed"
+			student.reviewComments[assignment.id]="Numerical values associated with the review could not be found in the rubric's submission area either because reviews were not completed or were not recorded in a way that could be parsed."
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
 			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
@@ -2101,7 +2101,12 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	if not params.combineSubmissionAndReviewGrades and "regrade" in assignment.name.lower():
 		print("This looks like a regrade assignment and separate creation and reveiw grades are being posted.  To incentivize careful reviews when the student already has a good review grade, the scores for the creation and review can be combined with the combined score posted as both the creation and review score.")
 		combineBeforePosting=getBool("Should submission and review scores be combined into one score before posting to each (y/n)?")
+	prependText=""
+	if hasattr(params, 'textToPrependOnComments'):
+		prependText=params.textToPrependOnComments + "<p>"
 	additionalGradingComment=""
+
+		
 	if combineBeforePosting:
 		weightingOfCreation=params.weightingOfCreationGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
 		#weightingOfReviews=params.weightingOfReviewsGroup /(params.weightingOfCreationGroup + params.weightingOfReviewsGroup)
@@ -2126,7 +2131,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 					elif not useRegradeComments:
 						theComment=student.creationComments[assignment.id]
 					try:
-						creation.edit(comment={'text_comment':theComment})
+						creation.edit(comment={'text_comment':prependText + theComment})
 					except:
 						print(f"Unable to post grades for {student.name} - perhaps they dropped the class")
 						continue			
@@ -2148,7 +2153,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 							sub=reviewScoreAssignment.get_submission(student.id)
 							sub.edit(submission={'posted_grade': reviewScoreToPost})
 							if postComments:
-								sub.edit(comment={'text_comment': student.reviewComments[assignment.id]})
+								sub.edit(comment={'text_comment': prependText + student.reviewComments[assignment.id]})
 						except:
 							print(f"Unable to post grades for {student.name} - perhaps they dropped the class")
 
@@ -2205,6 +2210,9 @@ def postFromCSV(fileName=None, thisAssignment=None):
 	temp=input("Which coulumn number contains the comments (0 for none)? [" +str(commentCol+1)+"] ")
 	if temp!="":	
 		commentCol=int(temp)-1
+	prependText=""
+	if hasattr(params, 'textToPrependOnComments'):
+		prependText=params.textToPrependOnComments + "<p>"
 	for submission in submissions:
 		if submission.user_id in studentsById:
 			student=studentsById[submission.user_id]
@@ -2217,7 +2225,7 @@ def postFromCSV(fileName=None, thisAssignment=None):
 							submission.edit(submission={'posted_grade':row[gradeCol]})
 							msg+="\tscore: " + row[gradeCol] +"\n"
 						if commentCol!=-1:
-							submission.edit(comment={'text_comment':row[commentCol]})
+							submission.edit(comment={'text_comment':prependText + row[commentCol]})
 							msg+="\tcomment: '" + row[commentCol] +"'\n"
 						print(msg, end="")
 				except Exception:
@@ -2280,6 +2288,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 							print(f"{criteria['description']} will be worth {params.multiplier[criteria['description']]:0.1f} points")
 				print()		
 	if not params.loadedFromFile or ignoreFile:
+		params.textToPrependOnComments=input("Enter any text you want preceeding any comments posted to student work ['']:")
 		params.combineSubmissionAndReviewGrades=getBool("Should submission and review scores be combined into one grade (y/n)?", defaultVal='n')
 		if params.combineSubmissionAndReviewGrades:
 			weightingOfCreation=getNum("Enter the relative weight of the creation towards the total grade",0.7, fileDescriptor=logFile)

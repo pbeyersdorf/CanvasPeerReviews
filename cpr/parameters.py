@@ -4,9 +4,14 @@ class Parameters:
 	def __init__(self):
 		self.multiplier=dict()
 		self.halfLife=9999
+		self.textToPrependOnComments=""
 	
 	def __repr__(self):
 		msg=("The parameters are:\n")
+		try: # to deal with legacy data in Sp 25
+			msg+=(f"    textToPrependOnComments: {self.textToPrependOnComments}\n")
+		except:
+			pass
 		msg+=(f"    numberOfReviews: {self.numberOfReviews}\n")
 		msg+=(f"    combineSubmissionAndReviewGrades: {self.combineSubmissionAndReviewGrades}\n")
 		if self.combineSubmissionAndReviewGrades:
@@ -22,6 +27,7 @@ class Parameters:
 		msg+=(f"    halfLife = {self.halfLife}\n")
 		msg+=(f"    reviewScoreMethod = '{self.reviewScoreMethod}'\n")
 		msg+=(f"    multiplier:\n")
+		
 		for key in self.multiplier:
 			msg+=(f"        {key}: {self.multiplier[key]}\n")
 		return msg
