@@ -2478,8 +2478,10 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 				header+='"' + cid + '"' + delimiter #"LO" + str(cid) + delimiter
 		if outOf100:
 			header+="Creation out of 100" + delimiter + "Review out of 100" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Only Review Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
+			header+="Creation out of 100" + delimiter + "Curved Creation" + delimiter + "Review out of 100" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Only Review Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 		else:
 			header+="Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Only Review Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
+			header+="Creation" + delimiter + "Curved Creation" + delimiter + "Review" + delimiter + "Raw Total" + delimiter +"Adjusted Total" + delimiter + "Comment" + delimiter + "Only Review Comment" + delimiter + "Submission Grading Explanation" + delimiter +  "Review Grade Explaantion\n" 
 	else:
 		header+="Grade, Comment\n"
 	if saveToFile:
@@ -2505,6 +2507,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 						else:
 							line+="" + delimiter
 					line+=(str(points['creation']) + delimiter + 
+						str(points['curvedCreation']) + delimiter + 
 						str(points['review']) + delimiter + 
 						str(points['total']) + delimiter + 
 						str(points['curvedTotal']) + delimiter + 
