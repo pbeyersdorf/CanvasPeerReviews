@@ -1552,7 +1552,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			student.creationComments[assignment.id]=processTemplate(student,assignment,templateName=creationTemplateName)
 		
 		if len(student.rmsByAssignment[assignment.id])==0:
-			reviewTemplateName="review comment when no review found.txt"
+			reviewTemplateName="review comment when no review found"
 		student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName=reviewTemplateName)
 		
 	if (assignment.id in student.regrade):
