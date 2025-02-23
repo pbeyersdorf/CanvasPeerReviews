@@ -1550,10 +1550,11 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			student.creationComments[assignment.id]=""
 		else:
 			student.creationComments[assignment.id]=processTemplate(student,assignment,templateName=creationTemplateName)
-		if len(student.rmsByAssignment[assignment.id])>0:
-			student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName=reviewTemplateName)
-		else:
-			student.reviewComments[assignment.id]="Numerical values associated with the review could not be found in the rubric's submission area either because reviews were not completed or were not recorded in a way that could be parsed."
+		
+		if len(student.rmsByAssignment[assignment.id])==0:
+			reviewTemplateName="review comment when no review found.txt"
+		student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName=reviewTemplateName)
+		
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
 			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
@@ -1563,8 +1564,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 				print("not using template to craft regrade comments")
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
-		student.creationComments[assignment.id]="No submission received"
-		student.reviewComments[assignment.id]="No reviews assigned"
+		student.creationComments[assignment.id]=processTemplate(student,assignment,templateName="creation comment when nothing was submitted")
+		student.reviewComments[assignment.id]=processTemplate(student,assignment,templateName="review comment when nothing was assigned")
 	student.recordAdjustments(assignment)
 
 
