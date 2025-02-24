@@ -434,25 +434,28 @@ def removeAssignment(a=None):
 	
 ######################################
 # Choose an assignment to work on
-def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None, key=None, filter=None):
+def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, defaultAssignment=None, defaultPrompt="last assignment", prompt=None, key=None, filter=None, limitToPeerReviewedAssignments=True):
 	global graded_assignments, lastAssignment, activeAssignment, params
-	if key!=None and key in graded_assignments:
-		return graded_assignments[key]
+	if limitToPeerReviewedAssignments:
+		assignmentsToConsider=graded_assignments		
+	else:
+		assignmentsToConsider={a.id: a for a in course.get_assignments()}
+		assignmentsToConsider['last'] = graded_assignments['last']
+	if key!=None and key in assignmentsToConsider:
+		return assignmentsToConsider[key]
 	if defaultAssignment==None:
-		defaultAssignment=graded_assignments['last']
+		defaultAssignment=assignmentsToConsider['last']
 	if filter==None:
-		filteredAssignments=graded_assignments
+		filteredAssignments=assignmentsToConsider
 	else:
 		filter+="!"
 		# filter of the form "include!exclude"
-		filteredAssignments={key: graded_assignments[key] for key in graded_assignments if key!='last' and filter.split("!")[0] in graded_assignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in graded_assignments[key].name)}
+		filteredAssignments={key: assignmentsToConsider[key] for key in assignmentsToConsider if key!='last' and filter.split("!")[0] in assignmentsToConsider[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in assignmentsToConsider[key].name)}
 	if 'filter' in dir(params) and params.filter!=None:
 		print(f"Filtering assignment list based on {params.filter=} set to None to disable")
 		filter=params.filter+"!"		
-		filteredAssignments={key: filteredAssignments[key] for key in filteredAssignments if key!='last' and filter.split("!")[0] in filteredAssignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in filteredAssignments[key].name)}
-		
-		
-		
+		filteredAssignments={key: filteredAssignments[key] for key in filteredAssignments if key!='last' and filter.split("!")[0] in filteredAssignments[key].name and (filter.split("!")[1] =="" or not filter.split("!")[1] in filteredAssignments[key].name)}	
+
 	confirmed=False
 	defaultChoice=None
 	msg=""
@@ -468,19 +471,19 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 		if allowAll:
 			print("\t0) All" )
 		for key in filteredAssignments:
-			if  key in assignmentIDswithNumbers:
-				iStr=str([num for num in assignmentByNumber if assignmentByNumber[num]==graded_assignments[key] ][0]) +")"
+			if  key in assignmentIDswithNumbers and len([num for num in assignmentByNumber if assignmentByNumber[num]==assignmentsToConsider[key] ])>0:
+				iStr=str([num for num in assignmentByNumber if assignmentByNumber[num]==assignmentsToConsider[key] ][0]) +")"
 			else:
 				iStr=codes[i]+")"
 				if (key != 'last'):
 					i+=1		
 			if (key != 'last'):
-				cacheData.append({'str':iStr, 'name': graded_assignments[key].name, 'key': key})
-				if graded_assignments[key] == defaultAssignment:
-					print(f"\t{Fore.BLUE}{iStr:<4}{graded_assignments[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
+				cacheData.append({'str':iStr, 'name': assignmentsToConsider[key].name, 'key': key})
+				if assignmentsToConsider[key] == defaultAssignment:
+					print(f"\t{Fore.BLUE}{iStr:<4}{assignmentsToConsider[key].name}{Style.RESET_ALL}  <---- {defaultPrompt}")
 					defaultChoice=iStr[:-1]
 				else:
-					print(f"\t{iStr:<4}{graded_assignments[key].name}")
+					print(f"\t{iStr:<4}{assignmentsToConsider[key].name}")
 				assignmentKeyByNumber[iStr[:-1]]=key
 		val=None
 		while not (val in assignmentKeyByNumber or (val=='0' and allowAll)):
@@ -505,14 +508,14 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 			if allowAll and val=='0':
 				confirmed=confirm("You have chosen all assignments")
 			else:
-				confirmed=confirm("You have chosen " + graded_assignments[assignmentKeyByNumber[val]].name)
+				confirmed=confirm("You have chosen " + assignmentsToConsider[assignmentKeyByNumber[val]].name)
 		else:
 			confirmed=True
 		if confirmed:
 			if val=='0':
 				activeAssignment="all"
 			else:
-				activeAssignment=graded_assignments[assignmentKeyByNumber[val]]
+				activeAssignment=assignmentsToConsider[assignmentKeyByNumber[val]]
 	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	return activeAssignment
 
@@ -799,7 +802,7 @@ def getSolutionURLs(assignment=None, fileName="solution urls.csv"):
 		if success:
 			return solutionURLs[assignment.id]
 	except Exception as e: 
-		print("Exception - look on lines 702-720 in utilities.py")
+		print("Exception - unable to open list of solution urls.  This should not cause any problems.")
 		f = open(fileName, "w")
 		f.write("Assignment Name, Solution URL\n")
 		lines=[]
@@ -2031,7 +2034,11 @@ def createRelatedAssignment(assignment, separateGroup=True):
 			return a
 	creationPoints=assignment.points_possible
 	#reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
-	reviewAssignmentPoints=100
+	if hasattr(params,"pointsForReviewAssignment"):
+		reviewAssignmentPoints=params.pointsForReviewAssignment
+	else:
+		reviewAssignmentPoints=100
+
 	#creationDueDate=assignment.due_at_date.replace(tzinfo=None)
 	creationDueDate=assignment.due_at_date
 	reviewDueDate=creationDueDate+timedelta(days=params.peerReviewDurationInDays)
@@ -2142,13 +2149,14 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						creation.edit(submission={'posted_grade':scoreToPost})
 					else:
 						creationScoreToPost=student.points[assignment.id]['curvedCreation']
-						reviewScoreToPost=student.grades[assignment.id]['review']
 						if combineBeforePosting:
 							creationPoints=creationScoreToPost * weightingOfCreation
 							reviewPoints= assignment.points_possible * weightingOfReviews * student.grades[assignment.id]['review']
 							reviewScoreToPost = (creationPoints + reviewPoints) *100 / assignment.points_possible 
 							creationScoreToPost = int(creationPoints + reviewPoints)
 							student.reviewComments[assignment.id] = additionalGradingComment + student.reviewComments[assignment.id]
+						else:
+							reviewScoreToPost=round(student.grades[assignment.id]['review'] * reviewScoreAssignment.points_possible/100,2)											
 						try:
 							creation.edit(submission={'posted_grade': creationScoreToPost})
 							sub=reviewScoreAssignment.get_submission(student.id)
@@ -2304,6 +2312,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 			params.weightingOfReviews=1
 			params.weightingOfCreationGroup=getNum("Enter the percentage of the total course grade that the assignment group for creations should be set to (or leave blank to remain unchanged):", fileDescriptor=logFile, allowBlank=True)
 			params.weightingOfReviewsGroup=getNum("Enter the percentage of the total course grade that the assignment group for peer review scores should be set to (or leave blank):", fileDescriptor=logFile, allowBlank=True)
+			params.pointsForReviewAssignment=getNum("How many points should the review assignmetn be worth?",100, fileDescriptor=logFile)
 		params.numberOfReviews=getNum("How many reviewers should review each creation? (some students will be assigned one more than this number of reviews)",3, fileDescriptor=logFile)	
 		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews after the assignment is due?",3, fileDescriptor=logFile)
 		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10, fileDescriptor=logFile)

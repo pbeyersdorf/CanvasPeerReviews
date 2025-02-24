@@ -7,7 +7,7 @@ students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COU
 
 #################  Get relevant parameters assignment  #################
 params=getParameters()
-activeAssignment=chooseAssignment(requireConfirmation=False,  timeout=5, defaultAssignment=lastAssignment)
+activeAssignment=chooseAssignment(requireConfirmation=False,  timeout=5, defaultAssignment=lastAssignment, limitToPeerReviewedAssignments=False)
 
 
 # Get creations and reviews
