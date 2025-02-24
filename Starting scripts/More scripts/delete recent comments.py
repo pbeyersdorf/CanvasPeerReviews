@@ -25,6 +25,7 @@ for i,c in enumerate(creations):
 	creationComments=c.edit().submission_comments
 	for comment in creationComments:
 		commentTarget[comment['id']]=c.author.name
+		commentTarget[comment['id']]=studentsById[c.author_id].name
 		commentCreation[comment['id']]=c
 	allComments+=creationComments
 showCursor()
