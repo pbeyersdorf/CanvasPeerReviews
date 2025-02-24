@@ -20,7 +20,7 @@ class Parameters:
 		else:
 			msg+=(f"    weightingOfCreationGroup: {self.weightingOfCreationGroup}%\n")
 			msg+=(f"    weightingOfReviewsGroup: {self.weightingOfReviewsGroup}%\n")		
-			msg+=(f"    pointsForReviewAssignment: {self.pointsForReviewAssignment}%\n")		
+			msg+=(f"    pointsForReviewAssignment: {self.pointsForReviewAssignment}\n")		
 		msg+=(f"    peerReviewDurationInDays: {self.peerReviewDurationInDays}\n")		
 		msg+=(f"    compensationFactor: {self.compensationFactor}\n")
 		msg+=(f"    maxCompensationFraction: {self.maxCompensationFraction}\n")
