@@ -5,9 +5,35 @@ class Parameters:
 		self.multiplier=dict()
 		self.halfLife=9999
 		self.textToPrependOnComments=""
+	
 
 	def __repr__(self):
+		def formatAttr(attr):
+			theAttr=getattr(self, attr, None)
+			return f"    {attr}: {theAttr}\n"
+		
 		msg="The parameters are:\n"
+		msg+=formatAttr("textToPrependOnComments")
+		msg+=formatAttr("numberOfReviews")
+		msg+=formatAttr("combineSubmissionAndReviewGrades")
+		if self.combineSubmissionAndReviewGrades:
+			msg+=formatAttr("weightingOfCreation")
+			msg+=formatAttr("weightingOfReviews")
+		else:
+			msg+=formatAttr("weightingOfCreationGroup")
+			msg+=formatAttr("weightingOfReviewsGroup")
+			msg+=formatAttr("pointsForReviewAssignment")
+		
+		msg+=formatAttr("peerReviewDurationInDays")
+		msg+=formatAttr("compensationFactor")
+		msg+=formatAttr("maxCompensationFraction")
+		msg+=formatAttr("gradingPowerForInstructors")
+		msg+=formatAttr("halfLife")
+		msg+=formatAttr("reviewScoreMethod")
+		msg+=(f"    multiplier:\n")
+		for key in self.multiplier:
+			msg+=f"        {key}: {self.multiplier[key]}\n"
+		return msg
 		try: # to deal with legacy data in Sp 25
 			msg+=(f"    textToPrependOnComments: {self.textToPrependOnComments}\n")
 		except:

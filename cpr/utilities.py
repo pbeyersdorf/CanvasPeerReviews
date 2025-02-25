@@ -2034,10 +2034,7 @@ def createRelatedAssignment(assignment, separateGroup=True):
 			return a
 	creationPoints=assignment.points_possible
 	#reviewAssignmentPoints=round(creationPoints * params.weightingOfReviews / params.weightingOfCreation)
-	if hasattr(params,"pointsForReviewAssignment"):
-		reviewAssignmentPoints=params.pointsForReviewAssignment
-	else:
-		reviewAssignmentPoints=100
+	reviewAssignmentPoints=getattr(params, "pointsForReviewAssignment", 100)
 
 	#creationDueDate=assignment.due_at_date.replace(tzinfo=None)
 	creationDueDate=assignment.due_at_date
@@ -2109,9 +2106,9 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 	if not params.combineSubmissionAndReviewGrades and "regrade" in assignment.name.lower():
 		print("This looks like a regrade assignment and separate creation and reveiw grades are being posted.  To incentivize careful reviews when the student already has a good review grade, the scores for the creation and review can be combined with the combined score posted as both the creation and review score.")
 		combineBeforePosting=getBool("Should submission and review scores be combined into one score before posting to each (y/n)?")
-	prependText=""
-	if hasattr(params, 'textToPrependOnComments'):
-		prependText=params.textToPrependOnComments + "<p>"
+	prependText=getattr(params, "textToPrependOnComments", "")
+	if len(prependText)>0:
+		prependText+="<p>"
 	additionalGradingComment=""
 
 		
@@ -3082,4 +3079,4 @@ def print(*args, **kwargs):
 # redefine the input function to wrap the output	    
 originalInput= input
 def input(*args, **kwargs):
-	return originalInput(wrap(*args), **kwargs)
+	return originalInput(wrap(*args)+" ", **kwargs)
