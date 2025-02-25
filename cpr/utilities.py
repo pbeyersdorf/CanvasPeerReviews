@@ -338,6 +338,11 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 	try:
 		temp=submissions[0]
 	except:
+		print("resettting submissions._requester.new_quizzes_url to try to fix errror…")
+		submissions._requester.new_quizzes_url="" #necessary sometimes to avoid an attribute error
+	try:
+		temp=submissions[0]
+	except:
 		print("Error getting submissions.  See https://stackoverflow.com/questions/31708519/request-returns-bytes-and-im-failing-to-decode-them")
 		print("It may be fixed by running 'pip install brotlipy'")
 	for submission in submissions:
