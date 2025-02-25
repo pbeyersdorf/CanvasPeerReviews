@@ -2310,6 +2310,8 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 			params.weightingOfCreationGroup=getNum("Enter the percentage of the total course grade that the assignment group for creations should be set to (or leave blank to remain unchanged):", fileDescriptor=logFile, allowBlank=True)
 			params.weightingOfReviewsGroup=getNum("Enter the percentage of the total course grade that the assignment group for peer review scores should be set to (or leave blank):", fileDescriptor=logFile, allowBlank=True)
 			params.pointsForReviewAssignment=getNum("How many points should the review assignmetn be worth?",100, fileDescriptor=logFile)
+			if not course.apply_assignment_group_weights:
+				print(f"\033[1m"+"Make sure to set 'Weight final grade based on assignment groups' in canvas (under the assignmetns tab) for these weights to take effect"+"\033[0m")
 		params.numberOfReviews=getNum("How many reviewers should review each creation? (some students will be assigned one more than this number of reviews)",3, fileDescriptor=logFile)	
 		params.peerReviewDurationInDays=getNum("How many days should the students have to complete their peer reviews after the assignment is due?",3, fileDescriptor=logFile)
 		params.gradingPowerForInstructors=getNum("How many times greater than a student should an instructors grading be weighted?",10, fileDescriptor=logFile)
