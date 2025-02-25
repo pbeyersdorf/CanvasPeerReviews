@@ -5,9 +5,9 @@ class Parameters:
 		self.multiplier=dict()
 		self.halfLife=9999
 		self.textToPrependOnComments=""
-	
+
 	def __repr__(self):
-		msg=("The parameters are:\n")
+		msg="The parameters are:\n"
 		try: # to deal with legacy data in Sp 25
 			msg+=(f"    textToPrependOnComments: {self.textToPrependOnComments}\n")
 		except:
