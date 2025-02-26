@@ -1,3 +1,7 @@
 *.pyc
 .DS_Store
+<<<<<<< Updated upstream
 Starting scripts/.DS_Store
+=======
+cpr/.DS_Store
+>>>>>>> Stashed changes
