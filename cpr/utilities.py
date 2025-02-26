@@ -2524,7 +2524,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 						points=student.points[assignment.id]	
 					for cid in assignment.criteria_ids():
 						if assignment.id in student.pointsByCriteria and cid in student.pointsByCriteria[assignment.id]:
-							line+=str(student.pointsByCriteria[assignment.id][cid]) + delimiter
+							line+=f"{student.pointsByCriteria[assignment.id][cid]}{delimiter}"
 						else:
 							line+="" + delimiter
 					line+=f'''{points['creation']}{delimiter} {points['curvedCreation']}{delimiter} {points['review']}{delimiter} {points['total']}{delimiter} {points['curvedTotal']}{delimiter} "{student.creationComments[assignment.id]}"{delimiter} "{student.reviewComments[assignment.id]}"{delimiter} "{student.gradingExplanation}"{delimiter} "{student.reviewGradeExplanation}"{delimiter}'''
