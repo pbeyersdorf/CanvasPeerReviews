@@ -2527,26 +2527,16 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 							line+=str(student.pointsByCriteria[assignment.id][cid]) + delimiter
 						else:
 							line+="" + delimiter
-					try:
-						line+=(str(points['creation']) + delimiter + 
-							str(points['curvedCreation']) + delimiter + 
-							str(points['review']) + delimiter + 
-							str(points['total']) + delimiter + 
-							str(points['curvedTotal']) + delimiter + 
-							'"' + student.creationComments[assignment.id] + '"' + delimiter +
-							'"' + student.reviewComments[assignment.id] + '"' + delimiter +
-							'"' + student.gradingExplanation + '"' + delimiter +
-							'"' + student.reviewGradeExplanation + '"')
-					except:
-						print("Unable to export a grade for " + student.name)
-						line+=( delimiter + 
-							delimiter + 
-							delimiter +  
-							delimiter +  
-							delimiter + 
-							delimiter +
-							delimiter +
-							delimiter )				
+					line+=f'''{points['creation']}{delimiter} {points['curvedCreation']}{delimiter} {points['review']}{delimiter} {points['total']}{delimiter} {points['curvedTotal']}{delimiter} "{student.creationComments[assignment.id]}"{delimiter} "{student.reviewComments[assignment.id]}"{delimiter} "{student.gradingExplanation}"{delimiter} "{student.reviewGradeExplanation}"{delimiter}'''
+# 					line+=(str(points['creation']) + delimiter + 
+# 						str(points['curvedCreation']) + delimiter + 
+# 						str(points['review']) + delimiter + 
+# 						str(points['total']) + delimiter + 
+# 						str(points['curvedTotal']) + delimiter + 
+# 						'"' + student.creationComments[assignment.id] + '"' + delimiter +
+# 						'"' + student.reviewComments[assignment.id] + '"' + delimiter +
+# 						'"' + student.gradingExplanation + '"' + delimiter +
+# 						'"' + student.reviewGradeExplanation + '"')			
 			else:
 				line+= ','
 			line+='\n'
