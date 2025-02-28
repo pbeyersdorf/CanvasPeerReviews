@@ -977,7 +977,7 @@ def getReviews(creations):
 		reviewerName=student.name
 		if (reviewerName in completedReviewsByStudent):
 			completedReviews=completedReviewsByStudent[reviewerName]
-			msg+=f"{reviewerName} completed {len(completedReviews)} of {len(reviewer.assignedReviews(assignment.id))} assigned'\n"
+			msg+=f"{reviewerName} completed {len(completedReviews)} of {len(reviewer.assignedReviews(assignment.id))} assigned\n"
 			for assignedReviewAuthors in [studentsById[pr.user_id].name for pr in student.assignedReviews(assignment.id)]:
 				if assignedReviewAuthors in completedReviews:
 					msg+=f"\tcompleted review of {assignedReviewAuthors}\n"
