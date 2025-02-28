@@ -345,7 +345,7 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 		temp=submissions[0]
 	except:
 		print("Error getting submissions.  See https://stackoverflow.com/questions/31708519/request-returns-bytes-and-im-failing-to-decode-them")
-		print("It may be fixed by running 'pip install brotlipy'")
+		print("It may be fixed by running 'pip install brotlipy' or downgrading to canvasapi version 3.2.0")
 	for submission in submissions:
 		i+=1
 		try:
@@ -359,8 +359,8 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 				author.creations[thisAssignment.id]=creations[-1]
 				creationsByAuthorId[submission.user_id]=creations[-1]
 				#printLine("Getting submission of " + studentsById[submission.user_id].name ,False)
-		except Exception:
-			status['err']="key error"
+		except Exception as e:
+			status['err']=str(e)
 	if includeReviews:
 		printLine("Getting reviews for " + thisAssignment.name,False)
 		getReviews(creations)
