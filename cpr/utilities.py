@@ -114,6 +114,7 @@ status={'message': '',
 	'unreviewed work': False,
 	'printedUndoInfo': False,
 	'verificationKey': verificationKey,
+	'runTimeStamp': ":".join(str(datetime.now()).split(":")[0:-1]),
 	'dataDir': './'}
 
 		
@@ -537,7 +538,9 @@ def assignAndRecordPeerReview(creation,reviewer, msg="", secondPass=False):
 	creation.reviewCount+=1
 	if secondPass:
 		creation.secondPassReviewerIds.append(reviewer.id)
-	printLeftRight("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation ", msg)	
+	info=f"assigning {reviewer.name} to review {studentsById[creation.author_id].name}'s creation "
+	printLeftRight(info, msg)	
+	log(info, display=False, fileName=status['prefix']+"assigned_reviews_log.txt")
 	return peer_review
 	
 def undoAssignedPeerReviews(author=None, reviewer=None, assignment=None, peer_review=None):
@@ -974,7 +977,7 @@ def getReviews(creations):
 		reviewerName=student.name
 		if (reviewerName in completedReviewsByStudent):
 			completedReviews=completedReviewsByStudent[reviewerName]
-			msg+=f"{reviewerName} conmpleted {len(completedReviews)} of {len(reviewer.assignedReviews(assignment.id))} assigned'\n"
+			msg+=f"{reviewerName} completed {len(completedReviews)} of {len(reviewer.assignedReviews(assignment.id))} assigned'\n"
 			for assignedReviewAuthors in [studentsById[pr.user_id].name for pr in student.assignedReviews(assignment.id)]:
 				if assignedReviewAuthors in completedReviews:
 					msg+=f"\tcompleted review of {assignedReviewAuthors}\n"
@@ -2353,8 +2356,11 @@ def log(msg, display=True, fileName=None):
 	theFile=status['dataDir'] + fileName
 	if display:
 		print(msg, end ="")
+
+	needToAddTimeStamp=not findInLog(status['runTimeStamp'],theFile)
 	f = open(theFile, "a")
-	f.write("----" + str(datetime.now()) + "----\n")
+	if needToAddTimeStamp:
+		f.write("----" + status['runTimeStamp'] + "----\n")
 	f.write(msg) 
 	f.write("\n\n") 
 	f.close()
@@ -2363,20 +2369,15 @@ def log(msg, display=True, fileName=None):
 # look in the log to see if the searchText esists
 def findInLog(searchText, fileName=None):
 	if fileName==None:
-		#fileName=status['prefix']+"log.txt"
 		fileName=status['prefix']+"log.txt"
 	theFile=status['dataDir'] + fileName
 	try:
 		f = open(theFile, "r")
-		lines = f.readlines()
+		content = f.read()
 		f.close()
 	except:
 		return False
-	print("Previously known peer reviewed assignments: ")
-	for line in lines:
-		if searchText in line:
-			return True
-	print("Select an assignment or hit <enter> to refresh the list: ")
+	return searchText in content
 
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
