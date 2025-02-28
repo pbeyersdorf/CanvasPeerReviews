@@ -32,13 +32,12 @@ if not confirm():
 # Get creations and reviews
 getStudentWork(activeAssignment)
 
-	
 print(activeAssignment.name + " is done with peer reviewing \nlet's make it the active assignment.")
-val=inputWithTimeout("Will look for regrades from previous weeks.  (s) to skip",5)
-if val!='s':
-	regrade()
-#val=inputWithTimeout("Will calibrate student graders.  (s) to skip",5)
+print("Assuming that you are not using comments to trigger regrades.  If that is not the case open the script and uncomment the code block below this line")	
+#val=inputWithTimeout("Will look for regrades from previous weeks.  (s) to skip",5)
 #if val!='s':
+#	regrade()
+
 calibrate()
 
 #overrideDefaultPoints(activeAssignment)
@@ -55,10 +54,10 @@ while not acceptedCurve:
 	activeAssignment.curve=curve
 	grade(activeAssignment)	
 	getStatistics(activeAssignment, hist=True)
-	acceptedCurve=confirm("Are thes statistics ok?")
+	acceptedCurve=confirm("Are these statistics ok?")
 log("Accepted " + activeAssignment.curve + " as the curve for " +  activeAssignment.name)
 
-print("\nGrades saved to file 'scores for " + activeAssignment.name + "'")
+print(f"\nGrades saved to file 'scores for {activeAssignment.name}'")
 exportGrades(activeAssignment)
 print("Grades exported")
 print()

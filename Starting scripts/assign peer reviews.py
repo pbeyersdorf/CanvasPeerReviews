@@ -8,13 +8,14 @@ students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COU
 #################  Get relevant parameters assignment  #################
 params=getParameters()
 # if no assignments have yet been graded then prompt for graders
-if len([g for g in graded_assignments.values() if g.graded])==0: 
-	assignGraders()
-else:
-	viewGraders()
-	val=inputWithTimeout("(g) update grader list",3)
-	if (val=='g'):
-		assignGraders()
+print("Not assigning any graders.  If your class uses graders edit this script to uncomment the code block below this message")
+# if len([g for g in graded_assignments.values() if g.graded])==0: 
+# 	assignGraders()
+# else:
+# 	viewGraders()
+# 	val=inputWithTimeout("(g) update grader list",3)
+# 	if (val=='g'):
+# 		assignGraders()
 activeAssignment=utilities.nearestAssignment
 
 # Get creations and reviews
@@ -31,14 +32,15 @@ if not confirm("Calibration reviews assigned.  Continue?"):
 	
 # Assign remaining reviews  
 assignPeerReviews(creations, numberOfReviewers=params.numberOfReviews, AssignPeerReviewsToGraderSubmissions=False)
+
+if not params.combineSubmissionAndReviewGrades:
+	reviewScoreAssignment=createRelatedAssignment(activeAssignment)	
+
 webbrowser.open(activeAssignment.html_url + "/peer_reviews")	 
 if not confirm("The peer review assignment have been opened in a web browser.  Verify they look correct."):
 	undoAssignedPeerReviews()
 	finish()
 	exit()
-
-if not params.combineSubmissionAndReviewGrades:
-	reviewScoreAssignment=createRelatedAssignment(activeAssignment)	
 
 sendSeparateMessageToEachSection=False
 if sendSeparateMessageToEachSection:
