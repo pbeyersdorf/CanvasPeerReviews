@@ -1,6 +1,7 @@
 #put in .zshrc 
 #alias cpr='cd /Users/peteman/Nextcloud/Phys\ 51/Grades/CanvasPeerReviews; python menu.py'
-import os, time
+import os, time, sys
+sys.ps1 = 'menu>>>'
 complete=False
 relPath="."
 startingPath=relPath

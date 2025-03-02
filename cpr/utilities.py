@@ -83,6 +83,7 @@ creationsByAuthorId=dict()
 reviewsByCreationId=dict()
 params=Parameters()
 students=[]
+droppedStudents=[]
 instructors=[]
 instructorsWhoseReviewsShouldNotBeCalibrations=[]
 creations=[]
@@ -98,6 +99,7 @@ criteriaDescription=dict()
 sections=dict()
 params=Parameters()
 status={'message': '',
+	'finishMessage': '',
 	'err': '', 
 	'initialized': False, 
 	'gotParameters': False,
@@ -183,6 +185,16 @@ def loadCache():
 		params.loadedFromFile=False 
 	status['message']+="\nloaded " + ", ".join(loadedData)
 
+
+######################################
+# Find and mark any students who have dropped
+def getDroppedStudents():
+	global droppedStudents
+	users = course.get_users(enrollment_type=['student'])
+	userIds=[x.id for x in users]
+	droppedStudents=[y for y in students if y.id not in userIds]
+	return droppedStudents
+	
 ######################################
 # delete the files that cache student data and parameters
 def reset():
@@ -291,6 +303,8 @@ def updateAssignmentsAndStudents(quiet=False):
 	if not quiet:
 		printLine("Getting students",False)
 	getStudents(course)
+	getDroppedStudents()
+	
 	if not quiet:
 		printLine("Getting assignments",False)
 	getGradedAssignments(course)
@@ -525,6 +539,7 @@ def chooseAssignment(requireConfirmation=True, allowAll=False, timeout=None, def
 	os.system("mkdir -p '" + status['dataDir'] + "PickleJar" + "'")
 	return activeAssignment
 
+	
 ######################################
 #This function assigns a peer review and records it
 recentlyAssignedPeerReviews=[]
@@ -532,7 +547,12 @@ def assignAndRecordPeerReview(creation,reviewer, msg="", secondPass=False):
 	if not status['printedUndoInfo']:
 		print(Style.BRIGHT + "\nTo delete any assigned peer reviews run 'undoAssignedPeerReviews()'.  You will be prompted to delete each review that has been assigned in this session.\n" + Style.RESET_ALL)
 		status['printedUndoInfo']=True
-	peer_review=creation.create_submission_peer_review(reviewer.id)
+	try:
+		peer_review=creation.create_submission_peer_review(reviewer.id)
+	except Exception as e:
+		print(f"Error {e} when trying to create a peer review of {studentsById[creation.author_id].name}'s creation by {reviewer.name}.  Skipping…")
+		print("    You can assign manually and then do 'resyncReviews(activeAssignment)'")
+		return	
 	recentlyAssignedPeerReviews.append(peer_review)
 	reviewer.recordAssignedReview(creation.assignment_id, peer_review)
 	creation.reviewCount+=1
@@ -748,7 +768,7 @@ def getInstructors(course):
 #@timer
 def getStudents(course):
 	users = course.get_users(enrollment_type=['student'])
-	global students
+	global students, droppedStudents
 	#clearList(students)
 	for user in users:
 		user.courseid=course.id
@@ -771,6 +791,10 @@ def getStudents(course):
 	if 	needToGetSections:	
 		printLine("Looking up which section each student is in", False)
 		assignSections(students)
+	userIds=[x.id for x in users]
+	droppedStudents=[y for y in students if y.id not in userIds]
+	if len(droppedStudents)>0:
+		status['finishMessage'] = "The following students in the database have dropped the course:\n\t"+"\n\t".join([x.name for x in droppedStudents])
 	dataToSave['students'] = True
 	return students
 		
@@ -2879,6 +2903,7 @@ def saveData(listToSave=[]):
 ######################################
 # anything that needs to be done before exiting
 def finish(saveBeforeExit=None):
+	print(status['finishMessage'])
 	if saveBeforeExit==None:
 		saveBeforeExit=confirm("Shall any changes be saved? ")
 	if saveBeforeExit:
