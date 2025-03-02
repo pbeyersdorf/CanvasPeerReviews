@@ -4,8 +4,8 @@ errormsg=""
 from datetime import datetime, timedelta
 try:
 	from canvasapi import Canvas
-except Exception:
-	errormsg+="Missing canvasapi module.  Run 'pip install canvasapi' to intall\n"
+except Exception as e:
+	errormsg+="{e} Missing canvasapi module.  Run 'pip install canvasapi' to intall\n"
 from cpr.creation import Creation
 from cpr.student import Student
 from cpr.comparison import Comparison
@@ -59,8 +59,8 @@ if errormsg!="":
 homeFolder = os.path.expanduser('~')
 try:
 	from path_info import *
-except:
-	pass
+except Exception as e:
+	print(f"{e}, continuing…")
 
 try:
 	from credentials import *
@@ -243,7 +243,7 @@ def initialize(CANVAS_URL=None, TOKEN=None, COURSE_ID=None, dataDirectory="./Dat
 				success=True
 			except KeyboardInterrupt:
 				sys.exit()
-			except:
+			except Exception as e:
 				print("\nThat wasn't a valid URL for a canvas course.  It should look like https://sjsu.instructure.com/courses/314159")
 	if (TOKEN==None):
 		print("\nGo to canvas->Account->Settings and from the 'Approved Integrations' section, select '+New Acess Token'")
@@ -357,13 +357,13 @@ def getStudentWork(thisAssignment='last', includeReviews=True):
 	i=0
 	try:
 		temp=submissions[0]
-	except:
+	except Exception as e:
 		print("resettting submissions._requester.new_quizzes_url to try to fix errror…")
 		submissions._requester.new_quizzes_url="" #necessary sometimes to avoid an attribute error
 	try:
 		temp=submissions[0]
-	except:
-		print("Error getting submissions.  See https://stackoverflow.com/questions/31708519/request-returns-bytes-and-im-failing-to-decode-them")
+	except Exception as e:
+		print("Error {e} getting submissions.  See https://stackoverflow.com/questions/31708519/request-returns-bytes-and-im-failing-to-decode-them")
 		print("It may be fixed by running 'pip install brotlipy' or downgrading to canvasapi version 3.2.0")
 	for submission in submissions:
 		i+=1
@@ -604,8 +604,8 @@ def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSecti
 			print(f"professor reviews for {assignment.name} {assignment.id}")
 			professorReviewedSubmissionIDs=[r.submission_id for r in professorsReviews[assignment.id]]
 			calibrations=[c for c in creations if (c.id in professorReviewedSubmissionIDs)]
-		except:
-			print("It looks like the professor hasn't yet graded any submissions.  You should grade at least one to use as a calibration review.")
+		except Exception as e:
+			print(f"Error {e}: It looks like the professor hasn't yet graded any submissions.  You should grade at least one to use as a calibration review.")
 		#return
 		if len(calibrations)==0 and confirm("There were no submissions reviewed by the professor, should a random submission be assigned as the calibration review?"):
 			calibrations=="random"
@@ -978,8 +978,8 @@ def getReviews(creations):
 						# if not already assigned assignment.multiplier[cid]
 						studentsById[review.reviewer_id].reviewsGiven[review.submission_id]=review
 					allReviews.append(review)
-	except:
-		print(f"Unable to get {rubric.title} for this assignment.  Skipping...")
+	except Exception as e:
+		print(f"Error {e}: Unable to get {rubric.title} for this assignment.  Skipping...")
 	#create the comparison objects for each student
 	for student in students:
 		for key,thisGivenReview in student.reviewsGiven.items():
@@ -1098,7 +1098,7 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default", secon
 	for cid in assignment.criteria_ids():
 		try:
 			msg+= "\t(" +str(params.pointsForCid(cid,assignment ))+ ") " + criteriaDescription[cid] + "\n"
-		except:
+		except Exception as e:
 			pass
 	msg+="Using the following function for review '" + assignment.reviewCurve+ "' and a curve of '" + assignment.curve + "'\n"
 	log(msg)
@@ -1209,7 +1209,8 @@ def createTemplate(templateName="", showAfterCreate=True):
 				input(wrap("You need to edit the communication templates to your liking.  Press enter to open the templated directory:"))
 				subprocess.call(["open", f"{destinationFolder}{templateName}.txt"])
 				input("Press enter to continue:")
-	except:
+	except Exception as e:
+		print(f"Error {e}")
 		print(wrap(f"Unable to copy templates into data folder, please manually copy the templates from cpr/tempaltes to {destinationFolder}"))
 		input(wrap("Edit and save the templates in the new location, then press enter to continue:"))
 	return
@@ -1270,7 +1271,10 @@ def processTemplate(student, assignment, templateName):
 				creationGrade=creationPoints=reviewGrade=rawGrade=curvedGrade=curvedPoints=reviewPoints=rawPoints="--"
 			
 		except KeyError:
-			print("Key error for " + student.name + " perhaps they dropped")
+			errorMsg=f"Key error for {student.name}."
+			if not student.active:
+				  errorMsg+="They are not in the canvas roster - perhaps they dropped)"
+			print(errorMsg)
 			return ""
 		
 	try:
@@ -1293,15 +1297,18 @@ def processTemplate(student, assignment, templateName):
 			assignment=assignment
 			)
 		return renderedTemplate
-	except:
-		print(f"Unable to render template '{templateName}'")
+	except Exception as e:
+		print(f"Error {e}.  Unable to render template '{templateName}'")
 		return ""
 	try:
 		pass
 	except KeyboardInterrupt:
 		exit()
-	except:
-		print(f"Unable to render template '{templateName}' for {student.name} - perhaps they dropped")
+	except Exception as e:
+		errorMsg=f"Error {e}.  Unable to render template '{templateName}' for {student.name}."
+		if not student.active:
+			  errorMsg+="They are not in the canvas roster - perhaps they dropped)"
+		print(errorMsg)
 		return ""
 	return renderedTemplate
 
@@ -1496,7 +1503,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 						student.rmsByAssignment[assignment.id][0]=None
 						student.relativeRmsByAssignment[assignment.id][0]=None
 						student.weightsByAssignment[assignment.id][0]=0	
-				except:
+				except Exception as e:
+					print(f"Error {e}.  Setting rms=2 and continuing…")
 					rms=2
 					student.rmsByAssignment[assignment.id][0]=None
 					student.relativeRmsByAssignment[assignment.id][0]=None
@@ -1710,7 +1718,8 @@ def getStudentsNeedingRegrade(assignment, studentsToGrade="All"):
 											printLine(student.name + " has a new recalculation request pending")										
 					except KeyboardInterrupt:
 						exit()
-					except:
+					except Exception as e:
+						print(f"{e}, continuing…")
 						pass
 		printLine("",newLine=False)
 	else:
@@ -2174,8 +2183,11 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						theComment=student.creationComments[assignment.id]
 					try:
 						creation.edit(comment={'text_comment':prependText + theComment})
-					except:
-						print(f"Unable to post grades for {student.name} - perhaps they dropped the class")
+					except Exception as e:
+						errorMsg=f"Error: {e}\nUnable to post grades for {student.name} "
+						if not student.active:
+							  errorMsg+="They are not in the canvas roster - perhaps they dropped)"
+						print(errorMsg)
 						continue			
 				if postGrades:
 					if params.combineSubmissionAndReviewGrades:
@@ -2197,9 +2209,11 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 							sub.edit(submission={'posted_grade': reviewScoreToPost})
 							if postComments:
 								sub.edit(comment={'text_comment': prependText + student.reviewComments[assignment.id]})
-						except:
-							print(f"Unable to post grades for {student.name} - perhaps they dropped the class")
-
+						except Exception as e:
+							errorMsg=f"Error {e}.  Unable to post grades for {student.name}"
+							if not student.active:
+								  errorMsg+="They are not in the canvas roster - perhaps they dropped)"
+							print(errorMsg)
 	
 					student.gradingStatus[assignment.id]='posted'
 
@@ -2384,7 +2398,7 @@ def log(msg, display=True, fileName=None):
 	if display:
 		print(msg, end ="")
 
-	needToAddTimeStamp=not findInLog(status['runTimeStamp'],theFile)
+	needToAddTimeStamp=not findInLog(status['runTimeStamp'],fileName)
 	f = open(theFile, "a")
 	if needToAddTimeStamp:
 		f.write("----" + status['runTimeStamp'] + "----\n")
@@ -2402,7 +2416,8 @@ def findInLog(searchText, fileName=None):
 		f = open(theFile, "r")
 		content = f.read()
 		f.close()
-	except:
+	except Exception as e:
+		print(f"Error {e}.  '{searchText}' was not found in {fileName} and continuing…")
 		return False
 	return searchText in content
 
@@ -2607,7 +2622,8 @@ def selectInstructors(prompt):
 				selectedInstructors=[si for si in selectedInstructors if si!=instructors[val]]
 			else:
 				selectedInstructors.append(instructors[val])
-		except:
+		except Exception as e:
+			print(f"{e}, continuing…")
 			pass
 		for i,instructor in enumerate(instructors):
 			if instructor in selectedInstructors:
@@ -2703,8 +2719,11 @@ def message(theStudents, body, subject='', display=False):
 		print("\rMessaging " + student.name, end="")
 		try:
 			canvas.create_conversation(student.id, body=body, subject=subject)
-		except Exception:
-			print("error messaging " ,student.name, ".  Perhaps the student dropped." )
+		except Exception as e:
+			errorMsg=f"Error {e} messaging {student.name}."
+			if not student.active:
+				  errorMsg+="They are not in the canvas roster - perhaps they dropped)"
+			print(errorMsg)
 		if display:
 			print("messaging " +  student.name)		
 	printLine("",False)
@@ -3025,7 +3044,7 @@ def printLine(msg="", newLine=True, line=False):
 	try:
 		size=os.get_terminal_size()
 		cols=size.columns
-	except:
+	except Exception as e:
 		cols=80
 	hideCursor()
 	if (line):
@@ -3043,7 +3062,7 @@ def printLeftRight(left,right, end="\n"):
 	try:
 		size=os.get_terminal_size()
 		cols=size.columns
-	except:
+	except Exception as e:
 		cols=80
 	rowsOfText=1+int((len(left+right))/cols)
 	hideCursor()
@@ -3059,7 +3078,7 @@ def wrap(msg):
 	try:
 		size=os.get_terminal_size()
 		cols=size.columns
-	except:
+	except Exception as e:
 		cols=80
 	if len(msg.split("\n"))<2:
 		return '\n'.join(textwrap.wrap(msg, width=cols, replace_whitespace=False))
