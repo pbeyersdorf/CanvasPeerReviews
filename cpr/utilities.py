@@ -83,7 +83,6 @@ creationsByAuthorId=dict()
 reviewsByCreationId=dict()
 params=Parameters()
 students=[]
-droppedStudents=[]
 instructors=[]
 instructorsWhoseReviewsShouldNotBeCalibrations=[]
 creations=[]
@@ -189,7 +188,6 @@ def loadCache():
 ######################################
 # Find and mark any students who have dropped
 def getDroppedStudents(userList=None):
-	global droppedStudents
 	if userList==None:
 		users = course.get_users(enrollment_type=['student'])
 		userIds=[x.id for x in users]
@@ -775,7 +773,7 @@ def getInstructors(course):
 #@timer
 def getStudents(course):
 	users = course.get_users(enrollment_type=['student'])
-	global students, droppedStudents
+	global students
 	#clearList(students)
 	userList=list(users)
 	for user in userList:
