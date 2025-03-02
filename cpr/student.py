@@ -73,6 +73,7 @@ class Student:
 		self.section=0
 		self.sectionName="unknown"
 		self.maxGradingPower=5
+		self.active=True
 		self.rmsByAssignment=dict() # this is the raw rms for reviews given, so for a 10 point assignment it could be up to 10
 		self.deviationByAssignment=dict() # this is the raw deviation for reviews given compared to average scores for each cid
 		self.relativeRmsByAssignment=dict() # this is the rms out of 1 (relative to the points available on the assignment) for reviews given.  This is what is used for calculating grades.

@@ -188,11 +188,18 @@ def loadCache():
 
 ######################################
 # Find and mark any students who have dropped
-def getDroppedStudents():
+def getDroppedStudents(userList=None):
 	global droppedStudents
-	users = course.get_users(enrollment_type=['student'])
-	userIds=[x.id for x in users]
+	if userList==None:
+		users = course.get_users(enrollment_type=['student'])
+		userIds=[x.id for x in users]
+	else:
+		userIds=[x.id for x in userList]
 	droppedStudents=[y for y in students if y.id not in userIds]
+	for student in droppedStudents:
+		student.active=False
+	if len(droppedStudents)>0:
+		status['finishMessage'] = "The following students in the database have dropped the course:\n\t"+"\n\t".join([x.name for x in droppedStudents])
 	return droppedStudents
 	
 ######################################
@@ -770,7 +777,8 @@ def getStudents(course):
 	users = course.get_users(enrollment_type=['student'])
 	global students, droppedStudents
 	#clearList(students)
-	for user in users:
+	userList=list(users)
+	for user in userList:
 		user.courseid=course.id
 		alreadyAdded=False
 		try:
@@ -791,10 +799,7 @@ def getStudents(course):
 	if 	needToGetSections:	
 		printLine("Looking up which section each student is in", False)
 		assignSections(students)
-	userIds=[x.id for x in users]
-	droppedStudents=[y for y in students if y.id not in userIds]
-	if len(droppedStudents)>0:
-		status['finishMessage'] = "The following students in the database have dropped the course:\n\t"+"\n\t".join([x.name for x in droppedStudents])
+	getDroppedStudents(userList)
 	dataToSave['students'] = True
 	return students
 		
