@@ -64,7 +64,9 @@ on how they are grading
 #}<ul>
 {% for cid in assignment.criteria_ids(): %}{#
 #}<li>{#
-#}{%if student.deviationByAssignment[assignment.id][cid] > 0.05%}{#
+#}{%if student.deviationByAssignment[assignment.id][cid] == 999%}{#
+#}unable to evaluate a score for '{{criteriaDescription[cid]}}' {#
+#}{%elif student.deviationByAssignment[assignment.id][cid] > 0.05%}{#
 #}{{ "{0:0.1f}".format(student.rmsByAssignment[assignment.id][cid]) }} points for '{{criteriaDescription[cid]}}' (on average {{ "{0:0.1f}".format(student.deviationByAssignment[assignment.id][cid]) }} higher than {{compared_to(assignment)}}){#
 #}{%elif student.deviationByAssignment[assignment.id][cid] < -0.05:%}{#
 #}{{ "{0:0.1f}".format(student.rmsByAssignment[assignment.id][cid]) }} points for '{{criteriaDescription[cid]}}' (on average {{ "{0:0.1f}".format(-student.deviationByAssignment[assignment.id][cid]) }} lower than {{compared_to(assignment)}}){#
