@@ -671,7 +671,6 @@ def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSecti
 		iStart=i
 		while (	(i < iStart +len(students) + 1) and ((reviewer.id == calibrations[i%len(calibrations)].author_id) or  ((not ignoreSections) and studentsById[reviewer.id].section != studentsById[calibrations[i%len(calibrations)].author_id].section ))):
 			i+=1
-			
 		calibration = calibrations[i%len(calibrations)]
 		author=studentsById[calibrations[i%len(calibrations)].author_id]
 		if (author.name!=studentsById[reviewer.id].name):
