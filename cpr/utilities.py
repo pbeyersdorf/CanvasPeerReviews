@@ -678,7 +678,11 @@ def assignCalibrationReviews(calibrations="auto", assignment="last", ignoreSecti
 			msg=str(j+1) + "/" + str(len(reviewers))
 			peer_review=assignAndRecordPeerReview(calibration,reviewer, msg, secondPass)
 		else:
-			printLine("skipping self review", newLine=False)
+			nextCalibration=calibrations[(i+1)%len(calibrations)]
+			if calibration!=nextCalibration:
+				peer_review=assignAndRecordPeerReview(nextCalibration,reviewer, msg, secondPass)
+			else:
+				printLine("skipping self review", newLine=False)
 	dataToSave['students']=True
 	return calibrations
 	
