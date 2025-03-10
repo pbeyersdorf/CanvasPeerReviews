@@ -1632,8 +1632,6 @@ def reviewGradeOnCalibrations(assignment, student):
 		student.calibrationGradeExplanation
 	except Exception:
 		student.calibrationGradeExplanation=dict()
-	#consider reviews in common with the instructor
-	#student.calibrationGradeExplanation[assignment.id]="On peer reviews that were ALSO graded by the instructor, compared to the instructor the scores you gave out on average were:\n"
 	for key, thisGivenReview in student.reviewsGiven.items():
 		blankCreation=len([c for c in creations if c.id == key and c.missing])>0	
 		if thisGivenReview.assignment_id == assignment.id and not blankCreation:
