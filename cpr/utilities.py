@@ -3083,6 +3083,7 @@ def wrap(msg):
 		cols=size.columns
 	except Exception as e:
 		cols=80
+		return msg #if we don't know the temrnial size, don't wrap
 	if len(msg.split("\n"))<2:
 		return '\n'.join(textwrap.wrap(msg, width=cols, replace_whitespace=False))
 	returnStr=""
