@@ -2086,7 +2086,8 @@ def createRelatedAssignment(assignment, separateGroup=True):
 	reviewDueDate=creationDueDate+timedelta(days=params.peerReviewDurationInDays)
 	reviewDueDateString=reviewDueDate.astimezone().astimezone().strftime("%A (%m/%d) at %I:%M %p")
 
-	assignment.solutionsUrl=None
+	if not hasattr(assignment, 'solutionsUrl'):
+		assignment.solutionsUrl=None
 	
 	#xxx after the end of the semester the following code block can be removed and only the statement in the try section kept
 	try:
@@ -2185,7 +2186,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 					try:
 						creation.edit(comment={'text_comment':prependText + theComment})
 					except Exception as e:
-						errorMsg=f"Error: {e}\nUnable to post grades for {student.name} "
+						errorMsg=f"Error: {e}\nUnable to post comment for {student.name} "
 						if not student.active:
 							  errorMsg+="They are not in the canvas roster - perhaps they dropped)"
 						print(errorMsg)
