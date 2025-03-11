@@ -2199,9 +2199,9 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 						creationScoreToPost=student.points[assignment.id]['curvedCreation']
 						if combineBeforePosting:
 							creationPoints=creationScoreToPost * weightingOfCreation
-							reviewPoints= assignment.points_possible * weightingOfReviews * student.grades[assignment.id]['review']
+							reviewPoints= assignment.points_possible * weightingOfReviews * student.grades[assignment.id]['review']/100
 							reviewScoreToPost = (creationPoints + reviewPoints) *100 / assignment.points_possible 
-							creationScoreToPost = int(creationPoints + reviewPoints)
+							creationScoreToPost = round(creationPoints + reviewPoints)
 							student.reviewComments[assignment.id] = additionalGradingComment + student.reviewComments[assignment.id]
 						else:
 							reviewScoreToPost=round(student.grades[assignment.id]['review'] * reviewScoreAssignment.points_possible/100,2)											
