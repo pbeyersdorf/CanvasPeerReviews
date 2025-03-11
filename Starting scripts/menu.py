@@ -2,7 +2,7 @@
 #alias cpr='cd /Users/peteman/Nextcloud/Phys\ 51/Grades/CanvasPeerReviews; python menu.py'
 import os, time, sys
 from path_info import *
-sys.ps1 = 'menu>>>'
+sys.ps1 = '**>'
 complete=False
 relPath="."
 startingPath=relPath
@@ -41,6 +41,7 @@ if relPath!=startingPath:
 	cmd='cp "path_info.py" "' + relPath +'/"'
 	os.system(cmd)
 start = time.perf_counter()
+os.system("date >> '" + DATADIRECTORY + "'out.txt")
 returnVal=os.system("python3 -i '" + theFile + "' | tee -a '" + DATADIRECTORY + "'out.txt")
 end = time.perf_counter()
 if (end-start)<1 and returnVal!=0:
