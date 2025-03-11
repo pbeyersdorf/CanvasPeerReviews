@@ -2585,6 +2585,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 # 						'"' + student.reviewGradeExplanation + '"')			
 			else:
 				line+= ','
+			line=line.replace('\n','<br>')
 			line+='\n'
 			if saveToFile:
 				f.write(line)
