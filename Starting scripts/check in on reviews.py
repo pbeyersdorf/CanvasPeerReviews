@@ -46,8 +46,8 @@ for key in reviewsByCreationId:
 
 # make a list of all the submitted reviews as well as a list of ones that were submitted before the rubric was completely filled in
 reviews=[]
-for key in utilities.reviewsByCreationId:
-	for theReview in list(utilities.reviewsByCreationId[key].values()):
+for key in reviewsByCreationId:
+	for theReview in list(reviewsByCreationId[key].values()):
 		reviews.append(theReview)
 incompleteReviews=[]
 for review in reviews:
@@ -58,7 +58,7 @@ for review in reviews:
 			except:
 				if review.review_type=='grading':
 					#professor has an incomplete review
-					confirm(f"Your calibnration review of {studentsById[review.author_id].name} is incomplete.  You must fix this before grading this assignment. ")
+					confirm(f"Your calibration review of {studentsById[review.author_id].name} is incomplete.  You must fix this before grading this assignment. ")
 				if review.reviewer_id in studentsById and review.author_id in studentsById:
 					if  not findInLog(review.fingerprint()):
 						incompleteReviews.append(review)
