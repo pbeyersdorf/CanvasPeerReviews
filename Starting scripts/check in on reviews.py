@@ -56,6 +56,9 @@ for review in reviews:
 			try:
 				temp=d['points']
 			except:
+				if review.review_type=='grading':
+					#professor has an incomplete review
+					confirm(f"Your calibnration review of {studentsById[review.author_id].name} is incomplete.  You must fix this before grading this assignment. ")
 				if review.reviewer_id in studentsById and review.author_id in studentsById:
 					if  not findInLog(review.fingerprint()):
 						incompleteReviews.append(review)
