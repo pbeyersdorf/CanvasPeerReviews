@@ -1552,8 +1552,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		maxCreationPoints=assignment.points_possible
 		maxReviewPoints=maxCreationPoints * (params.weightingOfReviews/params.weightingOfCreation)
 		
+	reviewDigits=int(2-math.log10(maxReviewPoints))
 	creationPoints=round(creationGrade/100.0 * maxCreationPoints,digits)
-	reviewPoints=round(reviewGrade/100.0 * maxReviewPoints,digits)
+	reviewPoints=round(reviewGrade/100.0 * maxReviewPoints,reviewDigits)
 	if (digits == 0):
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
