@@ -46,6 +46,17 @@ val=inputWithTimeout("using '" + activeAssignment.reviewCurve + "' for review sc
 if val=='c':
 	activeAssignment.reviewCurve=confirm(msg="Enter curve as a function of rms: ", requireResponse=True)
 
+# check if the reviews need to be resynced
+needToResync=False
+for student in students:
+	completed=student.numberOfReviewsGivenOnAssignment(activeAssignment.id)
+	assigned=student.numberOfReviewsAssignedOnAssignment(activeAssignment.id)
+	if completed>assigned:
+		needToResync=True
+if needToResync:
+	print("Resyncing reviews now…")
+	resyncReviews(activeAssignment,creations) # this slows things down a lot, it should only be necessary if you have manually assigned 
+
 acceptedCurve=False
 while not acceptedCurve:
 	curve=input(f'Enter an expression that takes a raw score x and returns a curved score (out of {int(activeAssignment.points_possible)}), for instance "round({activeAssignment.points_possible/2}+x/2)": ')
