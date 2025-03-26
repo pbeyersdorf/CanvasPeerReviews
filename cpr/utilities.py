@@ -1253,12 +1253,9 @@ def processTemplate(student, assignment, templateName):
 					student.deviationByAssignment[assignment.id][cid]=999
 					student.rmsByAssignment[assignment.id][cid]=999
 				student.pointsByCriteriaScaled[assignment.id][cid]=0
-				if True:#try:
-					if cid in student.pointsByCriteria[assignment.id]:
-						if student.pointsByCriteria[assignment.id][cid]!='':
-							student.pointsByCriteriaScaled[assignment.id][cid]=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)				
-				else:#except:
-					pass
+				if cid in student.pointsByCriteria[assignment.id]:
+					if student.pointsByCriteria[assignment.id][cid]!='':
+						student.pointsByCriteriaScaled[assignment.id][cid]=round(student.pointsByCriteria[assignment.id][cid] * assignment.criteria_points(cid)/ params.pointsForCid(cid, assignment),2)				
 			
 			if assignment.id in student.grades:
 				creationGrade=round(student.grades[assignment.id]['creation'])
@@ -1538,7 +1535,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		reviewGrade=student.grades[assignment.id]['review']
 		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
 	else:
-		print("Unknown scorign method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
+		print("Unknown scoring method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
 		exit()	
 	#adjust the points from a scale of 100 down to the number of points for the assingmnet
 	digits=int(2-math.log10(assignment.points_possible))
@@ -1552,8 +1549,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		maxCreationPoints=assignment.points_possible
 		maxReviewPoints=maxCreationPoints * (params.weightingOfReviews/params.weightingOfCreation)
 		
+	reviewDigits=int(2-math.log10(maxReviewPoints))
 	creationPoints=round(creationGrade/100.0 * maxCreationPoints,digits)
-	reviewPoints=round(reviewGrade/100.0 * maxReviewPoints,digits)
+	reviewPoints=round(reviewGrade/100.0 * maxReviewPoints,reviewDigits)
 	if (digits == 0):
 		creationPoints=int(creationPoints)
 		reviewPoints=int(reviewPoints)
@@ -1569,7 +1567,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	if creationWasReviewed or missingSubmission:
 		if reviewScoreGrading=="ignore":
 			student.grades[assignment.id]={'creation': creationGrade, 'review':  None, 'total' :totalGrade, 'curvedTotal': 100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade}
-			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,  'curvedCreation':  assignment.points_possible * curvedCreationGrade/100}
+			student.points[assignment.id]={'creation': creationPoints, 'review':  None, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,  'curvedCreation':  assignment.points_possible * curvedCreationGrade/100.0}
 		else:
 			student.grades[assignment.id]={'creation': creationGrade, 'review':  reviewGrade, 'total' :totalGrade, 'curvedTotal':  100.0*curvedTotalPoints/assignment.points_possible, 'curvedCreation':  curvedCreationGrade}
 			student.points[assignment.id]={'creation': creationPoints, 'review':  reviewPoints, 'total' :totalPoints, 'curvedTotal': curvedTotalPoints,   'curvedCreation':  assignment.points_possible * curvedCreationGrade/100 }

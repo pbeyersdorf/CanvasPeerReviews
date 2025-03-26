@@ -58,7 +58,10 @@ for review in reviews:
 			except:
 				if review.review_type=='grading':
 					#professor has an incomplete review
-					confirm(f"Your calibration review of {studentsById[review.author_id].name} is incomplete.  You must fix this before grading this assignment. ")
+					reviewer=utilities.course.get_user(review.reviewer_id)
+					print(f"Would send a message to {reviewer.name} at this point but it is commented out")
+					#message(reviewer, body=msg, subject='Incomplete peer review', display=False)
+					print(f"Your calibration review of {studentsById[review.author_id].name} is incomplete.  You must fix this before grading this assignment. ")
 				if review.reviewer_id in studentsById and review.author_id in studentsById:
 					if  not findInLog(review.fingerprint()):
 						incompleteReviews.append(review)
@@ -98,7 +101,7 @@ def showDelinquentStudents():
 
 #offer to reset any incomplete reviews and message the reviewers to let them know to redo them
 ReviewCount=0
-val=''
+val='R'
 for review in incompleteReviews:
 	if not findInLog(review.fingerprint()):
 		for d in review.data:
@@ -124,7 +127,8 @@ for review in incompleteReviews:
 				#log it
 				log("reset review [" + review.fingerprint() + "]")
 				# need to send a message with text msg
-				message(reviewer, body=msg, subject='Incomplete peer review', display=False)
+				print(f"Would send a message to {reviewer.name} at this point but it is commented out")
+				#message(reviewer, body=msg, subject='Incomplete peer review', display=False)
 				#canvas.create_conversation(recipients=str(reviewerID), body=msg, subject='Incomplete peer review')
 				ReviewCount+=1
 			break
@@ -136,7 +140,7 @@ elif ReviewCount>0:
 	print(" " + str(ReviewCount) + " incomplete reviews")
 else:
 	print("Ignored " + str(len(incompleteReviews)) + " incomplete reviews")
-unreviewedCreations=checkForUnreviewed(activeAssignment, openPage=True)  #open a web page with links to all of the incomplete reviews.
+unreviewedCreations=checkForUnreviewed(activeAssignment, openPage=False)  #open a web page with links to all of the incomplete reviews.
 #offer to message students who haven't yet started their reviews
 
 #val=inputWithTimeout("(s) show students who haven't done any reviews", 60)

@@ -80,7 +80,7 @@ else:
 	
 
 finish(True)
-if confirm("If you assigned or deleted any peer reviews manually, the data needs to be resyncronized.  Shall we resynchonize?"):
-	resyncReviews(activeAssignment, creations)
-	utilities.dataToSave['students']=True
-finish(True)
+# if confirm("If you assigned or deleted any peer reviews manually, the data needs to be resyncronized.  Shall we resynchonize?"):
+# 	resyncReviews(activeAssignment, creations)
+# 	utilities.dataToSave['students']=True
+# finish(True)
