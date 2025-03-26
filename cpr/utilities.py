@@ -1535,7 +1535,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		reviewGrade=student.grades[assignment.id]['review']
 		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
 	else:
-		print("Unknown scorign method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
+		print("Unknown scoring method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
 		exit()	
 	#adjust the points from a scale of 100 down to the number of points for the assingmnet
 	digits=int(2-math.log10(assignment.points_possible))
