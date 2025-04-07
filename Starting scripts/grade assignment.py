@@ -62,10 +62,17 @@ while not acceptedCurve:
 	curve=input(f'Enter an expression that takes a raw score x and returns a curved score (out of {int(activeAssignment.points_possible)}), for instance "round({activeAssignment.points_possible/2}+x/2)": ')
 	if curve=="":
 		curve="x"
-	activeAssignment.curve=curve
-	grade(activeAssignment)	
-	getStatistics(activeAssignment, hist=True)
-	acceptedCurve=confirm("Are these statistics ok?")
+	try:
+		testFunc=eval('lambda x:' + curve)
+		testFunc(1)
+		activeAssignment.curve=curve
+		grade(activeAssignment)	
+		getStatistics(activeAssignment, hist=True)
+		acceptedCurve=confirm("Are these statistics ok?")
+	except:
+		print(f"Unable to evalaute '{curve}' as a function of x")
+		acceptedCurve=False
+
 log("Accepted " + activeAssignment.curve + " as the curve for " +  activeAssignment.name)
 
 print(f"\nGrades saved to file 'scores for {activeAssignment.name}'")
