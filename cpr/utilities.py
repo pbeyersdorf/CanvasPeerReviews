@@ -2749,9 +2749,10 @@ def confirm(msg="", requireResponse=False):
 	msg=formatWithBoldOptions(msg)
 	confirmationResponse=""
 	if not requireResponse:
-		print(msg)
-		confirmationResponse=input("'ok' to accept: " )
-		return (confirmationResponse == 'ok')
+		while confirmationResponse=="":
+			print(msg)
+			confirmationResponse=input("'ok' to accept: " )
+		return (confirmationResponse.lower() == 'ok' or confirmationResponse.lower()[0]=="y")
 	while confirmationResponse!='ok':
 		response=input(msg)
 		confirmationResponse=input("You entered '" + str(response) +"'\n'ok' to accept: " )
