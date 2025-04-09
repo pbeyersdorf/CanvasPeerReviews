@@ -66,6 +66,7 @@ while not acceptedCurve:
 		testFunc=eval('lambda x:' + curve)
 		testFunc(1)
 		activeAssignment.curve=curve
+		print("Calculating grades.  Please wait as it may take a few minutes…")
 		grade(activeAssignment)	
 		getStatistics(activeAssignment, hist=True)
 		acceptedCurve=confirm("Are these statistics ok?")
