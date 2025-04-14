@@ -727,7 +727,8 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				msg="additional assignment " + str(i+1) + "/" + str(len(creationsToConsider))
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
-	for reviewer in reviewers:
+	sortedReviewers=sorted(reviewers, key=lambda x: x.sortable_name) #sort alphabetically by last name
+	for reviewer in sortedReviewers:
 		tic=time.time()
 		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)} reviews")
 		while (reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)  < params.numberOfReviews and reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id) < len(creationsToConsider)-1 and time.time()-tic < 1):
