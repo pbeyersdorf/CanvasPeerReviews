@@ -932,14 +932,18 @@ def getReviews(creations):
 		if rubric.title == graded_assignments[creations[0].assignment_id].rubric_settings['title']:
 			break
 			
-	#rubric=course.get_rubric(rubric.id,include='assessments') #the documentation says that the style='full' is necessary to get a data hash, but startign in Dec 2024 this has caused occasional 504 errors and removing this parameter still seems to give a rubric with a data hash.
-	#if hasattr(rubric,'data'):
-	#	print("Got assessment data from rubric")
-	#else:
-	#	rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
-	#	print("Got assessment data from full rubric")
-	rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
-	
+	success=False
+	tryNum=1
+	while not success:
+		try:
+			rubric=course.get_rubric(rubric.id,include='assessments', style='full') #this is supposed ot be required to return the data parameter, but it sometimes times out
+			success=True
+		except:
+			if tryNum==1:
+				print("Encountered a server timeout ... this sometimes happens late inteh semester when the amount of data being requested gets very large.")
+			print(f"Try #{tryNum} failed.  Trying again")
+			tryNum+=1
+			success=False	
 	
 	try:
 		for creation in creations:
