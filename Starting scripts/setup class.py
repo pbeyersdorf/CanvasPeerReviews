@@ -53,7 +53,7 @@ while not successfullImport:
 		successfullImport=True	
 	except Exception as error:
 		print(error)
-		if "cpr" not in error:
+		if "cpr" not in str(error):
 			exit()
 		print("Unable to import CanvasPeerReviews, perhaps the wrong import path?")
 		cprLocation=getPath("In the pop up window (which may be behind terminal) choose the 'cpr' folder that contains the source code")
