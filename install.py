@@ -38,13 +38,20 @@ os.system(f"rm -rf '{cwd}/Starting scripts'")
 file1 = open(f'{cwd}/path_info.py', 'w')
 
 homeFolder = os.path.expanduser('~')
-RELATIVE_DATA_PATH=f'{cwd}/Data/'.replace(homeFolder,"")
-msg= f'''import sys, os
+if homeFolder in cwd:
+	RELATIVE_DATA_PATH=f'{cwd}/Data/'.replace(homeFolder,"")
+	msg= f'''import sys, os
 homeFolder = os.path.expanduser('~')
 os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
 sys.path.insert(0, '{cwd}/cpr') # another location for the module files.
 RELATIVE_DATA_PATH='{RELATIVE_DATA_PATH}' #data directory relative to the home folder where class data will be stored
 DATADIRECTORY=homeFolder + RELATIVE_DATA_PATH
+'''
+else:
+	msg= f'''import sys, os
+os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
+sys.path.insert(0, '{cwd}/cpr') # another location for the module files.
+DATADIRECTORY={cwd}/Data/
 '''
 file1.write(msg)
 file1.close()
