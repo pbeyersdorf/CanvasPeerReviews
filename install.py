@@ -38,7 +38,6 @@ os.system(f"rm -rf '{cwd}/Starting scripts'")
 file1 = open(f'{cwd}/path_info.py', 'w')
 
 homeFolder = os.path.expanduser('~')
-print(f"\n\n\nXXXXXXXXXX {homeFolder} in {cwd}? {homeFolder in cwd}")
 if homeFolder in cwd:
 	RELATIVE_DATA_PATH=f'{cwd}/Data/'.replace(homeFolder,"")
 	msg= f'''import sys, os
@@ -52,7 +51,7 @@ else:
 	msg= f'''import sys, os
 os.chdir(os.path.dirname(os.path.realpath(__file__))) # work in the path the script was run from
 sys.path.insert(0, '{cwd}/cpr') # another location for the module files.
-DATADIRECTORY={cwd}/Data/
+DATADIRECTORY='{cwd}/Data/'
 '''
 file1.write(msg)
 file1.close()
