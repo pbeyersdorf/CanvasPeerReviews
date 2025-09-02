@@ -38,7 +38,7 @@ os.system(f"rm -rf '{cwd}/Starting scripts'")
 file1 = open(f'{cwd}/path_info.py', 'w')
 
 homeFolder = os.path.expanduser('~')
-print(f"{homeFolder} in {cwd}? {homeFolder in cwd})
+print(f"\n\n\nXXXXXXXXXX {homeFolder} in {cwd}? {homeFolder in cwd}")
 if homeFolder in cwd:
 	RELATIVE_DATA_PATH=f'{cwd}/Data/'.replace(homeFolder,"")
 	msg= f'''import sys, os
