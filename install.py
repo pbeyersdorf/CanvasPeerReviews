@@ -4,8 +4,15 @@ from glob import glob
 std="/".join(__file__.split("/")[:-1])
 cwd=std + "/Peer Reviews"
 
-#make the working directory
-os.system(f"mkdir '{cwd}'")
+if(len(sys.argv)==1):
+	print(f"This script will create a folder called 'Peer Reviews'\nat the locatoin it was run from, i.e. '{cwd}'")
+	val=input("'ok' to continue:")
+	if not ("ok" in val.lower() or 'y' in val.lower()):
+		exit()
+
+	#make the working directory
+	os.system(f"mkdir '{cwd}'")
+
 os.chdir(cwd)
 
 #create virtual environment
@@ -15,7 +22,7 @@ if not os.path.exists(f"{cwd}/venv"):
 
 #activate virtual environment
 if sys.prefix == sys.base_prefix: #If not running from virtual environment
-	os.system(f"cd '{std}'; source  'Peer Reviews/venv/bin/activate'; python3 install.py ")
+	os.system(f"cd '{std}'; source  'Peer Reviews/venv/bin/activate'; python3 install.py rerun")
 	sys.exit()
 
 #access github and download the files
