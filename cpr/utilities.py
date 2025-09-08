@@ -2452,6 +2452,14 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 	if len(curvedTotal)==0 or not assignment.graded:
 		print("You must grade the assignment before getting statistics")
 		return
+	if text:
+		print("Creation average is %.1f%% with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
+		print("Review average is %.1f%% with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
+		print("Raw total average is %.1f%% with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
+		if (params.combineSubmissionAndReviewGrades):
+			print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
+		else:
+			print("Curved creation average is %.1f with stdev of %.1f" % (np.average(curvedCreation),np.std(curvedCreation)) )	
 	if hist:
 		if (params.combineSubmissionAndReviewGrades):
 			marks = curvedTotal + zeros
@@ -2463,15 +2471,7 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 		plt.title('Curved grades\n\n',
 				  fontweight ="bold")
 		# Displaying the graph
-		plt.show(block=False)
-	if text:
-		print("Creation average is %.1f%% with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
-		print("Review average is %.1f%% with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
-		print("Raw total average is %.1f%% with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
-		if (params.combineSubmissionAndReviewGrades):
-			print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
-		else:
-			print("Curved creation average is %.1f with stdev of %.1f" % (np.average(curvedCreation),np.std(curvedCreation)) )	
+		plt.show()#block=False)
 	assignment.creationAverage=np.average(creationGrade)
 	assignment.creationStd=np.std(creationGrade)
 	assignment.reviewAverage=np.average(reviewGrade)
