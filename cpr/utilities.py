@@ -2176,7 +2176,7 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 		if assignment.id in student.creations:
 			creation=student.creations[assignment.id]
 			if (student.gradingStatus[assignment.id] in ['graded','regraded']):
-				printLine("posting for " + student.name, newLine=False)
+				printLine("posting for " + student.name, newLine=False, flush=True)
 				if postComments:
 
 					theComment=additionalGradingComment + "\n\n"
@@ -3074,7 +3074,7 @@ def printLeftRight(left,right, end="\n"):
 	rowsOfText=1+int((len(left+right))/cols)
 	hideCursor()
 	print("\r",end="")
-	print(f'{left:<{rowsOfText*cols-len(right)}}{right}',end=end)
+	print(f'{left:<{rowsOfText*cols-len(right)}}{right}',end=end, flush=True)
 	showCursor()
 
 ######################################
