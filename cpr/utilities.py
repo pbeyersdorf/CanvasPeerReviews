@@ -2537,7 +2537,7 @@ def importGrades(assignment=None, fileName=None, overwrite=False):
 ######################################
 # Export the student grades for the given assignment to a file and optionally print
 # them on the screen too.		
-def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, saveToFile=True, outOf100=False):
+def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, saveToFile=True, outOf100=True):
 	#fileName = "gradesheet.csv"
 	if fileName==None and assignment!= None:
 		fileName="scores for " + assignment.name + ".csv"
