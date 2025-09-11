@@ -2455,8 +2455,8 @@ def getStatistics(assignment=lastAssignment, text=True, hist=False):
 	if text:
 		print("Creation average is %.1f%% with stdev of %.1f" % (np.average(creationGrade),np.std(creationGrade)) )	
 		print("Review average is %.1f%% with stdev of %.1f" % (np.average(reviewGrade),np.std(reviewGrade)) )	
-		print("Raw total average is %.1f%% with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
 		if (params.combineSubmissionAndReviewGrades):
+			print("Raw total average is %.1f%% with stdev of %.1f" % (np.average(rawTotal),np.std(rawTotal)) )	
 			print("Curved average is %.1f with stdev of %.1f" % (np.average(curvedTotal),np.std(curvedTotal)) )	
 		else:
 			print("Curved creation average is %.1f with stdev of %.1f" % (np.average(curvedCreation),np.std(curvedCreation)) )	
