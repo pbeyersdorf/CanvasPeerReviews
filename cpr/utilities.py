@@ -3047,7 +3047,7 @@ def inputWithTimeout(prompt, timeout=10, default=None):
     
 ######################################
 # print a line by printing white space
-def printLine(msg="", newLine=True, line=False):
+def printLine(msg="", newLine=True, line=False, flush=False):
 	try:
 		size=os.get_terminal_size()
 		cols=size.columns
@@ -3057,9 +3057,9 @@ def printLine(msg="", newLine=True, line=False):
 	if (line):
 		originalPrint("-"*cols)
 	if newLine:
-		originalPrint("\r{: <{width}}".format(msg, width=cols-1),"")		
+		originalPrint("\r{: <{width}}".format(msg, width=cols-1),"", flush=flush)		
 	else:
-		originalPrint("\r{: <{width}}".format(msg, width=cols-1),"",end="")
+		originalPrint("\r{: <{width}}".format(msg, width=cols-1),"",end="", flush=flush)
 		
 	showCursor()	
 
