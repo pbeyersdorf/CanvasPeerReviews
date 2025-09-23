@@ -718,7 +718,7 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 		reviewerAvaialble=creation.reviewCount<len(creationsToConsider)-1
 		tic=time.time()
-		while creation.reviewCount < numberOfReviewers and reviewerAvaialble and and time.time()-tic < 10: #this creation did not get enough reviewers assigned somehow, spend up to 10 seconds trying to fix
+		while creation.reviewCount < numberOfReviewers and reviewerAvaialble and time.time()-tic < 10: #this creation did not get enough reviewers assigned somehow, spend up to 10 seconds trying to fix
 			#get the reviewer with the fewest reviews so far
 			sortedReviewers=sorted(reviewers, key=lambda r:r.numberOfReviewsAssignedOnAssignment(creation.assignment_id))
 			sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation)) and reviewer.id != creation.user_id and reviewer.numberOfReviewsAssignedOnAssignment(creation.assignment_id)  < params.numberOfReviews+1 and (reviewer.section == studentsById[creation.user_id].section or ignoreSections)]
