@@ -2994,8 +2994,12 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 	try:
 		if  default!=None:
 			prompt+=" [" +str(default) +"]"
+		else:
+			default=""
 		prompt+=": "
-		user_input = inputimeout(prompt=f"{prompt} [{default}]", timeout=timeout)		
+		user_input = inputimeout(prompt=prompt, timeout=timeout)	
+		if user_input=="":
+			user_input=default
 	except TimeoutOccurred:
 		user_input = default
 	return str(user_input)
