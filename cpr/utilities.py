@@ -2989,7 +2989,6 @@ def reverseText(msg):
 ######################################
 # Prompt for user input, but give up after a timeout
 def inputWithTimeout(prompt, timeout=10, default=None):
- + timeLeftString + Style.RESET_ALL +msg[len(timeLeftString):] 
 	print(f"{Fore.GREEN}You have {timeout}s to respond to the following:{Style.RESET_ALL}")
 	prompt=formatWithBoldOptions(prompt)
 	try:
