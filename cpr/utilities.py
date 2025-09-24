@@ -2992,12 +2992,12 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 	print(f"{Fore.GREEN}You have {timeout}s to respond to the following:{Style.RESET_ALL}")
 	prompt=formatWithBoldOptions(prompt)
 	try:
-		if  default==None:
-			user_input = inputimeout(prompt=f"{prompt}", timeout=timeout)
-		else:
-			user_input = inputimeout(prompt=f"{prompt} [{default}]", timeout=timeout)		
+		if  default!=None:
+			prompt+=" [" +str(default) +"]"
+		prompt+=": "
+		user_input = inputimeout(prompt=f"{prompt} [{default}]", timeout=timeout)		
 	except TimeoutOccurred:
-		user_input = 'Time is up!'
+		user_input = default
 	return str(user_input)
 	
 ######################################
