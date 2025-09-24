@@ -1095,10 +1095,15 @@ def grade(assignment, studentsToGrade="All", reviewScoreGrading="default", secon
 			val=inputWithTimeout(f"Review grades will use '{reviewScoreGrading}' method.  (c) to change", 3)		
 			if val=='c':
 				assignment.setReviewScoringMethod()
+			print("continuing…")
 		reviewScoreGrading = assignment.reviewScoreMethod 	
 	assignment.reviewScoreMethod = reviewScoreGrading
+	i=0
 	for student in makeList(studentsToGrade):
+		i+=1
+		printLine("    " +str(i) + "/" + str(len(makeList(studentsToGrade))) +" Grading " + student.name, False)
 		gradeStudent(assignment, student, reviewScoreGrading, secondPass)
+	printLine("Done calculating student grades…")
 	assignment.graded=True
 	status["graded"]=True
 	msg=assignment.name +  " graded with the following point values:\n"
