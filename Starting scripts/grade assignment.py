@@ -8,13 +8,15 @@ students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COU
 #################  Get relevant parameters assignment  #################
 params=getParameters()
 # if no assignments have yet been graded then prompt for graders
-if len([g for g in graded_assignments.values() if g.graded])==0: 
-	assignGraders()
-else:
-	viewGraders()
-	val=inputWithTimeout("(g) update grader list",3)
-	if (val=='g'):
-		assignGraders()
+print("Not assigning any graders.  If your class uses graders edit this script to uncomment the code block below this message")
+#if len([g for g in graded_assignments.values() if g.graded])==0: 
+#	assignGraders()
+#else:
+#	viewGraders()
+#	val=inputWithTimeout("(g) update grader list",3)
+#	if (val=='g'):
+#		assignGraders()
+
 #activeAssignment=lastAssignment
 #if activeAssignment.graded:
 activeAssignment=chooseAssignment(requireConfirmation=False)
@@ -82,8 +84,8 @@ print("Grades exported")
 print()
 if confirm("Post grades on canvas?", False):
 	postGrades(activeAssignment)
-print("\nGrading Power Rankings")
-gradingPowerRanking()
-print("\nGrading Deviation Rankings")
-gradingDeviationRanking()
+#print("\nGrading Power Rankings")
+#gradingPowerRanking()
+#print("\nGrading Deviation Rankings")
+#gradingDeviationRanking()
 finish(True)
