@@ -41,6 +41,12 @@ try:
 	from matplotlib import pyplot as plt
 except ImportError:
 	errormsg+="Missing matplotlib module.  Run 'pip3 install matplotlib' to intall\n"
+try:
+	from inputimeout import inputimeout, TimeoutOccurred
+except ImportError:
+	errormsg+="Missing inputimeout module.  Run 'pip3 install inputimeout' to intall\n"
+
+
 
 import webbrowser
 import copy
@@ -2982,8 +2988,21 @@ def reverseText(msg):
 	
 ######################################
 # Prompt for user input, but give up after a timeout
-	
 def inputWithTimeout(prompt, timeout=10, default=None):
+	print(f"You have {timeout}s to respond to the following:")
+	prompt=formatWithBoldOptions(prompt)
+	try:
+		if  default==None:
+			user_input = inputimeout(prompt=f"{prompt}", timeout=timeout)
+		else:
+			user_input = inputimeout(prompt=f"{prompt} [{default}]", timeout=timeout)		
+	except TimeoutOccurred:
+		user_input = 'Time is up!'
+	return str(user_input)
+	
+######################################
+# Prompt for user input, but give up after a timeout - this was causing issues for some users, replaced with a module
+def inputWithTimeoutOld(prompt, timeout=10, default=None):
 	import signal, threading
 	prompt=formatWithBoldOptions(prompt)
 	stopFlag=False
