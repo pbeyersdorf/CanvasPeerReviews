@@ -2584,16 +2584,7 @@ def exportGrades(assignment=None, fileName=None, delimiter=",", display=False, s
 							line+=f"{student.pointsByCriteria[assignment.id][cid]}{delimiter}"
 						else:
 							line+="" + delimiter
-					line+=f'''{student.points[assignment.id]['creation']}{delimiter} {student.grades[assignment.id]['creation']}{delimiter} {student.points[assignment.id]['curvedCreation']}{delimiter} {student.grades[assignment.id]['curvedCreation']}{delimiter} {student.points[assignment.id]['review']}{delimiter} {student.grades[assignment.id]['review']}{delimiter} {student.points[assignment.id]['total']}{delimiter} {student.points[assignment.id]['curvedTotal']}{delimiter} "{student.creationComments[assignment.id]}"{delimiter} "{student.reviewComments[assignment.id]}"{delimiter} "{student.gradingExplanation}"{delimiter} "{student.reviewGradeExplanation}"{delimiter}'''
-# 					line+=(str(points['creation']) + delimiter + 
-# 						str(points['curvedCreation']) + delimiter + 
-# 						str(points['review']) + delimiter + 
-# 						str(points['total']) + delimiter + 
-# 						str(points['curvedTotal']) + delimiter + 
-# 						'"' + student.creationComments[assignment.id] + '"' + delimiter +
-# 						'"' + student.reviewComments[assignment.id] + '"' + delimiter +
-# 						'"' + student.gradingExplanation + '"' + delimiter +
-# 						'"' + student.reviewGradeExplanation + '"')			
+					line+=f'''{student.points[assignment.id]['creation']}{delimiter} {student.grades[assignment.id]['creation']}{delimiter} {student.points[assignment.id]['curvedCreation']}{delimiter} {student.grades[assignment.id]['curvedCreation']}{delimiter} {student.points[assignment.id]['review']}{delimiter} {student.grades[assignment.id]['review']}{delimiter} {student.points[assignment.id]['total']}{delimiter} {student.points[assignment.id]['curvedTotal']}{delimiter} "{student.creationComments[assignment.id]}"{delimiter} "{student.reviewComments[assignment.id]}"{delimiter} "{student.gradingExplanation}"{delimiter} "{student.reviewGradeExplanation}"{delimiter}'''		
 			else:
 				line+= ','
 			line=line.replace('\n','<br>')
