@@ -1444,7 +1444,8 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			creationGrade=0
 			student.gradingExplanation+="No submission received"
 			if not surpressFurtherPrintingForStudent:
-				print(f"\rNo submission for {student.name} on assignment {assignment.name} assigning grade of {creationGrade}")
+				#print(f"\rNo submission for {student.name} on assignment {assignment.name} assigning grade of {creationGrade}")
+				print(f"\rNo submission for {student.name} assigning grade of {creationGrade}")
 			surpressFurtherPrintingForStudent=True
 			missingSubmission=True
 		else:
@@ -1452,13 +1453,13 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 				creationGrade=0 # Change this
 				student.gradingExplanation+="The submission was late"#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 				if not surpressFurtherPrintingForStudent:
-					print(f"\r{student.name}'s submission was late and not included in the review process.  Assigning a grade of {creationGrade}")	
+					print(f"\r{student.name}'s submission was too late for the review process.  Assigning a grade of {creationGrade}")	
 				surpressFurtherPrintingForStudent=True
 			elif student.creations[assignment.id].submitted_at != None:
 				creationGrade=100 # Change this
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 				if not surpressFurtherPrintingForStudent:
-					print("\rNo reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
+					print("\rNo reviews of",student.name," assigning placeholder grade of", creationGrade)	
 	if reviewScoreGrading.lower()=="calibrated grading" or reviewScoreGrading.lower()=="compare to instructor":
 		#calculate review grades
 		tempDelta=dict()
