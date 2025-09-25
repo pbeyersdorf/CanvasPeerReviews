@@ -2997,10 +2997,11 @@ def inputWithTimeout(prompt, timeout=10, default=None):
 		else:
 			default=""
 		prompt+=": "
-		user_input = inputimeout(prompt=prompt, timeout=timeout)	
+		user_input = inputimeout(prompt=prompt, timeout=timeout)
 		if user_input=="":
 			user_input=default
 	except TimeoutOccurred:
+		print("timed out ... proceeding")	
 		user_input = default
 	return str(user_input)
 	
