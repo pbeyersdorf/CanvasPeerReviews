@@ -1444,7 +1444,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			creationGrade=0
 			student.gradingExplanation+="No submission received"
 			if not surpressFurtherPrintingForStudent:
-				print(f"No submission for {student.name} on assignment {assignment.name} assigning grade of {creationGrade}")
+				print(f"\rNo submission for {student.name} on assignment {assignment.name} assigning grade of {creationGrade}")
 			surpressFurtherPrintingForStudent=True
 			missingSubmission=True
 		else:
@@ -1452,13 +1452,13 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 				creationGrade=0 # Change this
 				student.gradingExplanation+="The submission was late"#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 				if not surpressFurtherPrintingForStudent:
-					print(f"{student.name}'s submission was late and not included in the review process.  Assigning a grade of {creationGrade}")	
+					print(f"\r{student.name}'s submission was late and not included in the review process.  Assigning a grade of {creationGrade}")	
 				surpressFurtherPrintingForStudent=True
 			elif student.creations[assignment.id].submitted_at != None:
 				creationGrade=100 # Change this
 				student.gradingExplanation+=""#"This submission was not reviewed.  Placeholder grade of " + str(creationGrade) + " assigned\n"
 				if not surpressFurtherPrintingForStudent:
-					print("No reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
+					print("\rNo reviews of",student.name,"on assignment",assignment.name, "assigning placeholder grade of", creationGrade)	
 	if reviewScoreGrading.lower()=="calibrated grading" or reviewScoreGrading.lower()=="compare to instructor":
 		#calculate review grades
 		tempDelta=dict()
@@ -1504,7 +1504,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 					student.relativeRmsByAssignment[assignment.id][cid]=0
 					student.weightsByAssignment[assignment.id][cid]=0
 			if errorMessage!=None:
-				print(errorMessage)
+				print(f"\r{errorMessage}")
 			delta2=weight=0
 			
 			for cid in [cid for cid in tempWeight if cid!=0]:
@@ -1522,7 +1522,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 						student.relativeRmsByAssignment[assignment.id][0]=None
 						student.weightsByAssignment[assignment.id][0]=0	
 				except Exception as e:
-					print(f"Error {e}.  Setting rms=2 and continuing…")
+					print(f"\rError {e}.  Setting rms=2 and continuing…")
 					rms=2
 					student.rmsByAssignment[assignment.id][0]=None
 					student.relativeRmsByAssignment[assignment.id][0]=None
@@ -1533,9 +1533,9 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 			if not missingSubmission:
 				if not surpressFurtherPrintingForStudent:
 					if len(student.rmsByAssignment[assignment.id]) >0:
-						print(f"Unable to get rms for {student.name}, perhaps they didn't complete any reviews")
+						print(f"\rUnable to get rms for {student.name}, perhaps they didn't complete any reviews")
 					else:
-						print(f"{student.name} did not complete any reviews, assigning review score of 0")
+						print(f"\r{student.name} did not complete any reviews, assigning review score of 0")
 			rms=None
 		if rms != None:
 			reviewGradeFunc= eval('lambda x:' + assignment.reviewCurve.replace('rms','x'))
@@ -1553,7 +1553,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		reviewGrade=student.grades[assignment.id]['review']
 		totalGrade=creationGrade * params.weightingOfCreation + reviewGrade * params.weightingOfReviews
 	else:
-		print("Unknown scoring method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
+		print("\rUnknown scoring method '" + reviewScoreGrading + "'.  Use assignment.setReviewScoringMethod() to change")
 		exit()	
 	#adjust the points from a scale of 100 down to the number of points for the assingmnet
 	digits=int(2-math.log10(assignment.points_possible))
@@ -1593,7 +1593,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		student.gradingStatus[assignment.id]='graded'if creationWasReviewed else 'ungraded'
 	else:
 		if not surpressFurtherPrintingForStudent:
-			print(f"{student.name}'s work wasn't reviewed so no score is being posted")
+			print(f"\r{student.name}'s work wasn't reviewed so no score is being posted")
 		student.gradingStatus[assignment.id]='ungraded'
 		status['unreviewed work']=True
 	
@@ -1623,10 +1623,10 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	if (assignment.id in student.regrade):
 		if (student.regrade[assignment.id]=="Started"):
 			if (not assignment.id in student.regradeComments or len(student.regradeComments[assignment.id])==0):
-				print("using template to craft regrade comments")
+				print("\rusing template to craft regrade comments")
 				student.regradeComments[assignment.id]=processTemplate(student,assignment,templateName="regrade comments")
 			else:
-				print("not using template to craft regrade comments")
+				print("\rnot using template to craft regrade comments")
 	if not assignment.id in student.creations:
 		student.gradingExplanation+="No submission received"
 		student.creationComments[assignment.id]=processTemplate(student,assignment,templateName="creation comment when nothing was submitted")
@@ -2184,12 +2184,13 @@ def postGrades(assignment, postGrades=True, postComments=True, listOfStudents='a
 		weightingOfReviews=1-weightingOfCreation
 		additionalGradingComment = f"For this regrade assignment your creation and review scores are being combined into a single score ({100*weightingOfCreation}% from the submission, {100*weightingOfReviews}% from the reviews) that will be recorded for both the creation and review assignment.<p>"
 			
-			
+	studentNum=0
 	for student in listOfStudents:
+		studentNum+=1
 		if assignment.id in student.creations:
 			creation=student.creations[assignment.id]
 			if (student.gradingStatus[assignment.id] in ['graded','regraded']):
-				printLine("posting for " + student.name, newLine=False, flush=True)
+				printLine(f"{studentNum}/{len(listOfStudents)}posting for {student.name}", newLine=False, flush=True)
 				if postComments:
 
 					theComment=additionalGradingComment + "\n\n"
