@@ -128,6 +128,7 @@ txtFiles = [y for x in os.walk(cprPath) for y in glob(os.path.join(x[0], '*.txt'
 scriptsFiles= [y for x in os.walk(cwd) for y in glob(os.path.join(x[0], '*.py'))]
 scriptsFiles=[x for x in scriptsFiles if 'venv' not in x]
 scriptsFiles=[x for x in scriptsFiles if x not in pyFiles]
+scriptsFiles=[x for x in scriptsFiles if "cpr/" not in x]
 
 print('''
 This script will access the latest files in the 'CanvasPeerReviews' repository on github. It will add any new template files to your system, and give you the option to overwrite any existing python files on your computer with ones on the gitHib server.  Before anything is overwritten a backup copy will be made in the data backups folder.
