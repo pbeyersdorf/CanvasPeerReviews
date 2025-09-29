@@ -80,7 +80,8 @@ if assignedAssessmentsToGraders>0:
 print("\t"+str(len(incompleteReviews)) + " incomplete reviews")
 print("")
 # make a list of students who havent' started their peer reviews yet
-delinquentReviewers=[s for s in students if s.role=='student' and s.numberOfReviewsGivenOnAssignment(activeAssignment.id)==0 and activeAssignment.id in s.creations]
+#delinquentReviewers=[s for s in students if s.role=='student' and s.numberOfReviewsGivenOnAssignment(activeAssignment.id)==0 and 
+delinquentReviewers=[s for s in students if s.role=='student' and s.numberOfReviewsGivenOnAssignment(activeAssignment.id)==0 and s.numberOfReviewsAssignedOnAssignment(activeAssignment.id)>0]
 print("No reviews by", len(delinquentReviewers),"students")
 
 
