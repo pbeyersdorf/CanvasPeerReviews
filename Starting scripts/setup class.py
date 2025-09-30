@@ -5,7 +5,8 @@ from tkinter import filedialog
 homeFolder = os.path.expanduser('~')
 
 def clearOldContent():
-	contentToDelete=["Data", "Data-backups", "path_info.py", "credentials.py"]
+	#contentToDelete=["Data", "Data-backups", "path_info.py", "credentials.py"]
+	contentToDelete=["Data", "Data-backups", "credentials.py"]
 	itemsToDelete = [itm for itm in os.listdir() if itm in contentToDelete]
 	if len(itemsToDelete)==0:
 		return
@@ -16,7 +17,7 @@ def clearOldContent():
 	return
 
 def getPath(prompt="Select directory", defaultPath="/"):
-	print(prompt)
+	print(prompt,flush=True)
 	root = Tk()
 	root.withdraw()
 	root.filename =  filedialog.askdirectory(initialdir = defaultPath, title = prompt)
