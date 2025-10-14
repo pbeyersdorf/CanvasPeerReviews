@@ -2349,6 +2349,8 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 				totalMultiplierPoints=0
 				for criteria in assignment.rubric:
 					criteriaDescription[criteria['description']]=criteria['description']
+					if criteria['description'] in params.multiplier and (selectedAssignment!=assignment):
+						print(f"{criteria['description']} has already been configured to be worth {params.multiplier[criteria['description']]} points (out of 100)")
 					if not criteria['description'] in params.multiplier or (selectedAssignment==assignment):
 						default=100/len(assignment.rubric)
 						params.multiplier[criteria['description']]=getNum(f"How many points (out of 100) should '{criteria['description']}' be worth? ",limits=[0,100], fileDescriptor=logFile, defaultVal=default)						
