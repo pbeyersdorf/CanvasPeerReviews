@@ -5,6 +5,7 @@ class Parameters:
 		self.multiplier=dict()
 		self.halfLife=9999
 		self.textToPrependOnComments=""
+		self.weightCreationGradeByFractionOfReviewsCompleted=False
 	
 
 	def __repr__(self):
@@ -34,11 +35,12 @@ class Parameters:
 		for key in self.multiplier:
 			msg+=f"        {key}: {self.multiplier[key]}\n"
 		return msg
-		try: # to deal with legacy data in Sp 25
-			msg+=(f"    textToPrependOnComments: {self.textToPrependOnComments}\n")
-		except:
-			pass
+		msg+=(f"    textToPrependOnComments: {self.textToPrependOnComments}\n")
 		msg+=(f"    numberOfReviews: {self.numberOfReviews}\n")
+		try: # this parameter was introduced in November 2025
+			msg+=(f"    weightCreationGradeByFractionOfReviewsCompleted: {self.weightCreationGradeByFractionOfReviewsCompleted}\n")
+		except:
+			pass		
 		msg+=(f"    combineSubmissionAndReviewGrades: {self.combineSubmissionAndReviewGrades}\n")
 		if self.combineSubmissionAndReviewGrades:
 			msg+=(f"    weightingOfCreation: {self.weightingOfCreation}\n")

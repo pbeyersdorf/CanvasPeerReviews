@@ -1263,6 +1263,9 @@ def processTemplate(student, assignment, templateName):
 			return None
 		if not  hasattr(student,"pointsByCriteriaScaled"):
 			student.pointsByCriteriaScaled=dict()
+		if not hasattr(student,"creationGradeExplanation"):
+			student.creationGradeExplanation=""
+		
 		if assignment.id not in student.pointsByCriteriaScaled:
 			student.pointsByCriteriaScaled[assignment.id]=dict()
 		try:
@@ -1578,6 +1581,16 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 	curvedTotalPoints=curveFunc(totalPoints)
 	curvedCreationGrade=100*curveFunc(creationPoints)/maxCreationPoints
 	#curvedCreationGrade=curveFunc(creationGrade) #xxx need to fix this
+	if not hasattr(params,"weightCreationGradeByFractionOfReviewsCompleted"): #to deal with this being added mid-semester in Fall 25
+		params.weightCreationGradeByFractionOfReviewsCompleted=False
+	student.creationGradeExplanation = ""
+	if student.amountReviewed(assignment)  < 1 and params.weightCreationGradeByFractionOfReviewsCompleted:
+		creationGrade = creationGrade * student.amountReviewed(assignment)
+		creationPoints = creationPoints * student.amountReviewed(assignment)
+		if (student.amountReviewed(assignment) > 0):
+			student.creationGradeExplanation=f"Since you only completed {int(student.amountReviewed(assignment) *100)}% of your assigned peer reviews you only receive {{int(student.amountReviewed(assignment) *100)}% of your creation score (which would have been {int(creationGrade*10)/10}).  "
+		else:
+			student.creationGradeExplanation=f"Since you didn't comnplete any peer reviews you weren't given credit for your submission.  "
 	if not assignment.id in student.creations:
 		curvedTotalPoints=0 # no submission
 		curvedCreationGrade=0 # no submission
@@ -2396,6 +2409,8 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 		else:
 			params.maxCompensationFraction=0;
 		params.setReviewScoringMethod() 
+		if not combineSubmissionAndReviewGrades:
+			params.weightCreationGradeByFractionOfReviewsCompleted = getBool("Should students creation scores get multiplied by the fraction of the assigned reviews they have completed (y/n)?", defaultVal='n')
 		createTemplate()
 
 	logFile.close()

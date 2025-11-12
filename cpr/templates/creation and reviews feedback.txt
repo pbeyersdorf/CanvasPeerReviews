@@ -6,7 +6,7 @@ A weighted average of the reviews of your work give the following scores:
 {% endfor %}{#
 #}</ul>    
 
-Earning you {{creationGrade}}% for your submission.
+Earning you {{creationGrade}}% for your submission.  {{student.creationGradeExplanation}}
 
 Compared to reviews by {{ macros.compared_to(assignment) }}, the peer review scores you gave others deviated by
 {{ macros.review_feedback_by_criteria(student,assignment,criteriaDescription) }}

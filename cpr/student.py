@@ -56,6 +56,7 @@ class Student:
 		self._assignedReviews=dict()
 		self.reviewsReceived=[]
 		self.criteriaDescription=dict()
+		self.creationGradeExplanation = None
 		self.gradingPowerNormalizationFactor=dict()
 		self.points=dict()
 		self.grades=dict()
