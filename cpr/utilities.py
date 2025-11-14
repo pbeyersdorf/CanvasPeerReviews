@@ -735,16 +735,20 @@ def assignPeerReviews(creationsToConsider, reviewers="randomize", numberOfReview
 				peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
 	# now that all creations have been assigned the target number of reviews, keep assigning until all students have the target number of reviews assigned
 	sortedReviewers=sorted(reviewers, key=lambda x: x.sortable_name) #sort alphabetically by last name
-	sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation)) and reviewer.id != creation.user_id and (reviewer.section == studentsById[creation.user_id].section or ignoreSections)]
+	#sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers if (not reviewer.assignedReviewOfCreation(creation)) and reviewer.id != creation.user_id and (reviewer.section == studentsById[creation.user_id].section or ignoreSections)]
+	sortedAvailableReviewers=[reviewer for reviewer in sortedReviewers]
 
 	for reviewer in sortedAvailableReviewers:
 		tic=time.time()
 		print(f"{reviewer.name} was assigned {reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)} reviews")
 		while (reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id)  < params.numberOfReviews and reviewer.numberOfReviewsAssignedOnAssignment(creationsToConsider[0].assignment_id) < len(creationsToConsider)-1 and time.time()-tic < 1):
 			creation=random.choice(creationsToConsider)
-			msg="---"
-			peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
-			#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")			
+			if (not reviewer.assignedReviewOfCreation(creation)) and reviewer.id != creation.user_id and (reviewer.section == studentsById[creation.user_id].section or ignoreSections):
+				msg="---"
+				peer_review=assignAndRecordPeerReview(creation,reviewer, msg, secondPass)
+				#print("assigning " + str(reviewer.name)	 + " to review " + str(studentsById[creation.author_id].name) + "'s creation")	
+		if not time.time()-tic < 1:
+			print(f"Timedout trying to assign enough reviews to {reviewer.name}")
 	if len(graders)==0:
 		return
 	# finally assign to graders
