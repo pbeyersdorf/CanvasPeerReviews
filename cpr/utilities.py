@@ -1592,7 +1592,7 @@ def gradeStudent(assignment, student, reviewScoreGrading="default", gradeStudent
 		creationGrade = creationGrade * student.amountReviewed(assignment)
 		creationPoints = creationPoints * student.amountReviewed(assignment)
 		if (student.amountReviewed(assignment) > 0):
-			student.creationGradeExplanation=f"Since you only completed {int(student.amountReviewed(assignment) *100)}% of your assigned peer reviews you only receive {{int(student.amountReviewed(assignment) *100)}% of your creation score (which would have been {int(creationGrade*10)/10}).  "
+			student.creationGradeExplanation=f"Since you only completed {int(student.amountReviewed(assignment) *100)}% of your assigned peer reviews you only receive {int(student.amountReviewed(assignment) *100)}% of your creation score (which would have been {int(creationGrade*10)/10}).  "
 		else:
 			student.creationGradeExplanation=f"Since you didn't comnplete any peer reviews you weren't given credit for your submission.  "
 	if not assignment.id in student.creations:
