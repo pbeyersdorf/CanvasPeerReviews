@@ -2413,7 +2413,7 @@ def getParameters(ignoreFile=False, selectedAssignment="all"):
 		else:
 			params.maxCompensationFraction=0;
 		params.setReviewScoringMethod() 
-		if not combineSubmissionAndReviewGrades:
+		if not params.combineSubmissionAndReviewGrades:
 			params.weightCreationGradeByFractionOfReviewsCompleted = getBool("Should students creation scores get multiplied by the fraction of the assigned reviews they have completed (y/n)?", defaultVal='n')
 		createTemplate()
 
