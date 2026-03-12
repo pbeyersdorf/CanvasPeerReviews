@@ -8,6 +8,9 @@ students, graded_assignments, lastAssignment = initialize(CANVAS_URL, TOKEN, COU
 params=getParameters()
 
 average={}
+success={}
+fail={}
+successThreshold=3
 for aid in graded_assignments:
 	theseReviews=[reviewsById[key] for key in reviewsById if reviewsById[key].assignment_id == aid]
 	count=0
@@ -24,9 +27,22 @@ for aid in graded_assignments:
 		if count ==0:
 			for category in thisReview.scores:
 				total[category]=thisReview.scores[category]
+				if (thisReview.scores[category] >=successThreshold):
+					success[category]=1
+					fail[category]=0
+				else:
+					success[category]=0
+					fail[category]=1				
+				total[category]=thisReview.scores[category]
+				total[category]=thisReview.scores[category]
 		else:			
 			for category in total:
 				total[category]+=thisReview.scores[category]
+				if (thisReview.scores[category] >=successThreshold):
+					success[category]+=1
+				else:
+					fail[category]+=1				
+
 		count+=1
 
 	if count>0:
@@ -36,6 +52,6 @@ for aid in graded_assignments:
 		print(f"For {graded_assignments[aid].name}:")
 	
 		for category in average[aid]:
-			print(f"\t{category}: {average[aid][category]}")
+			print(f"\t{category}: {average[aid][category]}, {round(success[category]*100/(success[category] +fail[category]))}% success rate")
 	
 		
