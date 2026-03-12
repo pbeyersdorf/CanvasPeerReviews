@@ -10,6 +10,7 @@ params=getParameters()
 average={}
 success={}
 fail={}
+total={}
 successThreshold=3
 for aid in graded_assignments:
 	theseReviews=[reviewsById[key] for key in reviewsById if reviewsById[key].assignment_id == aid]
