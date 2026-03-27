@@ -1077,8 +1077,11 @@ def calibrate(studentsToCalibrate="all", endDate=datetime.utcnow().replace(tzinf
 	for student in studentsToCalibrate:
 		for comp in student.comparisons.values():
 			if comp.updateable:
-				otherReviewer=studentsById[reviewsById[comp.reviewIDComparedTo].reviewer_id]
-				comp.updateWeight(otherReviewer)
+				try:
+					otherReviewer=studentsById[reviewsById[comp.reviewIDComparedTo].reviewer_id]
+					comp.updateWeight(otherReviewer)
+				except:
+					pass
 	dataToSave['students']=True
 	status["calibrated"]=True
 
